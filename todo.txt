@@ -1,8 +1,7 @@
 TODO: 
-    _vdb_rebalance_tree - need to rebalance trees after insertion/deletion
-    add project to github
-    vdb_fetch_record (by primary key for now)
     vdb_delete_record (by primary key for now)
+    _vdb_rebalance_tree - need to rebalance trees after insertion/deletion
+    switch to B-Tree (or B+-Tree) - rewrite interface between tree/vdb if necessary to ease future tree implementation changes
 
 Vaquita Relational Database
     vdb.c

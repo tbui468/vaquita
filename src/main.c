@@ -20,6 +20,13 @@ void make_data(struct VdbData* d, bool a, uint64_t b, char* c) {
     d->count = 3;
 }
 
+void print_data(struct VdbData* result) {
+    printf("record found!\n");
+    printf("%ld\n", result->data[0].as.Int);
+    printf("%.*s\n", result->data[1].as.Str->len, result->data[1].as.Str->start);
+    printf("%d\n", result->data[2].as.Bool);
+}
+
 int main(int argc, char** argv) {
     argc = argc;
     argv = argv;
@@ -41,12 +48,20 @@ int main(int argc, char** argv) {
     struct VdbData d1;
     make_data(&d1, true, 42, "dog");
     struct VdbData d2;
-    make_data(&d2, false, 9, "cat");
+    make_data(&d2, false, 9, "catsss");
 
     if (vdb_insert_record(h, "students", d2) != 0)
         printf("failed to insert record\n");
     if (vdb_insert_record(h, "students", d1) != 0)
         printf("failed to insert record\n");
+
+    printf("searching for record...\n");
+    struct VdbData* result = vdb_fetch_record(h, "students", 0);
+    if (result) {
+        print_data(result);
+    } else {
+        printf("record not found\n");
+    }
 
     vdb_close(h);
 

@@ -356,6 +356,7 @@ void _vdb_write_node(FILE* f, uint32_t off, struct TreeNode n) {
     }
 }
 
+
 void _vdb_insert_node(FILE* f, uint32_t off, struct TreeNode n) {
     fseek_w(f, sizeof(uint32_t) * 2, SEEK_SET);
     uint32_t field_count;
@@ -405,7 +406,7 @@ void _vdb_rebalance_tree(FILE* f) {
     //rebalance the tree - rotation 
 }*/
 
-int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData data) {
+int _vdb_get_table_idx(VDBHANDLE h, const char* table) {
     struct DB* db = (struct DB*)h;
 
     int tabidx = -1;
@@ -419,10 +420,18 @@ int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData data) {
         }
     }
 
+    return tabidx;
+}
+
+
+int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData data) {
+    struct DB* db = (struct DB*)h;
+
+    int tabidx = _vdb_get_table_idx(h, table);
+
     if (tabidx == -1)
         return tabidx;
 
-    get_filename(db->tables[tabidx], filename, FILENAME_MAX);
     if (!_vdb_valid_schema(db->tables[tabidx], data))
         return -1;
 
@@ -439,4 +448,71 @@ int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData data) {
     //_vdb_rebalance_tree(db->tables[tabidx]); //TODO: need to rotate to prevent unbalanced tree
 
     return 0;
+}
+
+struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
+    struct DB* db = (struct DB*)h;
+
+    int tabidx = _vdb_get_table_idx(h, table);
+
+    fseek_w(db->tables[tabidx], sizeof(uint32_t) * 2, SEEK_SET);
+    uint32_t field_count;
+    fread_w(&field_count, sizeof(uint32_t), 1, db->tables[tabidx]);
+    enum VdbField fields[field_count];
+    for (uint32_t i = 0; i < field_count; i++) {
+        fread_w(fields + i, sizeof(uint32_t), 1, db->tables[tabidx]);
+    }
+
+    fseek_w(db->tables[tabidx], sizeof(uint32_t) * 2, SEEK_CUR);
+    uint32_t cur;
+    fread_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+
+    while (cur) {
+        fseek_w(db->tables[tabidx], cur + sizeof(uint32_t) * 2, SEEK_SET);
+        uint32_t pk;
+        fread_w(&pk, sizeof(uint32_t), 1, db->tables[tabidx]);
+
+        if (key < pk) {
+            fseek_w(db->tables[tabidx], cur, SEEK_SET);
+            fread_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+            continue;
+        } else if (key > pk) {
+            fseek_w(db->tables[tabidx], cur + sizeof(uint32_t), SEEK_SET);
+            fread_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+            continue;
+        } else {
+            fseek_w(db->tables[tabidx], cur + sizeof(uint32_t) * 4, SEEK_SET);
+            struct VdbData* data = malloc(sizeof(struct VdbData));
+            data->count = field_count;
+            data->data = malloc(sizeof(struct VdbDatum) * field_count);
+
+            for (uint32_t i = 0; i < field_count; i++) {
+                enum VdbField f = fields[i];
+                switch (f) {
+                case VDBF_INT:
+                    data->data[i].type = VDBF_INT;
+                    fread_w(&data->data[i].as.Int, sizeof(uint64_t), 1, db->tables[tabidx]);
+                    break;
+                case VDBF_STR:
+                    data->data[i].type = VDBF_STR;
+                    struct VdbString* s = malloc_w(sizeof(struct VdbString));
+                    fread_w(&s->len, sizeof(uint32_t), 1, db->tables[tabidx]);
+                    s->start = malloc_w(sizeof(char) * s->len);
+                    fread_w(s->start, sizeof(char), s->len, db->tables[tabidx]);
+                    data->data[i].as.Str = s;
+                    break;
+                case VDBF_BOOL:
+                    data->data[i].type = VDBF_BOOL;
+                    fread_w(&data->data[i].as.Bool, sizeof(bool), 1, db->tables[tabidx]);
+                    break;
+                default:
+                    break;
+                }
+            }
+
+            return data;
+        }
+    }
+
+    return NULL;
 }

@@ -41,5 +41,6 @@ void vdb_close(VDBHANDLE);
 int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema schema);
 int vdb_drop_table(VDBHANDLE h, const char* table_name);
 int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData data);
+struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
 
 #endif //VDB_H

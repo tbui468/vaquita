@@ -1,0 +1,78 @@
+TODO: 
+    _vdb_rebalance_tree - need to rebalance trees after insertion/deletion
+    add project to github
+    vdb_fetch_record (by primary key for now)
+    vdb_delete_record (by primary key for now)
+
+Vaquita Relational Database
+    vdb.c
+        vdb_open(struct DB* db, const char* name); - opens a database with given name
+        vdb_create_table(struct DB* db, const char* table_name, enum Field* fields, int field_count); - adds table to database with given schema
+        vdb_drop_table(struct DB* db, const char* table_name);
+        vdb_insert_record(struct DB* db, const char* table_name, ...); - number/type of variable arguments must match table schema
+        vdb_delete_record(struct DB* db, const char* table_name, int key);
+        vdb_get_by_primary_key(struct DB*, uint64_t primary_key); - get table record by id //will add SQL query engine later
+
+    tree.c - tree grabs blocks it needs and will need to figure out offsets to get proper tree data/metadata
+        vdb_tree_read(struct DB* db, int off, uint8_t* buf, int len) { //this should be atomic
+            //compute correct block index
+            vdb_pager_read_lock();
+            struct Block* b = vdb_pager_read_block(correct block index);
+            //do whatever necessary to b
+            vdb_pager_un_lock();
+        }
+        vdb_tree_write(struct DB* db, int off, uint8_t* buf, int len) { //this should be atomic
+            //compute correct block index
+            vdb_pager_write_lock();
+            struct Block* b = vdb_pager_read_block(correct block index);
+            //write data to b
+            vdb_pager_write_block(index);
+            vdb_pager_un_lock();
+        }
+
+        other functions for traversing tree and finding free records
+
+    pager.c - pager only knows about blocks
+        vdb_pager_read_lock(struct DB* db, int off, int len);
+        vdb_pager_write_lock(struct DB* db, int off, int len);
+        vdb_pager_un_lock(struct DB* db, int off, int len);
+        vdb_pager_read_block(struct Block* b, int idx);
+        vdb_pager_write_block(struct Block* b, int idx, uint8_t* buf, int len);
+
+
+
+Database Internals
+    Chapter 1: Introduction and Overview (PDF 27)
+        What is the difference between row and column oriented data layouts?
+            row-oriented stores data in tuples
+            column stores data by fields
+        Is a wide column store the same as a column-oriented database?
+            No, but I'm not sure what wide column store is
+        What is the difference between a primary and secondary key?
+            Primary key (usually incremented integer) points to data
+            Secondary key either references primary key OR references data (depending on implementation)
+
+    Chapter 2: B-Tree Basics (PDF 45)
+        How can a rotation step be used to keep a binary tree balance?
+            Change root if one side is higher
+        How are fanout and height of a tree related?
+            fanout are how many children per node.  More children, less height (give the same number of nodes)
+        Why is sequential vs random I/O access not as important in SSDs compared to HDDs?
+            Spinning head in HDD is super slow, so access sequential sectors on disk is a fair bit faster
+            SSDs uses cells, so it's not a big of a deal (but sequential is still faster here too)
+        What is a 2-3 tree?
+            Two indices, and three children per node
+        What is the difference between a B-Tree and B+-Tree?
+            B-Trees store data in internal and leaf nodes, and B+-Trees only store them in leaves
+        When does a node need to be split?
+            Too many children (over a set max capacity)
+        When does splitting cause the B-Tree to grow in height?
+            When splitting a node cause the root to need to be split too
+        When should nodes be merged?
+            When children count in under a set threshhold
+    
+    Chapter 3: File Formats (PDF 65)
+
+Designing Data-Intensive Applications
+    Chapter 1: Reliable, Scalable, and Maintainable Applications (PDF 15)
+

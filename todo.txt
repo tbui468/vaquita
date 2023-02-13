@@ -1,7 +1,15 @@
-TODO: 
-    vdb_delete_record (by primary key for now)
+TODO: Storage engine
+    switch to B-Tree - this will make more sense when switching to a paging system
     _vdb_rebalance_tree - need to rebalance trees after insertion/deletion
+        find algorithm to compute height of a given subtree - then use this to determine whether to rotate right or left
     switch to B-Tree (or B+-Tree) - rewrite interface between tree/vdb if necessary to ease future tree implementation changes
+    Pager - tree should request blocks from pager
+        a single page holds only a single node?  (Any extra data will be in overflow pages)
+        this will make more sense if using a B-Tree rather than a binary tree
+    virtual machine for running straightline code (which we need to define)
+        predicates and combinations of it will be useful here
+    How to compile SQL to produce straight line code to run in vm
+    Make it a distributed system - add network support
 
 Vaquita Relational Database
     vdb.c
@@ -71,7 +79,49 @@ Database Internals
             When children count in under a set threshhold
     
     Chapter 3: File Formats (PDF 65)
+        What is a slotted layout?
+        In a slotted layout page, how are pointers and cells related?
+        How are nodes and pages related?  (eg, how many nodes per page?)
+        What mechanisms can be used to ensure (at least attempt) data was not accidentally corrupted?
 
+    Chapter 4: Implementing B-Trees (PDF 81)
+        What can magic numbers be used for? 
+        What are sibling links, and why are they useful?
+        What are overflow pages?
+        Why are breadcrumbs used with B-Trees, and what data structure is commonly used to store breadcrumbs?
+        Why are nodes 'rebalanced' instead of merged/split sometimes?
+        What are right-only appends?
+        What is bulk-loading and how does it relate to right-only appends?
+        What's the purpose of compressing data?
+        What is compaction/vacuum/maintenance?
+
+    Chapter 5: Transaction Processing and Recovery (PDF 99)
+        
 Designing Data-Intensive Applications
     Chapter 1: Reliable, Scalable, and Maintainable Applications (PDF 15)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

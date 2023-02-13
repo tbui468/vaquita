@@ -516,3 +516,120 @@ struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
 
     return NULL;
 }
+
+void _tree_insert_node(FILE* f, uint32_t node_off, uint32_t root_off) {
+    fseek_w(f, node_off + sizeof(uint32_t), SEEK_SET);
+    uint32_t key;
+    fread_w(&key, sizeof(uint32_t), 1, f);
+
+    uint32_t cur = root_off;
+
+    while (cur) {
+        fseek_w(f, cur, SEEK_SET);
+        uint32_t left, right, pk;
+        fread_w(&left, sizeof(uint32_t), 1, f);
+        fread_w(&right, sizeof(uint32_t), 1, f);
+        fread_w(&pk, sizeof(uint32_t), 1, f);
+
+        if (key < pk) {
+            if (!left) {
+                fseek_w(f, cur, SEEK_SET);
+                fwrite_w(&node_off, sizeof(uint32_t), 1, f);
+            } else {
+                cur = left;
+                continue;
+            }
+        } else if (key > pk) {
+            if (!right) {
+                fseek_w(f, cur + sizeof(uint32_t), SEEK_SET);
+                fwrite_w(&node_off, sizeof(uint32_t), 1, f);
+            } else {
+                cur = right;
+                continue;
+            }
+        }
+    }
+}
+
+int vdb_delete_record(VDBHANDLE h, const char* table, uint32_t key) {
+    struct DB* db = (struct DB*)h;
+
+    int tabidx = _vdb_get_table_idx(h, table);
+
+    fseek_w(db->tables[tabidx], sizeof(uint32_t) * 2, SEEK_SET);
+    uint32_t field_count;
+    fread_w(&field_count, sizeof(uint32_t), 1, db->tables[tabidx]);
+    enum VdbField fields[field_count];
+    for (uint32_t i = 0; i < field_count; i++) {
+        fread_w(fields + i, sizeof(uint32_t), 1, db->tables[tabidx]);
+    }
+
+    fseek_w(db->tables[tabidx], sizeof(uint32_t) * 2, SEEK_CUR);
+    uint32_t cur;
+    fread_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+    uint32_t prev = sizeof(uint32_t) * (field_count + 5);
+
+    while (cur) {
+        fseek_w(db->tables[tabidx], cur + sizeof(uint32_t) * 2, SEEK_SET);
+        uint32_t pk;
+        fread_w(&pk, sizeof(uint32_t), 1, db->tables[tabidx]);
+
+        if (key < pk) {
+            prev = cur;
+            fseek_w(db->tables[tabidx], cur, SEEK_SET);
+            fread_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+            continue;
+        } else if (key > pk) {
+            prev = cur + sizeof(uint32_t);
+            fseek_w(db->tables[tabidx], cur + sizeof(uint32_t), SEEK_SET);
+            fread_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+            continue;
+        } else {
+            uint32_t left_off;
+            uint32_t right_off;
+            fseek_w(db->tables[tabidx], cur, SEEK_SET);
+            fread_w(&left_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+            fread_w(&right_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+            if (!left_off && !right_off) { //no node to promote
+                fseek_w(db->tables[tabidx], prev, SEEK_SET);
+                uint32_t zero;
+                fwrite_w(&zero, sizeof(uint32_t), 1, db->tables[tabidx]);
+            } else if (!left_off) { //promote right child
+                fseek_w(db->tables[tabidx], prev, SEEK_SET);
+                fwrite_w(&right_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+            } else if (!right_off) { //promote left child
+                fseek_w(db->tables[tabidx], prev, SEEK_SET);
+                fwrite_w(&left_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+            } else { //arbitrarily promote left child for now
+                //if left is promoted
+                //promoted node's left child can remain the same
+                fseek_w(db->tables[tabidx], prev, SEEK_SET);
+                fwrite_w(&left_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+                //promoted node's right child now becomes its previous right sibling
+                fseek_w(db->tables[tabidx], left_off + sizeof(uint32_t), SEEK_SET);
+                uint32_t prev_right;
+                fread_w(&prev_right, sizeof(uint32_t), 1, db->tables[tabidx]);
+                fseek_w(db->tables[tabidx], -sizeof(uint32_t), SEEK_CUR);
+                fwrite_w(&right_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+                //promoted node's previous right child can be inserted into right child subtree (will be left-most left)
+                _tree_insert_node(db->tables[tabidx], prev_right, right_off);
+            }
+
+            //insert delete node into freelist (and also zero out right child just in case)
+            fseek_w(db->tables[tabidx], cur + sizeof(uint32_t), SEEK_SET);
+            uint32_t zero = 0;
+            fwrite(&zero, sizeof(uint32_t), 1, db->tables[tabidx]);
+
+            fseek_w(db->tables[tabidx], sizeof(uint32_t) * (field_count + 4), SEEK_SET);
+            uint32_t prev_free_off;
+            fread_w(&prev_free_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+            fseek_w(db->tables[tabidx], -sizeof(uint32_t), SEEK_CUR);
+            fwrite_w(&cur, sizeof(uint32_t), 1, db->tables[tabidx]);
+            fseek_w(db->tables[tabidx], cur, SEEK_SET);
+            fwrite_w(&prev_free_off, sizeof(uint32_t), 1, db->tables[tabidx]);
+            return 0;
+        }
+    }
+
+    return -1;
+}

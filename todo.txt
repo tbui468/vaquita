@@ -1,5 +1,54 @@
 TODO: Storage engine
+
+    tree.c should NOT have access to struct DB
+        it should only access FILE* for now (may change this once pager is integrated)
+    How about this:
+        when creating a new database, just create a new directory called students.vdb
+        and put all tables inside that directory (all .vtb files).  Then when a database
+        is opened, just go through that directory and open file descriptors for all
+        .vtb files - extra information now doesn't need to be stored in a root file (like before)
+
+
+    struct Meta {
+        enum VdbNodeType type; //VDBN_INTERN, VDBN_LEAF
+        uint32_t size; //should be a constant, 4096
+        uint32_t offsets_start;
+        uint32_t offsets_size;
+        uint32_t cells_size;
+        uint32_t feelist;    
+        VdbSchema* schema; //put last since variable sized
+    };
+
     switch to B-Tree - this will make more sense when switching to a paging system
+        |meta|offsets|freespace|cells|
+        meta (set to 256 bytes for now to allow growth later)
+            page type - internal or leaf
+            page size
+            freelist head
+            offsets start
+            offsets size
+            cells size
+
+        offsets
+            offsets to keys - these offsets are ordered based on key values
+            grow to the right
+
+        freespace
+            if meta size + offsets size + cells size > page size, then no more freespace for new records
+            but freelist is still available, and defragging page may provide more freespace
+
+        cells
+            grow to the left
+            
+        offsets grow from left to right
+        cells grow from right to left
+        once freespace is used up, an overflow page will be needed - metadata can store overflow page information
+        cells hold two metadata values: next (to link freeblocks), and length (which is needed to check if large enough)
+        offsets need to be ordered by keys so allow binary search
+
+        for internal nodes, cells will contain key data and page data for next node
+        for leaf nodes, cells will contain key data and the corresponding data record
+
     _vdb_rebalance_tree - need to rebalance trees after insertion/deletion
         find algorithm to compute height of a given subtree - then use this to determine whether to rotate right or left
     switch to B-Tree (or B+-Tree) - rewrite interface between tree/vdb if necessary to ease future tree implementation changes
@@ -80,43 +129,85 @@ Database Internals
     
     Chapter 3: File Formats (PDF 65)
         What is a slotted layout?
+            Using an offset section to allow easier reuse of slots and easy rearranging of slots
         In a slotted layout page, how are pointers and cells related?
+            pointers point to cells
         How are nodes and pages related?  (eg, how many nodes per page?)
+            A node is normally represented as a page
         What mechanisms can be used to ensure (at least attempt) data was not accidentally corrupted?
+            checksums
 
     Chapter 4: Implementing B-Trees (PDF 81)
         What can magic numbers be used for? 
+            sanity check
         What are sibling links, and why are they useful?
+            links between sibling nodes - don't need to have access to parent to find siblings of a node
         What are overflow pages?
+            A node is normally a single page, but if all data doesn't fit, it can refer to a new page that
+            stores the extra data
         Why are breadcrumbs used with B-Trees, and what data structure is commonly used to store breadcrumbs?
+            trace route down the tree so that changes can be made (sometimes a parent is needed to find a 
+            sibling of a node, eg when splitting and merging).  A stack can be used.
         Why are nodes 'rebalanced' instead of merged/split sometimes?
+            quicker than merging and splitting - kicking the can down the road
         What are right-only appends?
+            If index is greater than all other indices (eg, primary key when using autoincrementing keys)
+            then it's a way to optimize insertion by skipping the read part of the tree to find the correct
+            place to insert the key/record
         What is bulk-loading and how does it relate to right-only appends?
+            If loading records in sorted order, using right-only appends can optimize loading
         What's the purpose of compressing data?
+            Make it take less disk space
         What is compaction/vacuum/maintenance?
+            Combine free space into a larger segment
 
     Chapter 5: Transaction Processing and Recovery (PDF 99)
+        What can the O_DIRECT flag be used for when opening a file?
+            Bypass kernel buffer when doing disk access
+        What is a referenced page?
+            Page that is used in the current transaction...?
+        What is a pinned page?
+            bit to signify that page is being used, so the pager should not evict it
+        What is a dirty page?
+            page has been updated, so it needs to be flushed 
+        What is an LFU eviction policy?
+            least frequently used policy.  
+        Is the write-ahead log written to memory or to disk?
+            disk - this allows recovery in case of power failure (or other failure)
+        What is a log sequence number used for?
+            sequence of operations in a log.  The number is needed for knowing how much of the log has
+            already been applied to the file on disk.  Related to checkpointing???
+        When using shadow paging, what is the difference between a physical log and a logical log?
+            physical log shows the differences between the old page and new page
+            logical log shows the operations necessary to undo a new page back to the old page
+        How are force/steal policies related to transaction commits?
+            steal means pushing pages to disk even if not commited to make space (which could be bad)
+                wouldn't this require the page to be reverted if the transaction fails????
+            force means push page to disk after every commit (and not waiting even if other transactions will need to commit same page)
+        How can deadlocks be handled?
+            timeout, 
+        What is latch crabbing?
+            latch a single node at at time, and then unlock prev / lock next node as the tree is traversed
+            this is more complex than simply locking entire file, but it allows for more processes/threads to
+            use the file/tree at the same time.  
+
+    Chapter 6: B-Tree Variants (PDF 131)
+        What is the purpose of a copy-on-write mechanism (I had a wrong impression of this before)?
+        What is the point of all these B-Tree variants?  What problem are they trying to solve?
+        BW-Trees solve what problem that buffering updates doesn't?  (FD-Trees and Lazy B-Trees buffer updates)
         
-Designing Data-Intensive Applications
-    Chapter 1: Reliable, Scalable, and Maintainable Applications (PDF 15)
+    Chapter 7: Log-Structured Storage (PDF 149)
+        What is the purposed of using Log-Structure Storage (LSS)?
+        Is a log-structured merge tree (LSM-Tree) immutable or mutable?  How about vanilla B-Trees?
+        What problem(s) does an immutable data structure solve?
+        Why are LSM-Trees more efficient at writing than reading?
+        With regards to LSM-Trees, what is the point of compaction?
+        What is the RUM conjecture?  
+        What does a bloom filter do, and why is it useful in LSM-Trees?
+        In an uordered LSM-Tree, does the cost of writes or reads decrease?
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    Chapter 8: Introduction and Overview (PDF 191)
+        
 
 
 

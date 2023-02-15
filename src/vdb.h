@@ -1,10 +1,19 @@
 #ifndef VDB_H
 #define VDB_H
 
+#include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 typedef void* VDBHANDLE;
+
+struct DB {
+    char* name;
+    FILE* table_files[128];
+    char* table_names[128];
+    uint32_t table_count;
+};
+
 
 enum VdbField {
     VDBF_INT,
@@ -36,12 +45,11 @@ struct VdbData {
     uint32_t count;
 };
 
+VDBHANDLE vdb_create(const char* name);
 VDBHANDLE vdb_open(const char* name);
-void vdb_close(VDBHANDLE);
-int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema schema);
+void vdb_close(VDBHANDLE h);
+
+int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* schema);
 int vdb_drop_table(VDBHANDLE h, const char* table_name);
-int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData data);
-struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
-int vdb_delete_record(VDBHANDLE h, const char* table, uint32_t key);
 
 #endif //VDB_H

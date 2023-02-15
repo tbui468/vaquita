@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdarg.h>
+#include <sys/stat.h>
 
 #include "util.h"
 
@@ -145,4 +147,53 @@ int remove_w(const char* pathname) {
     if ((res = remove(pathname)) == -1)
         err_quit("remove failed");
     return res;
+}
+
+int mkdir_w(const char* pathname, int mode) {
+    int res;
+    if ((res = mkdir(pathname, mode)) == -1)
+        err_quit("mkdir failed");
+    return res;
+}
+
+DIR* opendir_w(const char* name) {
+    DIR* d;
+    if (!(d = opendir(name)))
+        err_quit("opendir failed");
+    return d;
+}
+
+int closedir_w(DIR* d) {
+    int res;
+    if ((res = closedir(d)) == -1)
+        err_quit("closedir failed");
+    return res;
+}
+
+struct dirent* readdir_w(DIR* d) {
+    struct dirent* dir;
+    if (!(dir = readdir(d)))
+        err_quit("readdir failed");
+    return dir;
+}
+
+int join_path(char* result, ...) {
+    result[0] = '\0';
+    va_list ap;
+    char* s;
+    int len = 0;
+    va_start(ap, result);
+    while ((s = va_arg(ap, char*))) {
+        strcat(result + len, s);
+        len += strlen(s);
+        result[len] = '/';
+        len++;
+        result[len] = '\0';
+    }
+    va_end(ap);
+
+    len--;
+    result[len] = '\0';
+
+    return len;
 }

@@ -40,21 +40,21 @@ int main(int argc, char** argv) {
     argc = argc;
     argv = argv;
 
-    VDBHANDLE h = vdb_open("test");
+    VDBHANDLE h = vdb_create("test");
 
     enum VdbField fields[] = { VDBF_INT, VDBF_STR, VDBF_BOOL };
     struct VdbSchema s = { fields, 3 };
-    if (vdb_create_table(h, "students", s) != 0)
+    if (vdb_create_table(h, "students", &s) != 0)
         printf("failed to create table\n");
 
-//    if (vdb_create_table(h, "teachers", s) != 0)
-//        printf("failed to create table\n");
+    if (vdb_create_table(h, "teachers", &s) != 0)
+        printf("failed to create table\n");
 
 //    if(vdb_drop_table(h, "students") != 0)
 //        printf("failed to drop table\n");
-//    if (vdb_drop_table(h, "teachers") != 0)
-//        printf("failed to drop table\n");
-
+    if (vdb_drop_table(h, "teachers") != 0)
+        printf("failed to drop table\n");
+/*
     struct VdbData d1;
     make_data(&d1, true, 42, "dog");
     struct VdbData d2;
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
     if ((result = vdb_fetch_record(h, "students", 1)))
         print_data(result);
     if ((result = vdb_fetch_record(h, "students", 2)))
-        print_data(result);
+        print_data(result);*/
 
     vdb_close(h);
 

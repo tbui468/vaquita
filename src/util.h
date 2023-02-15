@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <dirent.h>
 
 void err_quit(const char* msg);
 
@@ -21,5 +22,12 @@ int fclose_w(FILE* f);
 void* calloc_w(size_t count, size_t size);
 void* malloc_w(size_t size);
 int remove_w(const char* pathname);
+int mkdir_w(const char* pathname, int mode);
+
+DIR* opendir_w(const char* name);
+int closedir_w(DIR* d);
+struct dirent* readdir_w(DIR* d);
+
+int join_path(char* result, ...);
 
 #endif //VDB_UTIL_H

@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
 //        printf("failed to drop table\n");
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
-/*
+
     struct VdbData d1;
     make_data(&d1, true, 42, "dog");
     struct VdbData d2;
@@ -62,17 +62,17 @@ int main(int argc, char** argv) {
     struct VdbData d3;
     make_data(&d3, true, 11, "birds");
 
-    if (vdb_insert_record(h, "students", d1) != 0)
+    if (vdb_insert_record(h, "students", &d1) != 0)
         printf("failed to insert record\n");
-    if (vdb_insert_record(h, "students", d2) != 0)
+    if (vdb_insert_record(h, "students", &d2) != 0)
         printf("failed to insert record\n");
-    if (vdb_insert_record(h, "students", d3) != 0)
+    if (vdb_insert_record(h, "students", &d3) != 0)
         printf("failed to insert record\n");
 
     free_data(&d1);
     free_data(&d2);
     free_data(&d3);
-
+/*
     struct VdbData* result;
     if ((result = vdb_fetch_record(h, "students", 0)))
         print_data(result);

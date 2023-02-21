@@ -29,6 +29,33 @@ void _vdb_load_table(struct DB* db, const char* pathname) {
     db->table_count++;
 }
 
+void _vdb_tablename_to_pathname(struct DB* db, const char* table_name, char* pathname) {
+    char dir[FILENAME_MAX];
+    memcpy(dir, db->name, strlen(db->name));
+    dir[strlen(db->name)] = '\0';
+    strcat(dir, ".vdb");
+
+    char tab[FILENAME_MAX];
+    memcpy(tab, table_name, strlen(table_name));
+    tab[strlen(table_name)] = '\0';
+    strcat(tab, ".vtb");
+
+    join_path(pathname, ".", dir, tab, NULL);
+}
+
+FILE* _vdb_get_table_file(struct DB* db, const char* table_name) {
+    char filename[FILENAME_MAX];
+    _vdb_tablename_to_pathname(db, table_name, filename);
+
+    for (uint32_t i = 0; i < db->table_count; i++) {
+        if (strcmp(filename, db->table_names[i]) == 0) {
+            return db->table_files[i];
+        }
+    }
+
+    return NULL;
+}
+
 VDBHANDLE vdb_create(const char* name) {
     char filename[FILENAME_MAX];
     filename[0] = '\0';
@@ -50,6 +77,7 @@ VDBHANDLE vdb_open(const char* name) {
     memcpy(db->name, name, strlen(name));
     db->name[strlen(name)] = '\0';
     db->table_count = 0;
+    db->pager = pager_init();
 
     DIR* d;
     struct dirent* dir;
@@ -79,18 +107,8 @@ void vdb_close(VDBHANDLE h) {
 int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* schema) {
     struct DB* db = (struct DB*)h;
 
-    char dir[FILENAME_MAX];
-    memcpy(dir, db->name, strlen(db->name));
-    dir[strlen(db->name)] = '\0';
-    strcat(dir, ".vdb");
-
-    char tab[FILENAME_MAX];
-    memcpy(tab, table_name, strlen(table_name));
-    tab[strlen(table_name)] = '\0';
-    strcat(tab, ".vtb");
-
     char filename[FILENAME_MAX];
-    join_path(filename, ".", dir, tab, NULL);
+    _vdb_tablename_to_pathname(db, table_name, filename);
 
     FILE* f = fopen_w(filename, "w+");
     tree_init(f, schema);
@@ -104,18 +122,8 @@ int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* sche
 int vdb_drop_table(VDBHANDLE h, const char* table_name) {
     struct DB* db = (struct DB*)h;
 
-    char dir[FILENAME_MAX];
-    memcpy(dir, db->name, strlen(db->name));
-    dir[strlen(db->name)] = '\0';
-    strcat(dir, ".vdb");
-
-    char tab[FILENAME_MAX];
-    memcpy(tab, table_name, strlen(table_name));
-    tab[strlen(table_name)] = '\0';
-    strcat(tab, ".vtb");
-
     char filename[FILENAME_MAX];
-    join_path(filename, ".", dir, tab, NULL);
+    _vdb_tablename_to_pathname(db, table_name, filename);
 
     int idx = -1;
     for (uint32_t i = 0; i < db->table_count; i++) {
@@ -138,3 +146,14 @@ int vdb_drop_table(VDBHANDLE h, const char* table_name) {
 
     return 0;
 }
+
+int vdb_insert_record(VDBHANDLE h, const char* table_name, struct VdbData* d) {
+    struct DB* db = (struct DB*)h;
+
+    FILE* f = _vdb_get_table_file(db, table_name);
+    tree_insert_record(db->pager, f, table_name, d);
+    return 0;
+}
+
+
+

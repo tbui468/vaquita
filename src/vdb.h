@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "pager.h"
+
 typedef void* VDBHANDLE;
 
 struct DB {
@@ -12,6 +14,7 @@ struct DB {
     FILE* table_files[128];
     char* table_names[128];
     uint32_t table_count;
+    struct VdbPager* pager;
 };
 
 
@@ -51,5 +54,6 @@ void vdb_close(VDBHANDLE h);
 
 int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* schema);
 int vdb_drop_table(VDBHANDLE h, const char* table_name);
+int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d);
 
 #endif //VDB_H

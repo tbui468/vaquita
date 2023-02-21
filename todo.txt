@@ -1,23 +1,25 @@
 TODO: Storage engine
+    void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name, struct VdbData* d) {
+        implement fetching of data using primary keys
+
+        split node when too big - write test code to insert a ton of records until leaf is over threshold
+        implement split a node (leaf node)
+    
+        splitting a leaf may cause internal node to require splitting - write code to cause this
+        implement splitting of node (internal node - this may propagate all the way up to root, splitting root and making a new root)
+
+    int vdb_delete_record(VDBHANDLE h , const char* table);
+
+    tree_insert_record(uint32_t idx, uint32_t pk, struct VdbData* d);
+        this can be called recursively to find place to insert leaf node
+
+        how should things be inserted into a B-Tree?
+
+    pager_fetch_page(uint32_t* buf, uint32_t idx);
+    pager_flush_page(uint32_t idx);
 
     tree.c should NOT have access to struct DB
         it should only access FILE* for now (may change this once pager is integrated)
-    How about this:
-        when creating a new database, just create a new directory called students.vdb
-        and put all tables inside that directory (all .vtb files).  Then when a database
-        is opened, just go through that directory and open file descriptors for all
-        .vtb files - extra information now doesn't need to be stored in a root file (like before)
-
-
-    struct Meta {
-        enum VdbNodeType type; //VDBN_INTERN, VDBN_LEAF
-        uint32_t size; //should be a constant, 4096
-        uint32_t offsets_start;
-        uint32_t offsets_size;
-        uint32_t cells_size;
-        uint32_t feelist;    
-        VdbSchema* schema; //put last since variable sized
-    };
 
     switch to B-Tree - this will make more sense when switching to a paging system
         |meta|offsets|freespace|cells|
@@ -193,26 +195,123 @@ Database Internals
 
     Chapter 6: B-Tree Variants (PDF 131)
         What is the purpose of a copy-on-write mechanism (I had a wrong impression of this before)?
+            Make a copy, write to that copy, and then after the entire write is done merge with original...
         What is the point of all these B-Tree variants?  What problem are they trying to solve?
+            copy-on-write variations, buffer updates to amortize cost of writing to tree/file
         BW-Trees solve what problem that buffering updates doesn't?  (FD-Trees and Lazy B-Trees buffer updates)
+            don't remember
         
     Chapter 7: Log-Structured Storage (PDF 149)
-        What is the purposed of using Log-Structure Storage (LSS)?
-        Is a log-structured merge tree (LSM-Tree) immutable or mutable?  How about vanilla B-Trees?
-        What problem(s) does an immutable data structure solve?
-        Why are LSM-Trees more efficient at writing than reading?
-        With regards to LSM-Trees, what is the point of compaction?
-        What is the RUM conjecture?  
-        What does a bloom filter do, and why is it useful in LSM-Trees?
-        In an uordered LSM-Tree, does the cost of writes or reads decrease?
+        What is the purpose of a LSM-Tree?
+            Faster writing
+            Implementation of copy-on-write.
+            Buffers writes and then does it all at one time sequentially
+        What problems does it solve that B-Trees (and its buffered updates variants) don't solve?
+            ??? 
+        What are some of the drawbacks of LSM-Trees?
+            Slower reads.
 
     Chapter 8: Introduction and Overview (PDF 191)
+        What is the difference between concurrency and parallelism (think of the coffee machines and queues example)?
+            Concurrency means two things are happening at the same time, but only one gets to go at a time
+            Parallelism means two things are happending at the same time AND both get to go at the same time
+        Distributed systems are complex, so why would we even make a database distributed?
+            Redundancy - if one database fails, then a different one holding the same data can be accessed
+        A fair-loss link is similar to what network protocol?
+            UDP
+        What is a stubborn-link?
+            Keeps sending data until ack is received...?
+        A perfect-link is similar to what network protocol?  How is it different from a stubborn-link?
+            TCP.  It checks acknowledgements.
+        The FLP Impossibility Problem says that there is no consensus algorithm in a bounded time for an asynchronous system, why does this not apply for real systems?
+            Real systems are not completely asynchronous?  Not completely random time for messages to arrive, etc.  There is some sychrony...?
+        What is a network partition?
+            Nodes are separated (due to network failure, etc), and subnetworks are operating without knowing 
+            that they are isolated
         
+    Chapter 9: Failure Detection (PDF 215)
+        Can a failure detector be both efficient and accurate? 
+            Nope.  One or the other.
+        What is an outsourced hearbeat?
+            Have a different node check (rather than doing it directly)
+        How does a phi-accrual detector work?
+            Instead of binary classification of whether a node is up or not, uses a sliding scale
+            to assign probability a node is down
+        What are the upsides/downsides of using a gossip protocol?
+            A lot of network traffic...?
 
+    Chapter 10: Leader Election (PDF 225)
+        What is the safety property?  Do most election algorithms satisfy this property?
+            Only one leader is ever elected at a time - this prevents split brain situation
+        What is the liveness property?
+            Most of the time a leader exists, and elections will produce a winner in a short time (whatever short happens to mean)
+        What's the purpose of a having a leader?
+            Synchronization optimization - having all nodes need to pass a lot of data to synchronize can be expensive
+        What is the bully algorithm? (Monarchial algorithm)
+            Node with highest priority/weight is automatically leader
+        Can split brains still occur when using the bully algorithm?
+            Yes, if networks are partitioned
 
+    Chapter 11: Replication and Consistency (PDF 235)
+        What are some reasons for replicating data? 
+            Redundancy in case a node is lost (due to corruption, etc)
+            Availability - faster response for client
+        Why is availability useful for businesses?
+            Faster is more money
+        What is the relationship between consistency and linearizable?
+            Linearizable means that a series of actions ...?
+        What is CAP?
+            consistency, availability, and partition tolerance
+            But consistency and availability cannot both be possible
+            One has to be relaxed a bit if the other is to be made stricter
+        What is yield and harvest?
+            One is percent of data received per request, and the other
+            is the percent of requests that responded to successfully
+            Have to trade one for the other in most (?) cases.
+        Is linearizability different from sequential consistency?
+        Do vector clocks deal with divergence?
+            No, they only detect divergence
+        What is the last-write-wins conflict strategy?
+            The last write gets to stay in the database
+        How many nodes are necessary for a quorum?
+            More than half
+        What is the purpose of consistency models?
+        Why is a strict consistency model not possible to implement?
+        What is the difference between a consistency model and session model?
+        Why are witness replicas sometimes used in conjunciton with copy replicas?
+            Less storage cost.  Nodes are either replica or witness nodes.  Replica
+            nodes store data records, but witness nodes only store write events to data???
+        Give an example of a strong consistency model and a weak consistency model.
+        Where does the strong eventual consistency model fall on the strong/weak continuum?
 
+    Chapter 12: Anti-Entropy and Dissemination (PDF 263)
+        What is an anti-entropy mechanism for?
+            Fixing any mismatch in data when encountered (to avoid the whole system going to shit)
+        How does a read-repair work?
+            When a record is read, check nodes for any inconsistent data in the given record
+            and fix them if necessary
+        How is using a digest-read more efficient than a basic read-repair?
+            Send only a hash of the data instead of the while thing
+        What is a hinted-handoff?
+            Not sure...
+        How is a simple read-repair different from using a merkle-tree to check for inconsistency between two replicas?
+            A simple read-repair only checks the read record for inconsistencies, but a merkle tree can be used
+            to check all the data between replicas.  The leaves of a merkle tree are hashes of the records, and the internal
+            nodes and root of the merkle tree are hashs of the leaves.  Any change/difference in the leaves will be represented
+            in the root, so only the root hashes need to be compared - any difference in the root hash will mean that there
+            are inconsistencies between the data in the two replicas.
+        What is the advantage of a push/lazy-push multicast tree?
+            Less network congestion...?
 
+    Chapter 13: Distributed Transactions (PDF 277)
+        What does an atomic commitment algorithm give us? 
+        In a two-phase commit algorithm, how are coordinators and cohorts related?
+        What happens if during a two-phase commit a single cohort votes to NOT commit?
+        Are three-phase commits in common usage like two-phase commits?
+        What are the purpose of Calvin and Spanner?  What functionality do these algorithms provide?
+        What is sharding?  What is the goal of sharding?
 
+    Chapter 14: Consensus (PDF 299)
 
 
 

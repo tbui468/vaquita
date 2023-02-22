@@ -149,11 +149,31 @@ int vdb_drop_table(VDBHANDLE h, const char* table_name) {
 
 int vdb_insert_record(VDBHANDLE h, const char* table_name, struct VdbData* d) {
     struct DB* db = (struct DB*)h;
-
+    //TODO: lock file here
     FILE* f = _vdb_get_table_file(db, table_name);
     tree_insert_record(db->pager, f, table_name, d);
+    //TODO: unlock file here
     return 0;
 }
 
 
+struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
+    struct DB* db = (struct DB*)h;
+    //TODO: lock file here
+    FILE* f = _vdb_get_table_file(db, table);
+    struct VdbData* result = tree_fetch_record(db->pager, f, table, key);
+    //TODO: unlock file here
+    return result;
+}
 
+void vdb_free_data(struct VdbData* data) {
+    for (uint32_t i = 0; i < data->count; i++) {
+        struct VdbDatum d = data->data[i];
+        if (d.type == VDBF_STR) {
+            free(d.as.Str);
+        }
+    }
+
+    free(data->data);
+    free(data);
+}

@@ -1,7 +1,5 @@
 TODO: Storage engine
     void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name, struct VdbData* d) {
-        implement fetching of data using primary keys
-
         split node when too big - write test code to insert a ton of records until leaf is over threshold
         implement split a node (leaf node)
     
@@ -305,13 +303,27 @@ Database Internals
 
     Chapter 13: Distributed Transactions (PDF 277)
         What does an atomic commitment algorithm give us? 
+            Makes commitments in a distributed system
         In a two-phase commit algorithm, how are coordinators and cohorts related?
+            Coordinator asks cohorts if a transaction is allowed to be commited
+            All cohorts must agree.  If so, the coordinator sends out a message telling all
+            cohorts to commit.
         What happens if during a two-phase commit a single cohort votes to NOT commit?
+            The entire transaction is abandoned
         Are three-phase commits in common usage like two-phase commits?
+            No.  It kinda solves the possible problem with coordinators suddenly dropping while cohorts
+            are waiting for a response.  But it's complicated, and there are more problems...?  So it's
+            not as commonly used (if at all)
         What are the purpose of Calvin and Spanner?  What functionality do these algorithms provide?
+            Global deterministic transaction order - this simplifies coordination since the order
+            of transactions is known by all nodes.
         What is sharding?  What is the goal of sharding?
+            Replica nodes only store a subset of the data.  Then keys are used to route requests to
+            the correct node with the desired data.  This can ease congestion.  Shards with higher
+            frequency access can hold smaller subsets of the data.  
 
     Chapter 14: Consensus (PDF 299)
-
-
+        Explain the three properties of consensus: agreement, validity, and termination.
+        How is an atomic broadcast different from a flooding algorithm?
+        Virtual synchrony <------- PDF302 START HERE
 

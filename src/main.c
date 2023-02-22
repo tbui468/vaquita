@@ -55,23 +55,21 @@ int main(int argc, char** argv) {
         printf("failed to insert record\n");
     if (vdb_insert_record(h, "students", d2) != 0)
         printf("failed to insert record\n");
-    if (vdb_insert_record(h, "students", d3) != 0)
-        printf("failed to insert record\n");
+    for (int i = 0; i < 140; i++) {
+        if (vdb_insert_record(h, "students", d3) != 0)
+            printf("failed to insert record\n");
+    }
 
     vdb_free_data(d1);
     vdb_free_data(d2);
     vdb_free_data(d3);
 
     struct VdbData* result;
-    if ((result = vdb_fetch_record(h, "students", 1)))
+    if ((result = vdb_fetch_record(h, "students", 120)))
         print_data_and_free(result);
     else
         printf("No record found\n");
-    if ((result = vdb_fetch_record(h, "students", 2)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
-    if ((result = vdb_fetch_record(h, "students", 3)))
+    if ((result = vdb_fetch_record(h, "students", 140))) //TODO: This should result in a valid record
         print_data_and_free(result);
     else
         printf("No record found\n");

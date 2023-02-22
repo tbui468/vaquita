@@ -6,7 +6,7 @@
 struct VdbPager* pager_init() {
     struct VdbPager* p = malloc_w(sizeof(struct VdbPager));
     p->pages = NULL;
-    p->count = 0;
+    p->page_count = 0;
     return p;
 }
 
@@ -35,6 +35,7 @@ struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, const char* tabl
     struct VdbPage* page = _pager_load_page(f, table, idx);
     page->next = pager->pages;
     pager->pages = page;
+    pager->page_count++;
 
     return page;
 }

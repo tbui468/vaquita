@@ -9,7 +9,10 @@
 
 struct VdbPager {
     struct VdbPage* pages; 
-    uint32_t count;
+    uint32_t page_count;
+    FILE* table_files[128];
+    char* table_names[128];
+    uint32_t table_count;
 };
 
 struct VdbPage {

@@ -250,9 +250,20 @@ int _tree_data_size(struct VdbData* d) {
     return data_size;
 }
 
+bool _tree_leaf_is_full(struct VdbPage* leaf, uint32_t dc_size) {
+    struct NodeMeta* lm = _tree_deserialize_meta(leaf->buf);
+    uint32_t current_size = OFFSETS_START + lm->cells_size + lm->offsets_size;
+    _tree_free_meta(lm);
+    return current_size + dc_size >= VDB_PAGE_SIZE;
+}
+
+void _tree_split_leaf(struct VdbPage* leaf) {
+    //traverse down to leaf while caching parent to allow rewrite of offsets/metadata
+}
+
 void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name, struct VdbData* d) {
     uint32_t root_idx = 0;
-    struct VdbPage* root = pager_get_page(pager, f, table_name, root_idx);
+    struct VdbPage* root = pager_get_page(pager, f, table_name, root_idx); //TODO: this should be the parent of the leaf, and not necessarily the root
     struct NodeMeta* m = _tree_deserialize_meta(root->buf);
 
     uint32_t pk = m->right_ptr.key;
@@ -263,6 +274,19 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name,
     uint32_t data_size = _tree_data_size(d);
     uint32_t dc_meta_size = sizeof(uint32_t) * 3;
     struct DataCell dc = { 0, pk, data_size, d };
+
+    if (_tree_leaf_is_full(leaf, dc_meta_size + data_size)) {
+        printf("leaf is full.  Need to split leaf here!!!!\n");
+        return;
+        _tree_split_leaf(leaf); //this function should call _tree_split_internal(internal_to_split), should also allocate new page
+
+        _tree_free_meta(m);
+        _tree_free_meta(lm);
+        leaf = _tree_traverse_to_leaf(pager, f, table_name, root, pk);
+        m = _tree_deserialize_meta(root->buf);
+        lm = _tree_deserialize_meta(leaf->buf);
+    }
+
     _tree_serialize_datacell(leaf->buf + VDB_PAGE_SIZE - lm->cells_size - data_size - dc_meta_size, &dc);
 
     //write offset
@@ -276,9 +300,6 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name,
     m->right_ptr.key++;
     _tree_serialize_meta(root->buf, m);
 
-    _tree_free_meta(m);
-    _tree_free_meta(lm);
-
     //TODO: flush pages here to test if function works
     //flushing should be a pager function
     fseek_w(f, 0, SEEK_SET);
@@ -287,6 +308,9 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name,
 
     //    pager_flush(root);
     //    pager_flush(leaf);
+
+    _tree_free_meta(m);
+    _tree_free_meta(lm);
 }
 
 

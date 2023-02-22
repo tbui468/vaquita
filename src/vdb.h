@@ -11,9 +11,6 @@ typedef void* VDBHANDLE;
 
 struct DB {
     char* name;
-    FILE* table_files[128];
-    char* table_names[128];
-    uint32_t table_count;
     struct VdbPager* pager;
 };
 

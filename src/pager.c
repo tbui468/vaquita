@@ -10,9 +10,9 @@ struct VdbPager* pager_init() {
     return p;
 }
 
-struct VdbPage* _pager_load_page(FILE* f, const char* table, uint32_t idx) {
+struct VdbPage* _pager_load_page(FILE* f, uint32_t idx) {
     struct VdbPage* page = malloc_w(sizeof(struct VdbPage));
-    page->table = strdup(table);
+    page->file = f;
     page->idx = idx;
     page->buf = malloc_w(VDB_PAGE_SIZE);
     page->dirty = false;
@@ -23,16 +23,16 @@ struct VdbPage* _pager_load_page(FILE* f, const char* table, uint32_t idx) {
     return page;
 }
 
-struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, const char* table, uint32_t idx) {
+struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
     struct VdbPage* cur = pager->pages;
     while (cur) {
-        if (cur->idx == idx && strcmp(cur->table, table) == 0)
+        if (cur->idx == idx && f == cur->file)
             return cur;
         else
             cur = cur->next;
     }
 
-    struct VdbPage* page = _pager_load_page(f, table, idx);
+    struct VdbPage* page = _pager_load_page(f, idx);
     page->next = pager->pages;
     pager->pages = page;
     pager->page_count++;

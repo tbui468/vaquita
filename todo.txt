@@ -1,7 +1,5 @@
 TODO: Storage engine
     Implement splitting of leaves when this occurs
-        _tree_traverse_to_leaf shouldn't really need the table_name
-            pass it the pager along with an index representing the table/file descriptor needed
         _tree_traverse_to_leaf should return leaf and parent node (parent is necessary when inserting) <---------START HERE
 
         _tree_split_leaf should just split the leaf and update any necessary data

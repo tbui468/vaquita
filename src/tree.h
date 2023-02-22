@@ -37,7 +37,7 @@ struct NodeMeta {
 
 
 void tree_init(FILE* f, struct VdbSchema* schema);
-void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name, struct VdbData* d);
-struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, const char* table, uint32_t key);
+void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d);
+struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, uint32_t key);
 
 #endif //VDB_TREE_H

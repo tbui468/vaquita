@@ -192,7 +192,7 @@ void tree_init(FILE* f, struct VdbSchema* schema) {
     free(buf2);
 }
 
-struct VdbPage* _tree_traverse_to_leaf(struct VdbPager* pager, FILE* f, const char* table, struct VdbPage* node, uint32_t pk) {
+struct VdbPage* _tree_traverse_to_leaf(struct VdbPager* pager, FILE* f, struct VdbPage* node, uint32_t pk) {
     struct NodeMeta* m = _tree_deserialize_meta(node->buf);
     assert(m->type == VDBN_INTERN);
 
@@ -218,11 +218,11 @@ struct VdbPage* _tree_traverse_to_leaf(struct VdbPager* pager, FILE* f, const ch
         child_idx = m->right_ptr.block_idx;
     }
 
-    struct VdbPage* child = pager_get_page(pager, f, table, child_idx);
+    struct VdbPage* child = pager_get_page(pager, f, child_idx);
     struct NodeMeta* cm = _tree_deserialize_meta(child->buf);
 
     if (cm->type == VDBN_INTERN) {
-        child = _tree_traverse_to_leaf(pager, f, table, child, pk);
+        child = _tree_traverse_to_leaf(pager, f, child, pk);
     }
 
     _tree_free_meta(cm); 
@@ -261,14 +261,14 @@ void _tree_split_leaf(struct VdbPage* leaf) {
     //traverse down to leaf while caching parent to allow rewrite of offsets/metadata
 }
 
-void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name, struct VdbData* d) {
+void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d) {
     uint32_t root_idx = 0;
-    struct VdbPage* root = pager_get_page(pager, f, table_name, root_idx); //TODO: this should be the parent of the leaf, and not necessarily the root
+    struct VdbPage* root = pager_get_page(pager, f, root_idx); //TODO: this should be the parent of the leaf, and not necessarily the root
     struct NodeMeta* m = _tree_deserialize_meta(root->buf);
 
     uint32_t pk = m->right_ptr.key;
 
-    struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, table_name, root, pk);
+    struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, root, pk);
     struct NodeMeta* lm = _tree_deserialize_meta(leaf->buf);
 
     uint32_t data_size = _tree_data_size(d);
@@ -282,7 +282,7 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name,
 
         _tree_free_meta(m);
         _tree_free_meta(lm);
-        leaf = _tree_traverse_to_leaf(pager, f, table_name, root, pk);
+        leaf = _tree_traverse_to_leaf(pager, f, root, pk);
         m = _tree_deserialize_meta(root->buf);
         lm = _tree_deserialize_meta(leaf->buf);
     }
@@ -314,10 +314,10 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, const char* table_name,
 }
 
 
-struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, const char* table, uint32_t key) {
+struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, uint32_t key) {
     uint32_t root_idx = 0;
-    struct VdbPage* root = pager_get_page(pager, f, table, root_idx);
-    struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, table, root, key);
+    struct VdbPage* root = pager_get_page(pager, f, root_idx);
+    struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, root, key);
     struct NodeMeta* lm = _tree_deserialize_meta(leaf->buf);
 
     struct DataCell* dc = NULL;

@@ -19,14 +19,14 @@ bool _vdb_has_ext(const char* name, const char* ext) {
 }
 
 void _vdb_load_table(struct DB* db, const char* pathname) {
-    int idx = db->pager->table_count;
+    int idx = db->table_count;
     int len = strlen(pathname);
 
-    db->pager->table_files[idx] = fopen_w(pathname, "r+");
-    db->pager->table_names[idx] = malloc_w(sizeof(char) * (len + 1));
-    memcpy(db->pager->table_names[idx], pathname, len);
-    db->pager->table_names[idx][len] = '\0';
-    db->pager->table_count++;
+    db->table_files[idx] = fopen_w(pathname, "r+");
+    db->table_names[idx] = malloc_w(sizeof(char) * (len + 1));
+    memcpy(db->table_names[idx], pathname, len);
+    db->table_names[idx][len] = '\0';
+    db->table_count++;
 }
 
 void _vdb_tablename_to_pathname(struct DB* db, const char* table_name, char* pathname) {
@@ -47,9 +47,9 @@ FILE* _vdb_get_table_file(struct DB* db, const char* table_name) {
     char filename[FILENAME_MAX];
     _vdb_tablename_to_pathname(db, table_name, filename);
 
-    for (uint32_t i = 0; i < db->pager->table_count; i++) {
-        if (strcmp(filename, db->pager->table_names[i]) == 0) {
-            return db->pager->table_files[i];
+    for (uint32_t i = 0; i < db->table_count; i++) {
+        if (strcmp(filename, db->table_names[i]) == 0) {
+            return db->table_files[i];
         }
     }
 
@@ -77,7 +77,7 @@ VDBHANDLE vdb_open(const char* name) {
     db->name = malloc_w(strlen(name) + 1);
     memcpy(db->name, name, strlen(name));
     db->name[strlen(name)] = '\0';
-    db->pager->table_count = 0;
+    db->table_count = 0;
 
     DIR* d;
     struct dirent* dir;
@@ -95,9 +95,9 @@ VDBHANDLE vdb_open(const char* name) {
 void vdb_close(VDBHANDLE h) {
     struct DB* db = (struct DB*)h;
     free(db->name);
-    for (uint32_t i = 0; i < db->pager->table_count; i++) {
-        fclose_w(db->pager->table_files[i]);
-        free(db->pager->table_names[i]);
+    for (uint32_t i = 0; i < db->table_count; i++) {
+        fclose_w(db->table_files[i]);
+        free(db->table_names[i]);
     }
     free(db->pager);
     free(db);
@@ -126,8 +126,8 @@ int vdb_drop_table(VDBHANDLE h, const char* table_name) {
     _vdb_tablename_to_pathname(db, table_name, filename);
 
     int idx = -1;
-    for (uint32_t i = 0; i < db->pager->table_count; i++) {
-        if (strcmp(filename, db->pager->table_names[i]) == 0) {
+    for (uint32_t i = 0; i < db->table_count; i++) {
+        if (strcmp(filename, db->table_names[i]) == 0) {
             idx = i;
             break;
         }
@@ -136,11 +136,11 @@ int vdb_drop_table(VDBHANDLE h, const char* table_name) {
     if (idx == -1)
         return -1;
 
-    free(db->pager->table_names[idx]);
-    fclose_w(db->pager->table_files[idx]);
-    db->pager->table_count--;
-    db->pager->table_names[idx] = db->pager->table_names[db->pager->table_count];
-    db->pager->table_files[idx] = db->pager->table_files[db->pager->table_count];
+    free(db->table_names[idx]);
+    fclose_w(db->table_files[idx]);
+    db->table_count--;
+    db->table_names[idx] = db->table_names[db->table_count];
+    db->table_files[idx] = db->table_files[db->table_count];
 
     remove_w(filename);
 
@@ -151,7 +151,7 @@ int vdb_insert_record(VDBHANDLE h, const char* table_name, struct VdbData* d) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
     FILE* f = _vdb_get_table_file(db, table_name);
-    tree_insert_record(db->pager, f, table_name, d);
+    tree_insert_record(db->pager, f, d);
     //TODO: unlock file here
     return 0;
 }
@@ -161,7 +161,7 @@ struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
     FILE* f = _vdb_get_table_file(db, table);
-    struct VdbData* result = tree_fetch_record(db->pager, f, table, key);
+    struct VdbData* result = tree_fetch_record(db->pager, f, key);
     //TODO: unlock file here
     return result;
 }

@@ -31,6 +31,7 @@ struct NodeMeta {
     uint32_t offsets_size;
     uint32_t cells_size;
     uint32_t freelist;    
+    uint32_t parent_idx;
     struct NodeCell right_ptr;
     struct VdbSchema* schema;
 };
@@ -39,5 +40,6 @@ struct NodeMeta {
 void tree_init(FILE* f, struct VdbSchema* schema);
 void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d);
 struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, uint32_t key);
+void tree_print_node(struct VdbPager* pager, FILE* f, uint32_t idx);
 
 #endif //VDB_TREE_H

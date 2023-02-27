@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "pager.h"
 #include "util.h"
@@ -16,6 +17,7 @@ struct VdbPage* _pager_load_page(FILE* f, uint32_t idx) {
     page->idx = idx;
     page->buf = malloc_w(VDB_PAGE_SIZE);
     page->dirty = false;
+    page->next = NULL;
 
     fseek_w(f, idx * VDB_PAGE_SIZE, SEEK_SET);
     fread_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
@@ -40,8 +42,11 @@ struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
     return page;
 }
 
-void pager_write_page(struct VdbPage* p, uint8_t* buf, int off, int len) {
-    memcpy(p->buf + off, buf, len);
-    p->dirty = true;
+uint32_t pager_allocate_page(FILE* f) {
+    fseek_w(f, 0, SEEK_END);
+    uint32_t idx = ftell_w(f) / VDB_PAGE_SIZE;
+    uint8_t* buf = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
+    fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
+    free(buf);
+    return idx;
 }
-

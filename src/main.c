@@ -65,6 +65,10 @@ int main(int argc, char** argv) {
     vdb_free_data(d3);
 
     struct VdbData* result;
+    if ((result = vdb_fetch_record(h, "students", 100)))
+        print_data_and_free(result);
+    else
+        printf("No record found\n");
     if ((result = vdb_fetch_record(h, "students", 120)))
         print_data_and_free(result);
     else

@@ -22,7 +22,7 @@ struct VdbPage {
 
 struct VdbPager* pager_init();
 struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, uint32_t idx);
-void pager_write_page(struct VdbPage* p, uint8_t* buf, int off, int len);
+uint32_t pager_allocate_page(FILE* f);
 
 
 #endif //VDB_PAGER_H

@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <dirent.h>
 
+#define flow(msg) printf("%s - %d\n", __func__, msg)
+
 void err_quit(const char* msg);
 
 int get_filename(FILE* f, char* buf, ssize_t max_len);

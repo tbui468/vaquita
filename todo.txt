@@ -1,2 +1,21 @@
 TODO:
-    Test with different records (append number)
+    Add more records to see what happens when interal node needs to split
+        may be easier to do this if VDB_PAGE_SIZE is smaller (1024 or even smaller)
+
+    How to implement execution engine:
+        SQL parser and VM to run the bytecode
+
+Using SQLite
+    Chapter 1: What is SQLite? (PDF 23)
+        How is SQLite different from something like Postgres or MySQL?
+    Chapter 2: Uses of SQLite (PDF 31)
+        Can SQLite be used to created an in-memory database?
+        In what situations is using a server/client RDBMS preferrable to SQLite?
+    Chapter 3: Buliding and Installing SQLite (PDF 39)
+    Chapter 4: The SQL Language
+    Chapter 5: The SELECT Command
+    Chapter 6: Database Design
+    Chapter 7: C Programming Interface
+    Chapter 8: Additional Features and APIs
+    Chapter 9: SQL Functions and Extensions
+    Chapter 10: Virtual Tables and Modules

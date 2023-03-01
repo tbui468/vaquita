@@ -56,7 +56,7 @@ int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* sche
 int vdb_drop_table(VDBHANDLE h, const char* table_name);
 int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d);
 struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
-
 void vdb_free_data(struct VdbData* data);
+void vdb_debug_print_tree(VDBHANDLE h, const char* table);
 
 #endif //VDB_H

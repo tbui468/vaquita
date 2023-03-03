@@ -1,29 +1,27 @@
 TODO:
-    Finished _tree_split_internal, but fetch doesn't work
-        Why are right internal node keys not in correct order?
-            tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes
-            Could make three node types: root, internal, and leaf
-                then just keep some information in root (schema, primary key counter, maybe other stuff)
-                data normalization will probably help prevent all the complexity building up here
-        right_ptr needs to update from lowest internal node all the way up to the root (not working now)
-    
-    tree_print_nodes -> debug_print_nodes
-    tree_print_keys -> debug_print_tree
-
     void _tree_append_cells(struct VdbPage* dst, struct VdbPage* src, uint32_t start, uint32_t end);
         replace those four loops (two in split leaf and two in split internal) with this function
         depending on the node type (leaf or internal), will copy either nodecell or datacell
         into the destination
 
-    Add more records to see what happens when interal node needs to split
-        may be easier to do this if VDB_PAGE_SIZE is smaller (1024 or even smaller)
-        Adding 56th record with page size 512 requires splitting internal node (root in this case)
-        look at TODO in _tree_split_leaf
+    Finished _tree_split_internal, but fetch doesn't work
+        Why are right internal node keys not in correct order?
+            tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes
+            Could make three node types: root, internal, and leaf
+                then just keep some information in root (schema, primary key counter, maybe other stuff)
+                data normalization of node meta data will probably help prevent all the complexity building up here
+                Could have three types of metadata too - root, internal and leaf
+                May be beneficial to create new function to split root (split leaf, split internal, split root)
+                How about this: store things like schema and primary key counter in block 0 
+                    And then start root on block 1.  Then we only need two types of nodes <--------this makes more sense
+                    store schema and block size in metadata of file (NOT of node)
 
-    Add more records to see if internal non-root nodes split correctly
-        Second level internal nodes should split from 2 nodes to 3 internal nodes
+    Need to rebalance trees at some point since the auto-incrementing primary key will make tree
+        right side heavy at some point.  Check tree balance after inserting record to see if
+        rebalance is necessary
 
     Deleting records
+        Should keys be reused?  How does sqlite do it?
 
     Switch to binary search in _tree_traverse_to_leaf (just using linear scan right now)
 

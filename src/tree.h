@@ -25,15 +25,29 @@ struct NodeCell {
     uint32_t block_idx;
 };
 
-struct NodeMeta {
-    enum VdbNodeType type;
+struct TreeMeta {
     uint32_t node_size;
+    uint32_t pk_counter;
+    struct VdbSchema* schema;
+};
+
+struct NodeMeta { //TODO: rename to 'InternMeta'
+    enum VdbNodeType type;
+    uint32_t node_size; //TODO: remove
     uint32_t offsets_size;
     uint32_t cells_size;
     uint32_t freelist;    
     uint32_t parent_idx;
     struct NodeCell right_ptr;
-    struct VdbSchema* schema;
+    struct VdbSchema* schema; //TODO: remove
+};
+
+struct LeafMeta {
+    enum VdbNodeType type;
+    uint32_t offsets_size;
+    uint32_t cells_size;
+    uint32_t freelist;    
+    uint32_t parent_idx;
 };
 
 

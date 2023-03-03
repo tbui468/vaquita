@@ -84,9 +84,9 @@ int main(int argc, char** argv) {
         printf("No record found\n");
 
     //vdb_debug_print_tree(h, "students");
-    vdb_debug_print_keys(h, "students", 0);
-    vdb_debug_print_keys(h, "students", 19);
+    vdb_debug_print_keys(h, "students", 1);
     vdb_debug_print_keys(h, "students", 20);
+    vdb_debug_print_keys(h, "students", 21);
 
 /*
     if ((result = vdb_fetch_record(h, "students", 2)))

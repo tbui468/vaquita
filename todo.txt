@@ -1,8 +1,4 @@
 TODO:
-    void _tree_append_cells(struct VdbPage* dst, struct VdbPage* src, uint32_t start, uint32_t end);
-        Replace two loops in _tree_split_leaf with this function <--------------start here
-            will need to rewrite loops to NOT use a general buffer (or rewrite function to use general buffer insteaf of VdbPage)
-
     Finished _tree_split_internal, but fetch doesn't work
         Why are right internal node keys not in correct order?
             tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes

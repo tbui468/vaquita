@@ -163,7 +163,32 @@ void _tree_free_datacell(struct DataCell* dc) {
     free(dc);
 }
 
+void _tree_serialize_tree_meta(uint8_t* buf, struct TreeMeta* tm) {
+    int off = 0;
+    _tree_write_uint32_t(buf, (uint32_t)tm->node_size, &off);
+    _tree_write_uint32_t(buf, (uint32_t)tm->pk_counter, &off);
+    _tree_write_uint32_t(buf, (uint32_t)tm->schema->count, &off);
+    for (uint32_t i = 0; i < tm->schema->count; i++) {
+        uint32_t field = tm->schema->fields[i];
+        _tree_write_uint32_t(buf, field, &off);
+    }
+}
+
+void _tree_init_tree_meta(struct TreeMeta* m, struct VdbSchema* schema) {
+    m->node_size = VDB_PAGE_SIZE;
+    m->pk_counter = 1;
+    m->schema = schema;
+}
+
 void tree_init(FILE* f, struct VdbSchema* schema) {
+    struct TreeMeta tm;
+    _tree_init_tree_meta(&tm, schema);
+    uint8_t* buf3 = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
+    _tree_serialize_tree_meta(buf3, &tm);
+    fseek_w(f, 0, SEEK_SET);
+    fwrite_w(buf3, sizeof(uint8_t), VDB_PAGE_SIZE, f);
+    free(buf3);
+
     struct NodeMeta m;
     m.type = VDBN_INTERN;
     m.node_size = VDB_PAGE_SIZE;
@@ -171,7 +196,7 @@ void tree_init(FILE* f, struct VdbSchema* schema) {
     m.cells_size = 0;
     m.freelist = 0;
     m.parent_idx = 0;
-    struct NodeCell nc = {0, 1, 1};
+    struct NodeCell nc = {0, 1, 2};
     m.right_ptr = nc;
     m.schema = schema;
 
@@ -179,9 +204,8 @@ void tree_init(FILE* f, struct VdbSchema* schema) {
     uint8_t* buf = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
     _tree_serialize_meta(buf, &m);
 
-    fseek_w(f, 0, SEEK_SET);
+    fseek_w(f, VDB_PAGE_SIZE, SEEK_SET);
     fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
-
     free(buf);
 
     //init first leaf
@@ -191,14 +215,14 @@ void tree_init(FILE* f, struct VdbSchema* schema) {
     lm.offsets_size = 0;
     lm.cells_size = 0;
     lm.freelist = 0;
-    lm.parent_idx = 0;
+    lm.parent_idx = 1;
     struct NodeCell lnc = {0, 0, 0};
     lm.right_ptr = lnc; //Not used
     lm.schema = schema;
 
     uint8_t* buf2 = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
     _tree_serialize_meta(buf2, &lm);
-    fseek_w(f, VDB_PAGE_SIZE, SEEK_SET);
+    fseek_w(f, VDB_PAGE_SIZE * 2, SEEK_SET);
     fwrite_w(buf2, sizeof(uint8_t), VDB_PAGE_SIZE, f);
     free(buf2);
 }
@@ -425,7 +449,7 @@ void _tree_split_leaf(struct VdbPager* pager, FILE* f, struct VdbPage* leaf) {
 }
 
 void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d) {
-    uint32_t root_idx = 0;
+    uint32_t root_idx = 1;
     struct VdbPage* root = pager_get_page(pager, f, root_idx);
     struct NodeMeta* m = _tree_deserialize_meta(root->buf);
 
@@ -475,7 +499,7 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d) {
 
 
 struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, uint32_t key) {
-    uint32_t root_idx = 0;
+    uint32_t root_idx = 1;
     struct VdbPage* root = pager_get_page(pager, f, root_idx);
     struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, root, key);
     struct NodeMeta* lm = _tree_deserialize_meta(leaf->buf);

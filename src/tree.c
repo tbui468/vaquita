@@ -272,6 +272,34 @@ bool _tree_node_is_full(struct VdbPage* node, uint32_t dc_size) {
     return current_size + dc_size >= VDB_PAGE_SIZE;
 }
 
+void _tree_append_cells(struct VdbPage* dst, uint8_t* src, uint32_t start, uint32_t size) {
+    struct NodeMeta* dm = _tree_deserialize_meta(dst->buf);
+
+    for (uint32_t i = start; i < start + size; i += sizeof(uint32_t)) {
+        uint32_t off = *((uint32_t*)(src + i));
+        if (dm->type == VDBN_INTERN) {
+            struct NodeCell nc = _tree_deserialize_nodecell(src + off);
+            dm->cells_size += sizeof(uint32_t) * 3;
+            uint32_t new_off = VDB_PAGE_SIZE - dm->cells_size;
+            _tree_serialize_nodecell(dst->buf + new_off, &nc);
+            memcpy(dst->buf + OFFSETS_START + dm->offsets_size, &new_off, sizeof(uint32_t));
+            dm->offsets_size += sizeof(uint32_t);
+        } else {
+            struct DataCell* dc = _tree_deserialize_datacell(src + off, dm->schema);
+            dm->cells_size += sizeof(uint32_t) * 3 + dc->size;
+            _tree_serialize_datacell(dst->buf + VDB_PAGE_SIZE - dm->cells_size, dc);
+            _tree_free_datacell(dc);
+
+            uint32_t new_offset = VDB_PAGE_SIZE - dm->cells_size;
+            memcpy(dst->buf + OFFSETS_START + dm->offsets_size, &new_offset, sizeof(uint32_t));
+            dm->offsets_size += sizeof(uint32_t);
+        }
+    }
+
+    _tree_serialize_meta(dst->buf, dm);
+    _tree_free_meta(dm);
+}
+
 struct VdbPage* _tree_split_internal(struct VdbPager* pager, FILE* f, struct VdbPage* node) {
     uint32_t left_idx = pager_allocate_page(f);
     uint32_t right_idx = pager_allocate_page(f);
@@ -305,25 +333,11 @@ struct VdbPage* _tree_split_internal(struct VdbPager* pager, FILE* f, struct Vdb
     rm.right_ptr = _tree_deserialize_nodecell(node->buf + off_end);
     rm.schema = nm->schema;
 
-    for (uint32_t i = OFFSETS_START; i < offsets_mid - sizeof(uint32_t); i += sizeof(uint32_t)) {
-        uint32_t off = *((uint32_t*)(node->buf + i));
-        struct NodeCell nc = _tree_deserialize_nodecell(node->buf + off);
-        lm.cells_size += sizeof(uint32_t) * 3;
-        uint32_t new_off = VDB_PAGE_SIZE - lm.cells_size;
-        _tree_serialize_nodecell(left_internal->buf + new_off, &nc);
-        memcpy(left_internal->buf + OFFSETS_START + lm.offsets_size, &new_off, sizeof(uint32_t));
-        lm.offsets_size += sizeof(uint32_t);
-    }
+    _tree_serialize_meta(left_internal->buf, &lm);
+    _tree_serialize_meta(right_internal->buf, &rm);
 
-    for (uint32_t i = offsets_mid; i < OFFSETS_START + nm->offsets_size - sizeof(uint32_t); i += sizeof(uint32_t)) {
-        uint32_t off = *((uint32_t*)(node->buf + i));
-        struct NodeCell nc = _tree_deserialize_nodecell(node->buf + off);
-        rm.cells_size += sizeof(uint32_t) * 3;
-        uint32_t new_off = VDB_PAGE_SIZE - rm.cells_size;
-        _tree_serialize_nodecell(right_internal->buf + new_off, &nc);
-        memcpy(right_internal->buf + OFFSETS_START + rm.offsets_size, &new_off, sizeof(uint32_t));
-        rm.offsets_size += sizeof(uint32_t);
-    }
+    _tree_append_cells(left_internal, node->buf, OFFSETS_START, offsets_mid - sizeof(uint32_t) - OFFSETS_START);
+    _tree_append_cells(right_internal, node->buf, offsets_mid, OFFSETS_START + nm->offsets_size - offsets_mid - sizeof(uint32_t));
 
     memset(node->buf, 0, VDB_PAGE_SIZE);
     nm->offsets_size = 0;
@@ -338,8 +352,6 @@ struct VdbPage* _tree_split_internal(struct VdbPager* pager, FILE* f, struct Vdb
     memcpy(node->buf + OFFSETS_START + nm->offsets_size, &left_off, sizeof(uint32_t));
     nm->offsets_size += sizeof(uint32_t);
 
-    _tree_serialize_meta(left_internal->buf, &lm);
-    _tree_serialize_meta(right_internal->buf, &rm);
     _tree_serialize_meta(node->buf, nm);
 
     _tree_free_meta(nm);
@@ -363,8 +375,6 @@ void _tree_split_leaf(struct VdbPager* pager, FILE* f, struct VdbPage* leaf) {
     nlm.right_ptr = lm->right_ptr;
     nlm.schema = lm->schema;
 
-    _tree_serialize_meta(new_leaf->buf, &nlm); //TODO: is this necessary?  We should only need to serialize after copying all data over
-
     uint8_t* buf = malloc_w(VDB_PAGE_SIZE);
     memcpy(buf, leaf->buf, VDB_PAGE_SIZE);
     memset(leaf->buf, 0, VDB_PAGE_SIZE);
@@ -376,37 +386,19 @@ void _tree_split_leaf(struct VdbPager* pager, FILE* f, struct VdbPage* leaf) {
     lm->freelist = 0;
 
     uint32_t half = prev_offsets_size / sizeof(uint32_t) / 2 * sizeof(uint32_t);
-    uint32_t final_key = 0;
-    for (uint32_t i = OFFSETS_START; i < OFFSETS_START + half; i += sizeof(uint32_t)) {
-        uint32_t off = *((uint32_t*)(buf + i));
-        
-        struct DataCell* dc = _tree_deserialize_datacell(buf + off, nlm.schema);
-        nlm.cells_size += sizeof(uint32_t) * 3 + dc->size;
-        _tree_serialize_datacell(new_leaf->buf + VDB_PAGE_SIZE - nlm.cells_size, dc);
-        final_key = dc->key;
-        _tree_free_datacell(dc);
+    uint32_t final_off = *((uint32_t*)(buf + OFFSETS_START + half - sizeof(uint32_t)));
+    struct DataCell* final_dc = _tree_deserialize_datacell(buf + final_off, nlm.schema);
+    uint32_t final_key = final_dc->key;
+    _tree_free_datacell(final_dc);
 
-        uint32_t new_offset = VDB_PAGE_SIZE - nlm.cells_size;
-        memcpy(new_leaf->buf + OFFSETS_START + nlm.offsets_size, &new_offset, sizeof(uint32_t));
-        nlm.offsets_size += sizeof(uint32_t);
-    }
-    for (uint32_t i = OFFSETS_START + half; i < OFFSETS_START + prev_offsets_size; i += sizeof(uint32_t)) {
-        uint32_t off = *((uint32_t*)(buf + i));
-        struct DataCell* dc = _tree_deserialize_datacell(buf + off, lm->schema);
-        lm->cells_size += sizeof(uint32_t) * 3 + dc->size;
-        _tree_serialize_datacell(leaf->buf + VDB_PAGE_SIZE - lm->cells_size, dc);
-        _tree_free_datacell(dc);
-
-        uint32_t new_offset = VDB_PAGE_SIZE - lm->cells_size;
-        memcpy(leaf->buf + OFFSETS_START + lm->offsets_size, &new_offset, sizeof(uint32_t));
-        lm->offsets_size += sizeof(uint32_t);
-    }
-    _tree_serialize_meta(leaf->buf, lm);
     _tree_serialize_meta(new_leaf->buf, &nlm);
+    _tree_append_cells(new_leaf, buf, OFFSETS_START, half);
+
+    _tree_serialize_meta(leaf->buf, lm);
+    _tree_append_cells(leaf, buf, OFFSETS_START + half, prev_offsets_size - half);
 
     free(buf);
     _tree_free_meta(lm);
-
 
     uint32_t nc_size = sizeof(uint32_t) * 3;
     if (_tree_node_is_full(parent, nc_size)) {

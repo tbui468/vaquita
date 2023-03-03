@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define VDB_PAGE_SIZE 1024
+#define VDB_PAGE_SIZE 512
 
 struct VdbPager {
     struct VdbPage* pages; 

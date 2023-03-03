@@ -58,5 +58,6 @@ int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d);
 struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
 void vdb_free_data(struct VdbData* data);
 void vdb_debug_print_tree(VDBHANDLE h, const char* table);
+void vdb_debug_print_keys(VDBHANDLE h, const char* table, uint32_t block_idx);
 
 #endif //VDB_H

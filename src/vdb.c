@@ -183,3 +183,9 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
     FILE* f = _vdb_get_table_file(db, table);
     tree_print_node(db->pager, f, 0);
 }
+
+void vdb_debug_print_keys(VDBHANDLE h, const char* table, uint32_t block_idx) {
+    struct DB* db = (struct DB*)h;
+    FILE* f = _vdb_get_table_file(db, table);
+    tree_print_keys(db->pager, f, block_idx);
+}

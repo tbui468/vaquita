@@ -1,21 +1,38 @@
 TODO:
+    Finished _tree_split_internal, but fetch doesn't work
+        Why are right internal node keys not in correct order?
+            tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes
+            Could make three node types: root, internal, and leaf
+                then just keep some information in root (schema, primary key counter, maybe other stuff)
+                data normalization will probably help prevent all the complexity building up here
+        right_ptr needs to update from lowest internal node all the way up to the root (not working now)
+    
+    tree_print_nodes -> debug_print_nodes
+    tree_print_keys -> debug_print_tree
+
+    void _tree_append_cells(struct VdbPage* dst, struct VdbPage* src, uint32_t start, uint32_t end);
+        replace those four loops (two in split leaf and two in split internal) with this function
+        depending on the node type (leaf or internal), will copy either nodecell or datacell
+        into the destination
+
     Add more records to see what happens when interal node needs to split
         may be easier to do this if VDB_PAGE_SIZE is smaller (1024 or even smaller)
+        Adding 56th record with page size 512 requires splitting internal node (root in this case)
+        look at TODO in _tree_split_leaf
+
+    Add more records to see if internal non-root nodes split correctly
+        Second level internal nodes should split from 2 nodes to 3 internal nodes
+
+    Deleting records
+
+    Switch to binary search in _tree_traverse_to_leaf (just using linear scan right now)
+
+    Limit how many blocks are in buffer cache at a time - use least-recently used eviction policy
+
+    Refactor code to make it more readable - splitting leaves is a mess now
+
+    Allow fetch to get range of records by primary key - first step into creating an execution engine here
 
     How to implement execution engine:
         SQL parser and VM to run the bytecode
 
-Using SQLite
-    Chapter 1: What is SQLite? (PDF 23)
-        How is SQLite different from something like Postgres or MySQL?
-    Chapter 2: Uses of SQLite (PDF 31)
-        Can SQLite be used to created an in-memory database?
-        In what situations is using a server/client RDBMS preferrable to SQLite?
-    Chapter 3: Buliding and Installing SQLite (PDF 39)
-    Chapter 4: The SQL Language
-    Chapter 5: The SELECT Command
-    Chapter 6: Database Design
-    Chapter 7: C Programming Interface
-    Chapter 8: Additional Features and APIs
-    Chapter 9: SQL Functions and Extensions
-    Chapter 10: Virtual Tables and Modules

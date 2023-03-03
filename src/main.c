@@ -45,29 +45,48 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    for (int i = 1; i < 36; i++) { //TODO: Adding a 35th record causes leaf with index 2 to split, seg faulting
-        struct VdbData* d = make_data(i, "dogs", true);
+    for (int i = 1; i <= 56; i++) { //TODO: Adding a 56th record requires splitting interal node (root in this case)
+        struct VdbData* d = make_data(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
         vdb_free_data(d);
     }
-
 
     struct VdbData* result;
     if ((result = vdb_fetch_record(h, "students", 1)))
         print_data_and_free(result);
     else
         printf("No record found\n");
-    if ((result = vdb_fetch_record(h, "students", 2)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
-    if ((result = vdb_fetch_record(h, "students", 35)))
+
+    if ((result = vdb_fetch_record(h, "students", 24)))
         print_data_and_free(result);
     else
         printf("No record found\n");
 
-    vdb_debug_print_tree(h, "students");
+    if ((result = vdb_fetch_record(h, "students", 48)))
+        print_data_and_free(result);
+    else
+        printf("No record found\n");
+
+    if ((result = vdb_fetch_record(h, "students", 50)))
+        print_data_and_free(result);
+    else
+        printf("No record found\n");
+
+    if ((result = vdb_fetch_record(h, "students", 51)))
+        print_data_and_free(result);
+    else
+        printf("No record found\n");
+
+    if ((result = vdb_fetch_record(h, "students", 56)))
+        print_data_and_free(result);
+    else
+        printf("No record found\n");
+
+    //vdb_debug_print_tree(h, "students");
+    vdb_debug_print_keys(h, "students", 0);
+    vdb_debug_print_keys(h, "students", 19);
+    vdb_debug_print_keys(h, "students", 20);
 
 /*
     if ((result = vdb_fetch_record(h, "students", 2)))

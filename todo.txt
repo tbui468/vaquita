@@ -1,4 +1,8 @@
 TODO:
+    Switch struct NodeMeta name to struct InternMeta
+
+    Integrate struct LeafMeta and InterMeta into tree
+
     Finished _tree_split_internal, but fetch doesn't work
         Why are right internal node keys not in correct order?
             tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes

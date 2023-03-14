@@ -31,7 +31,7 @@ struct TreeMeta {
     struct VdbSchema* schema;
 };
 
-struct NodeMeta { //TODO: rename to 'InternMeta'
+struct InternMeta {
     enum VdbNodeType type;
     uint32_t offsets_size;
     uint32_t cells_size;

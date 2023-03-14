@@ -1,9 +1,10 @@
 TODO:
-    Switch struct NodeMeta name to struct InternMeta
+    Note: reason for doing this refactoring is related to making sure we only store primary key counter in one place (block 0)
+        instead of all right pointers of every internal block.  
+    
+    Use tree metadata to store primary key counter <----------START HERE
 
-    Integrate struct LeafMeta and InterMeta into tree
-
-    Finished _tree_split_internal, but fetch doesn't work
+    Finished _tree_split_internal, but fetch doesn't work - not reading a record properly due to wrong right_ptr pks
         Why are right internal node keys not in correct order?
             tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes
             Could make three node types: root, internal, and leaf

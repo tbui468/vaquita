@@ -23,6 +23,7 @@ FILE* fopen_w(const char* filename, const char* mode);
 int fclose_w(FILE* f);
 void* calloc_w(size_t count, size_t size);
 void* malloc_w(size_t size);
+void* realloc_w(void* ptr, size_t size);
 int remove_w(const char* pathname);
 int mkdir_w(const char* pathname, int mode);
 

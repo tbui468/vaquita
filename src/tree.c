@@ -6,6 +6,26 @@
 #include "util.h"
 #include "pager.h"
 
+void il_init(struct IndexList* il) {
+    il->capacity = 8;
+    il->count = 0;
+    il->indices = malloc_w(sizeof(uint32_t) * il->capacity);
+}
+
+void il_append(struct IndexList* il, uint32_t idx) {
+    if (il->count >= il->capacity) {
+        il->capacity *= 2;
+        il->indices = realloc_w(il->indices, il->capacity * sizeof(uint32_t));
+    }
+
+    il->indices[il->count] = idx;
+    il->count++;
+}
+
+void il_free(struct IndexList* il) {
+    free(il->indices);
+}
+
 
 void _tree_read_uint32_t(uint32_t* dst, uint8_t* buf, int* off) {
     *dst = *((uint32_t*)(buf + *off));
@@ -248,45 +268,56 @@ void tree_init(FILE* f, struct VdbSchema* schema) {
     free(buf2);
 }
 
-struct VdbPage* _tree_traverse_to_leaf(struct VdbPager* pager, FILE* f, struct VdbPage* node, uint32_t pk) {
-    struct InternMeta m = _tree_deserialize_intern_meta(node->buf);
-    assert(m.type == VDBN_INTERN);
+struct IndexList _tree_traverse_to(struct VdbPager* pager, FILE* f, uint32_t pk) {
+    struct IndexList il;
+    il_init(&il);
 
-    //TODO: switch to binary search
-    int child_idx = -1;
-    uint32_t i = OFFSETS_START;
-    while (i < OFFSETS_START + m.offsets_size) {
-        uint32_t off = *((uint32_t*)&node->buf[i]);
-        struct NodeCell nc = _tree_deserialize_nodecell(&node->buf[off]);
-        if (i == OFFSETS_START) {
-            if (pk <= nc.key) {
-                child_idx = nc.block_idx;
-                break;
+    struct VdbPage* node = pager_get_page(pager, f, 1);
+
+    while (true) {
+        struct InternMeta m = _tree_deserialize_intern_meta(node->buf);
+        il_append(&il, node->idx);
+
+        //TODO: switch to binary search
+        int child_idx = -1;
+        uint32_t i = OFFSETS_START;
+        while (i < OFFSETS_START + m.offsets_size) {
+            uint32_t off = *((uint32_t*)&node->buf[i]);
+            struct NodeCell nc = _tree_deserialize_nodecell(&node->buf[off]);
+            if (i == OFFSETS_START) {
+                if (pk <= nc.key) {
+                    child_idx = nc.block_idx;
+                    break;
+                }
+            } else {
+                uint32_t prev_off = *((uint32_t*)&node->buf[i - sizeof(uint32_t)]);
+                struct NodeCell pnc = _tree_deserialize_nodecell(&node->buf[prev_off]);
+                if (pnc.key < pk && pk <= nc.key) {
+                    child_idx = nc.block_idx;
+                    break;
+                }
             }
-        } else {
-            uint32_t prev_off = *((uint32_t*)&node->buf[i - sizeof(uint32_t)]);
-            struct NodeCell pnc = _tree_deserialize_nodecell(&node->buf[prev_off]);
-            if (pnc.key < pk && pk <= nc.key) {
-                child_idx = nc.block_idx;
-                break;
-            }
+
+            i += sizeof(uint32_t);
         }
 
-        i += sizeof(uint32_t);
+        if (child_idx == -1) {
+            child_idx = m.right_ptr.block_idx;
+        }
+        struct VdbPage* child = pager_get_page(pager, f, child_idx);
+        struct InternMeta cm = _tree_deserialize_intern_meta(child->buf);
+
+        if (cm.type == VDBN_INTERN) {
+            node = child;
+        } else {
+            il_append(&il, child->idx);
+            break;
+        }
     }
 
-    if (child_idx == -1) {
-        child_idx = m.right_ptr.block_idx;
-    }
-    struct VdbPage* child = pager_get_page(pager, f, child_idx);
-    struct InternMeta cm = _tree_deserialize_intern_meta(child->buf);
-
-    if (cm.type == VDBN_INTERN) {
-        child = _tree_traverse_to_leaf(pager, f, child, pk);
-    }
-
-    return child;
+    return il;
 }
+
 
 int _tree_data_size(struct VdbData* d) {
     uint32_t data_size = 0;
@@ -384,8 +415,7 @@ struct VdbPage* _tree_split_internal(struct VdbPager* pager, FILE* f, struct Vdb
     rm.cells_size = 0;
     rm.freelist = 0;
     rm.parent_idx = node->idx;
-    uint32_t off_end = *((uint32_t*)(node->buf + OFFSETS_START + nm.offsets_size - sizeof(uint32_t)));
-    rm.right_ptr = _tree_deserialize_nodecell(node->buf + off_end);
+    rm.right_ptr = nm.right_ptr;
 
     _tree_serialize_intern_meta(left_internal->buf, &lm);
     _tree_serialize_intern_meta(right_internal->buf, &rm);
@@ -478,9 +508,17 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d) {
     struct VdbPage* root = pager_get_page(pager, f, root_idx);
     struct InternMeta m = _tree_deserialize_intern_meta(root->buf);
 
-    uint32_t pk = m.right_ptr.key;
+    struct VdbPage* meta_page = pager_get_page(pager, f, 0);
+    struct TreeMeta* tm = _tree_deserialize_tree_meta(meta_page->buf);
 
-    struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, root, pk);
+    uint32_t pk = tm->pk_counter;
+
+
+    struct IndexList il = _tree_traverse_to(pager, f, pk);
+    struct VdbPage* leaf = pager_get_page(pager, f, il.indices[il.count - 1]);
+    il_free(&il);;
+
+    //struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, root, pk);
     struct LeafMeta lm = _tree_deserialize_leaf_meta(leaf->buf);
 
     uint32_t data_size = _tree_data_size(d);
@@ -489,7 +527,11 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d) {
 
     if (_tree_node_is_full(leaf, dc_meta_size + data_size)) {
         _tree_split_leaf(pager, f, leaf);
-        leaf = _tree_traverse_to_leaf(pager, f, root, pk);
+
+        struct IndexList il = _tree_traverse_to(pager, f, pk);
+        leaf = pager_get_page(pager, f, il.indices[il.count - 1]);
+        il_free(&il);
+
         m = _tree_deserialize_intern_meta(root->buf);
         lm = _tree_deserialize_leaf_meta(leaf->buf);
     }
@@ -504,24 +546,37 @@ void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d) {
     lm.cells_size += data_size + dc_meta_size;
     _tree_serialize_leaf_meta(leaf->buf, &lm);
 
-    m.right_ptr.key++;
+    m.right_ptr.key = pk;
     _tree_serialize_intern_meta(root->buf, &m);
+    tm->pk_counter++;
+    _tree_serialize_tree_meta(meta_page->buf, tm);
+    _tree_free_tree_meta(tm);
+
+    //TODO: update parent right pointer of leaf (which may be new or old)
+    struct VdbPage* leaf_parent = pager_get_page(pager, f, lm.parent_idx);
+    struct InternMeta lp = _tree_deserialize_intern_meta(leaf_parent->buf);
+    lp.right_ptr.key = pk;
+    _tree_serialize_intern_meta(leaf_parent->buf, &lp);
+    fseek_w(f, VDB_PAGE_SIZE * lm.parent_idx, SEEK_SET);
+    fwrite_w(leaf_parent->buf, VDB_PAGE_SIZE, 1, f);
+
 
     //TODO: flush pages here to test if function works
     //flushing should be a pager function
-    fseek_w(f, VDB_PAGE_SIZE, SEEK_SET);
+    //    pager_flush(root); <---should write this function
+    //    pager_flush(leaf);
+    fseek_w(f, 0, SEEK_SET);
+    fwrite_w(meta_page->buf, VDB_PAGE_SIZE, 1, f);
     fwrite_w(root->buf, VDB_PAGE_SIZE, 1, f);
     fwrite_w(leaf->buf, VDB_PAGE_SIZE, 1, f);
-
-    //    pager_flush(root);
-    //    pager_flush(leaf);
 }
 
 
 struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, uint32_t key) {
-    uint32_t root_idx = 1;
-    struct VdbPage* root = pager_get_page(pager, f, root_idx);
-    struct VdbPage* leaf = _tree_traverse_to_leaf(pager, f, root, key);
+    struct IndexList il = _tree_traverse_to(pager, f, key);
+    struct VdbPage* leaf = pager_get_page(pager, f, il.indices[il.count - 1]);
+    il_free(&il);
+
     struct LeafMeta lm = _tree_deserialize_leaf_meta(leaf->buf);
 
     struct VdbPage* meta_node = pager_get_page(pager, f, 0);
@@ -558,7 +613,7 @@ void debug_print_intern(struct VdbPager* pager, FILE* f, uint32_t idx) {
         struct NodeCell nc = _tree_deserialize_nodecell(node->buf + off);
         printf("%d, ", nc.key);
     }
-    printf("%d\n", m.right_ptr.key);
+    printf("right ptr: %d\n", m.right_ptr.key);
 }
 
 void debug_print_leaf(struct VdbPager* pager, FILE* f, uint32_t idx) {

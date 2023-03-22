@@ -142,6 +142,13 @@ void* malloc_w(size_t size) {
     return ptr;
 }
 
+void* realloc_w(void* ptr, size_t size) {
+    void* ret;
+    if (!(ret = realloc(ptr, size)))
+        err_quit("realloc failed");
+    return ret;
+}
+
 int remove_w(const char* pathname) {
     int res;
     if ((res = remove(pathname)) == -1)

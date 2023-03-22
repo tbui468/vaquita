@@ -7,6 +7,12 @@
 
 #define OFFSETS_START 256
 
+struct IndexList {
+    uint32_t* indices;
+    uint32_t count;
+    uint32_t capacity;
+};
+
 enum VdbNodeType {
     VDBN_INTERN,
     VDBN_LEAF

@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    for (int i = 1; i <= 56; i++) { //TODO: Adding a 56th record requires splitting interal node (root in this case)
+    for (int i = 1; i <= 58; i++) { //TODO: Adding a 56th record requires splitting interal node (root in this case)
         struct VdbData* d = make_data(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
@@ -63,12 +63,12 @@ int main(int argc, char** argv) {
     else
         printf("No record found\n");
 
-    if ((result = vdb_fetch_record(h, "students", 48)))
+    if ((result = vdb_fetch_record(h, "students", 40)))
         print_data_and_free(result);
     else
         printf("No record found\n");
 
-    if ((result = vdb_fetch_record(h, "students", 50)))
+    if ((result = vdb_fetch_record(h, "students", 41)))
         print_data_and_free(result);
     else
         printf("No record found\n");
@@ -78,7 +78,7 @@ int main(int argc, char** argv) {
     else
         printf("No record found\n");
 
-    if ((result = vdb_fetch_record(h, "students", 56)))
+    if ((result = vdb_fetch_record(h, "students", 58)))
         print_data_and_free(result);
     else
         printf("No record found\n");

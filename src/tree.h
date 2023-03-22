@@ -42,7 +42,6 @@ struct InternMeta {
     uint32_t offsets_size;
     uint32_t cells_size;
     uint32_t freelist;    
-    uint32_t parent_idx;
     struct NodeCell right_ptr;
 };
 
@@ -51,7 +50,6 @@ struct LeafMeta {
     uint32_t offsets_size;
     uint32_t cells_size;
     uint32_t freelist;    
-    uint32_t parent_idx;
 };
 
 

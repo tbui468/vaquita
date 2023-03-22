@@ -1,4 +1,5 @@
 TODO:
+    _tree_split_leaf should take in a leaf index (instead of the actual page) so that the leaf parent can also be accessed
     Finish _tree_traverse_to (changing name to not conflict for now)
         remove parent indices
         Update right pointers using IndexList when inserting new record        

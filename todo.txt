@@ -1,47 +1,30 @@
 TODO:
-    _tree_split_leaf should take in a leaf index (instead of the actual page) so that the leaf parent can also be accessed
-    Finish _tree_traverse_to (changing name to not conflict for now)
-        remove parent indices
-        Update right pointers using IndexList when inserting new record        
+    Write debug code to print out tree like this:
+        1
+            20
+                2
+                3
+                4
+            21
+                5
+                6
+                7
+            31
+                8
+                9
+                10
+                11
+            32
+                12
+                13
+                14
 
-    _tree_traverse_to_leaf now can return a struct IndexList - caller can use this to get leaf (which will be last index in list)
-        this allows us to get rid of parent indices completely
-        also makes updating all right pointers easier when inserting a new record
-            take care to update index list (eg, traverse to leaf again) when leaves/internals are split
+        This will make writing code to rebalance/debugging easier
 
-    Could just make right pointer zero - then if zero, need to check tree meta data to find pk_counter
-
-    Changing ALL parent pointers is going to be a mess - where are parent_idx pointers being used?  Can't only be for right pointers, right?
-        It's only being used when splitting leaves/internal nodes.  Need access to the parent.  Could create a function that finds parent
-        Then get rid of parent index altogether...
-
-    Note: reason for doing this refactoring is related to making sure we only store primary key counter in one place (block 0)
-        instead of all right pointers of every internal block.  
-
-    Parent index of leaves not properly updated when inernal nodes are split (all pointing to node 1 now rather than 20 and 21)
-        see _tree_split_internal <------START HERE
-        //TODO Go through all children of node (which may be internal nodes or leaf nodes) and update parent_idx to reference left_idx or right_idx
-
-    Need to propagate right pointer of parent node all the way up to root
-
-    Use tree metadata to store primary key counter
-        Adding only 51 records skips key 48 for some reason...
-            I'm guessing the issue is that when splitting leaves, last key and right pointer and not being written properly
-            Walk through _tree_split_leaf function and simplify - it's too confusing to understand now
-
-    Finished _tree_split_internal, but fetch doesn't work - not reading a record properly due to wrong right_ptr pks
-        Why are right internal node keys not in correct order?
-            tree_insert_record <-------- this is problem.  Using root to track primary key, but not updating the child internal nodes
-            Could make three node types: root, internal, and leaf
-                then just keep some information in root (schema, primary key counter, maybe other stuff)
-                data normalization of node meta data will probably help prevent all the complexity building up here
-                Could have three types of metadata too - root, internal and leaf
-                May be beneficial to create new function to split root (split leaf, split internal, split root)
-                How about this: store things like schema and primary key counter in block 0 
-                    And then start root on block 1.  Then we only need two types of nodes <--------this makes more sense
-                    store schema and block size in metadata of file (NOT of node)
+        Function will need access to the depth in order to indent correctly
 
     Need to rebalance trees at some point since the auto-incrementing primary key will make tree
+        Add a ton of entries and check tree height
         right side heavy at some point.  Check tree balance after inserting record to see if
         rebalance is necessary
 

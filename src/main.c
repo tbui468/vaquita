@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    for (int i = 1; i <= 62; i++) { //TODO: Adding a 56th record requires splitting interal node (root in this case)
+    for (int i = 1; i <= 100; i++) {
         struct VdbData* d = make_data(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
@@ -53,40 +53,22 @@ int main(int argc, char** argv) {
     }
 
     struct VdbData* result;
-    if ((result = vdb_fetch_record(h, "students", 1)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
 
-    if ((result = vdb_fetch_record(h, "students", 24)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
+    uint32_t l[] = {1, 24, 40, 41, 51, 100};
+    for (int i = 0; i < 6; i++) {
+        if ((result = vdb_fetch_record(h, "students", l[i])))
+            print_data_and_free(result);
+        else
+            printf("No record found\n");
+    }
 
-    if ((result = vdb_fetch_record(h, "students", 40)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
-
-    if ((result = vdb_fetch_record(h, "students", 41)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
-
-    if ((result = vdb_fetch_record(h, "students", 51)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
-
-    if ((result = vdb_fetch_record(h, "students", 62)))
-        print_data_and_free(result);
-    else
-        printf("No record found\n");
-
-    //vdb_debug_print_tree(h, "students");
+    vdb_debug_print_tree(h, "students");
+    /*
     vdb_debug_print_keys(h, "students", 1);
     vdb_debug_print_keys(h, "students", 20);
     vdb_debug_print_keys(h, "students", 21);
+    vdb_debug_print_keys(h, "students", 31);
+    vdb_debug_print_keys(h, "students", 32);*/
 
 /*
     if ((result = vdb_fetch_record(h, "students", 2)))

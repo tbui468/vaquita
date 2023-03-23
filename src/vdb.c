@@ -181,7 +181,7 @@ void vdb_free_data(struct VdbData* data) {
 void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
     struct DB* db = (struct DB*)h;
     FILE* f = _vdb_get_table_file(db, table);
-    debug_print_nodes(db->pager, f, 0);
+    debug_print_tree(db->pager, f, 1, 0);
 }
 
 void vdb_debug_print_keys(VDBHANDLE h, const char* table, uint32_t block_idx) {

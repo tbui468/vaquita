@@ -647,17 +647,51 @@ void debug_print_nodes(struct VdbPager* pager, FILE* f, uint32_t idx) {
     } else {
         struct LeafMeta m = _tree_deserialize_leaf_meta(node->buf);
         printf("Node idx: %d, Free: %d, Type: Leaf\n", idx, VDB_PAGE_SIZE - OFFSETS_START - m.offsets_size - m.cells_size);
-        //print out all leaf keys
-        //for (uint32_t i = OFFSETS_START; i < OFFSETS_START + m->offsets_size; i += sizeof(uint32_t)) {
-        //    uint32_t off = *((uint32_t*)(node->buf + i));
-        //    struct DataCell* dc = _tree_deserialize_datacell(node->buf + off, m->schema);
-        //    printf("%d,", dc->key);
-        //    _tree_free_datacell(dc);
-       // }
-        //printf("\n");
     }
 
 }
 
+void debug_print_tree(struct VdbPager* pager, FILE* f, uint32_t idx, uint32_t depth) {
+    struct VdbPage* node = pager_get_page(pager, f, idx);    
+    if (_tree_node_is_leaf(node->buf)) {
+        struct LeafMeta m = _tree_deserialize_leaf_meta(node->buf);
+        struct VdbPage* meta_node = pager_get_page(pager, f, 0);
+        struct TreeMeta* tm = _tree_deserialize_tree_meta(meta_node->buf);
+        char s[depth * 4 + 1];
+        for (uint32_t i = 0; i < depth * 4; i++) {
+            s[i] = ' ';
+        }
+        s[depth * 4] = '\0';
+        printf("%s%d: (keys ", s, node->idx);
 
+        if (m.offsets_size > 0) {
+            uint32_t off = *((uint32_t*)(node->buf + OFFSETS_START));
+            struct DataCell* dc = _tree_deserialize_datacell(node->buf + off, tm->schema);
+            printf("%d - ", dc->key);
+            _tree_free_datacell(dc);
+
+            off = *((uint32_t*)(node->buf + OFFSETS_START + m.offsets_size - sizeof(uint32_t)));
+            dc = _tree_deserialize_datacell(node->buf + off, tm->schema);
+            printf("%d)", dc->key);
+            _tree_free_datacell(dc);
+        }
+        printf("\n");
+
+        _tree_free_tree_meta(tm);
+    } else {
+        struct InternMeta m = _tree_deserialize_intern_meta(node->buf);
+        char s[depth * 4 + 1];
+        for (uint32_t i = 0; i < depth * 4; i++) {
+            s[i] = ' ';
+        }
+        s[depth * 4] = '\0';
+        printf("%s%d\n", s, node->idx);
+        for (uint32_t i = OFFSETS_START; i < OFFSETS_START + m.offsets_size; i += sizeof(uint32_t)) {
+            uint32_t off = *((uint32_t*)(node->buf + i));
+            struct NodeCell nc = _tree_deserialize_nodecell(node->buf + off);
+            debug_print_tree(pager, f, nc.block_idx, depth + 1);
+        }
+        debug_print_tree(pager, f, m.right_ptr.block_idx, depth + 1); 
+    }
+}
 

@@ -147,11 +147,11 @@ int vdb_drop_table(VDBHANDLE h, const char* table_name) {
     return 0;
 }
 
-int vdb_insert_record(VDBHANDLE h, const char* table_name, struct VdbData* d) {
+int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
-    FILE* f = _vdb_get_table_file(db, table_name);
-    tree_insert_record(db->pager, f, d);
+    struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
+    tree_insert_record(t, d);
     //TODO: unlock file here
     return 0;
 }
@@ -160,8 +160,8 @@ int vdb_insert_record(VDBHANDLE h, const char* table_name, struct VdbData* d) {
 struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
-    FILE* f = _vdb_get_table_file(db, table);
-    struct VdbData* result = tree_fetch_record(db->pager, f, key);
+    struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
+    struct VdbData* result = tree_fetch_record(t, key);
     //TODO: unlock file here
     return result;
 }
@@ -180,12 +180,7 @@ void vdb_free_data(struct VdbData* data) {
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
     struct DB* db = (struct DB*)h;
-    FILE* f = _vdb_get_table_file(db, table);
-    debug_print_tree(db->pager, f, 1, 0);
+    struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
+    debug_print_tree(t, 1, 0);
 }
 
-void vdb_debug_print_keys(VDBHANDLE h, const char* table, uint32_t block_idx) {
-    struct DB* db = (struct DB*)h;
-    FILE* f = _vdb_get_table_file(db, table);
-    debug_print_keys(db->pager, f, block_idx);
-}

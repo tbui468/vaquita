@@ -7,6 +7,11 @@
 
 #define OFFSETS_START 256
 
+struct VdbTree {
+    struct VdbPager* pager;
+    FILE* f;
+};
+
 struct IndexList {
     uint32_t* indices;
     uint32_t count;
@@ -54,10 +59,8 @@ struct LeafMeta {
 
 
 void tree_init(FILE* f, struct VdbSchema* schema);
-void tree_insert_record(struct VdbPager* pager, FILE* f, struct VdbData* d);
-struct VdbData* tree_fetch_record(struct VdbPager* pager, FILE* f, uint32_t key);
-void debug_print_nodes(struct VdbPager* pager, FILE* f, uint32_t idx);
-void debug_print_tree(struct VdbPager* pager, FILE* f, uint32_t idx, uint32_t depth);
-void debug_print_keys(struct VdbPager* pager, FILE* f, uint32_t idx);
+void tree_insert_record(struct VdbTree t, struct VdbData* d);
+struct VdbData* tree_fetch_record(struct VdbTree t, uint32_t key);
+void debug_print_tree(struct VdbTree t, uint32_t idx, uint32_t depth);
 
 #endif //VDB_TREE_H

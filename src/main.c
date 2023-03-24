@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    for (int i = 1; i <= 100; i++) {
+    for (int i = 1; i <= 85; i++) { //TODO: 85 splits, 80 doesn't
         struct VdbData* d = make_data(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");

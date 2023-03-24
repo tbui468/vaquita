@@ -1,24 +1,12 @@
 TODO:
-    May be easier to rewrite tree functions
-        If a current node is full, rather than trying to balance, just add a new empty node to the right
-        If adding a new node to the right will result in a full node, add a new node to the parent (repeat up to root if necessary)
-        This won't be efficient if nodes are deleted, but we can deal with that later
-        This method will be simplier and faster than trying to rebalance everytime since we are only adding to the right
+    When splitting root into nodes 20 and 21, node 20 should remain full
 
-    Adding 85 records should split 2 nodes into 3 (rather than creating a new level)
-
-    _tree_traverse_to already gives the height of each node (heights are same as index)
-        When a node is full, ALL keys on that level need to be rebalanced.  Only add
-        a new node at that level if all nodes are above some capacity threshold
-
-        complete _tree_rebalance_internals
-        struct IndexList _tree_get_nodes_at_depth(struct VdbPager* pager, FILE* f, uint32_t depth) <----START HERE
-            May need to make another function to call recursively
-
-    Need to rebalance trees at some point since the auto-incrementing primary key will make tree
-        Add a ton of entries and check tree height
-        right side heavy at some point.  Check tree balance after inserting record to see if
-        rebalance is necessary
+    Need access to IndexList when splitting internals (since we need access to all parent nodes)
+        Algorithm:
+            If node is full
+                if node is root, root now becomes new left, add new right, and add new root
+                else, add new child (new right node) to parent
+                    if parent is full, run same algorithm
 
     Deleting records
         Should keys be reused?  How does sqlite do it?

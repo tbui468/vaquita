@@ -13,12 +13,9 @@ struct VdbPager* pager_init() {
 
 struct VdbPage* _pager_load_page(FILE* f, uint32_t idx) {
     struct VdbPage* page = malloc_w(sizeof(struct VdbPage));
-    page->file = f;
     page->idx = idx;
-    page->buf = malloc_w(VDB_PAGE_SIZE);
-    page->dirty = false;
-    page->next = NULL;
-
+    page->f = f;
+    page->buf = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
     fseek_w(f, idx * VDB_PAGE_SIZE, SEEK_SET);
     fread_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
 
@@ -28,7 +25,7 @@ struct VdbPage* _pager_load_page(FILE* f, uint32_t idx) {
 struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
     struct VdbPage* cur = pager->pages;
     while (cur) {
-        if (cur->idx == idx && f == cur->file)
+        if (cur->idx == idx && f == cur->f)
             return cur;
         else
             cur = cur->next;
@@ -49,4 +46,9 @@ uint32_t pager_allocate_page(FILE* f) {
     fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
     free(buf);
     return idx;
+}
+
+void pager_flush_page(struct VdbPage* page) {
+    fseek_w(page->f, page->idx * VDB_PAGE_SIZE, SEEK_END);
+    fwrite_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, page->f);
 }

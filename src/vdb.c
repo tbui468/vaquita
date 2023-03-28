@@ -103,7 +103,19 @@ void vdb_close(VDBHANDLE h) {
     free(db);
 }
 
+void vdb_free_data(struct VdbData* data) {
+    for (uint32_t i = 0; i < data->count; i++) {
+        struct VdbDatum d = data->data[i];
+        if (d.type == VDBF_STR) {
+            free(d.as.Str);
+        }
+    }
 
+    free(data->data);
+    free(data);
+}
+
+/*
 int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* schema) {
     struct DB* db = (struct DB*)h;
 
@@ -166,21 +178,9 @@ struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
     return result;
 }
 
-void vdb_free_data(struct VdbData* data) {
-    for (uint32_t i = 0; i < data->count; i++) {
-        struct VdbDatum d = data->data[i];
-        if (d.type == VDBF_STR) {
-            free(d.as.Str);
-        }
-    }
-
-    free(data->data);
-    free(data);
-}
-
 void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
     struct DB* db = (struct DB*)h;
     struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
     debug_print_tree(t, 1, 0);
 }
-
+*/

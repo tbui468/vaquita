@@ -1,15 +1,24 @@
 TODO:
-    When splitting root into nodes 20 and 21, node 20 should remain full
+    Use gdb to walk through code (Cherno recommended debugger to learn to read code)
+        https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
+        Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Need access to IndexList when splitting internals (since we need access to all parent nodes)
-        Algorithm:
-            If node is full
-                if node is root, root now becomes new left, add new right, and add new root
-                else, add new child (new right node) to parent
-                    if parent is full, run same algorithm
+    Allocating and getting a new page requires rewrite since struct VdbPage is no longer the same
+        Do we really need two separate functions for allocating a fresh page and getting that page using the index?
 
-    Deleting records
-        Should keys be reused?  How does sqlite do it?
+        Pager returns a buffer to tree module.  It's up to tree to deserialize based on type of node
+
+        VdbNode* _tree_get_node(pager, idx) {
+            page = pager_get_page(pager, idx);
+
+            switch (get type from page->buf) {
+                case VDBN_META:
+                    node = _tree_deserialize_meta(buf);
+            }
+        }
+
+    Deletin records
+        Should keys be reused?  How does sqlite do it? - sqlite allows reuse if user desires
 
     Switch to binary search in _tree_traverse_to_leaf (just using linear scan right now)
 

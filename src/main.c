@@ -34,6 +34,7 @@ int main(int argc, char** argv) {
 
     VDBHANDLE h = vdb_create("test");
 
+    /*
     enum VdbField fields[] = { VDBF_INT, VDBF_STR, VDBF_BOOL };
     struct VdbSchema s = { fields, 3 };
     if (vdb_create_table(h, "students", &s) != 0)
@@ -43,9 +44,10 @@ int main(int argc, char** argv) {
         printf("failed to create table\n");
 
     if (vdb_drop_table(h, "teachers") != 0)
-        printf("failed to drop table\n");
+        printf("failed to drop table\n");*/
 
-    for (int i = 1; i <= 200; i++) { //TODO: 85 splits, 80 doesn't
+    /*
+    for (int i = 1; i <= 120; i++) { //TODO: 85 splits, 80 doesn't
         struct VdbData* d = make_data(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
@@ -61,8 +63,8 @@ int main(int argc, char** argv) {
         else
             printf("No record found\n");
     }
-
-    vdb_debug_print_tree(h, "students");
+*/
+    //vdb_debug_print_tree(h, "students");
     /*
     vdb_debug_print_keys(h, "students", 1);
     vdb_debug_print_keys(h, "students", 20);

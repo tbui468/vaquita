@@ -12,55 +12,41 @@ struct VdbTree {
     FILE* f;
 };
 
-struct IndexList {
-    uint32_t* indices;
+struct VdbNodeList {
     uint32_t count;
-    uint32_t capacity;
+};
+
+struct VdbRecordList {
+    uint32_t count;
 };
 
 enum VdbNodeType {
+    VDBN_META,
     VDBN_INTERN,
     VDBN_LEAF
 };
 
-struct DataCell {
-    uint32_t next;
-    uint32_t key;
-    uint32_t size;
-    struct VdbData* data;
-};
-
-struct NodeCell {
-    uint32_t next;
-    uint32_t key;
-    uint32_t block_idx;
-};
-
-struct TreeMeta {
-    uint32_t node_size;
-    uint32_t pk_counter;
-    struct VdbSchema* schema;
-};
-
-struct InternMeta {
+struct VdbNode {
     enum VdbNodeType type;
-    uint32_t offsets_size;
-    uint32_t cells_size;
-    uint32_t freelist;    
-    struct NodeCell right_ptr;
+    uint32_t idx;
+    union {
+        struct {
+            uint32_t pk_counter;
+            struct VdbSchema* schema;
+        } meta;
+        struct {
+            struct VdbNodeList* nl;
+        } intern;
+        struct {
+            struct VdbRecordList* rl;
+        } leaf;
+    } as;
 };
 
-struct LeafMeta {
-    enum VdbNodeType type;
-    uint32_t offsets_size;
-    uint32_t cells_size;
-    uint32_t freelist;    
-};
 
-
-void tree_init(FILE* f, struct VdbSchema* schema);
-void tree_insert_record(struct VdbTree t, struct VdbData* d);
-struct VdbData* tree_fetch_record(struct VdbTree t, uint32_t key);
-void debug_print_tree(struct VdbTree t, uint32_t idx, uint32_t depth);
+void tree_init(struct VdbTree tree, struct VdbSchema* schema);
+//void tree_insert_record(struct VdbTree t, struct VdbData* d);
+//struct VdbData* tree_fetch_record(struct VdbTree t, uint32_t key);
+//void debug_print_tree(struct VdbTree t, uint32_t idx, uint32_t depth);
 
 #endif //VDB_TREE_H

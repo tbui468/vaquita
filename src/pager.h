@@ -13,16 +13,16 @@ struct VdbPager {
 };
 
 struct VdbPage {
-    FILE* file;
-    uint32_t idx;
     uint8_t* buf;
-    bool dirty;
+    uint32_t idx;
+    FILE* f;
     struct VdbPage* next;
 };
 
 struct VdbPager* pager_init();
 struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, uint32_t idx);
 uint32_t pager_allocate_page(FILE* f);
+void pager_flush_page(struct VdbPage* page);
 
 
 #endif //VDB_PAGER_H

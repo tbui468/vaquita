@@ -3,19 +3,11 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Allocating and getting a new page requires rewrite since struct VdbPage is no longer the same
-        Do we really need two separate functions for allocating a fresh page and getting that page using the index?
+    Adding and dropping tables
 
-        Pager returns a buffer to tree module.  It's up to tree to deserialize based on type of node
+    Adding records
 
-        VdbNode* _tree_get_node(pager, idx) {
-            page = pager_get_page(pager, idx);
-
-            switch (get type from page->buf) {
-                case VDBN_META:
-                    node = _tree_deserialize_meta(buf);
-            }
-        }
+    Fetching records
 
     Deletin records
         Should keys be reused?  How does sqlite do it? - sqlite allows reuse if user desires

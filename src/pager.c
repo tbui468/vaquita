@@ -49,6 +49,6 @@ uint32_t pager_allocate_page(FILE* f) {
 }
 
 void pager_flush_page(struct VdbPage* page) {
-    fseek_w(page->f, page->idx * VDB_PAGE_SIZE, SEEK_END);
+    fseek_w(page->f, page->idx * VDB_PAGE_SIZE, SEEK_SET);
     fwrite_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, page->f);
 }

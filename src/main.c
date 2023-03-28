@@ -34,7 +34,6 @@ int main(int argc, char** argv) {
 
     VDBHANDLE h = vdb_create("test");
 
-    /*
     enum VdbField fields[] = { VDBF_INT, VDBF_STR, VDBF_BOOL };
     struct VdbSchema s = { fields, 3 };
     if (vdb_create_table(h, "students", &s) != 0)
@@ -44,7 +43,7 @@ int main(int argc, char** argv) {
         printf("failed to create table\n");
 
     if (vdb_drop_table(h, "teachers") != 0)
-        printf("failed to drop table\n");*/
+        printf("failed to drop table\n");
 
     /*
     for (int i = 1; i <= 120; i++) { //TODO: 85 splits, 80 doesn't

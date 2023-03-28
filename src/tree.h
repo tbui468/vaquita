@@ -44,7 +44,7 @@ struct VdbNode {
 };
 
 
-void tree_init(struct VdbTree tree, struct VdbSchema* schema);
+void tree_init(struct VdbTree* tree, struct VdbSchema* schema);
 //void tree_insert_record(struct VdbTree t, struct VdbData* d);
 //struct VdbData* tree_fetch_record(struct VdbTree t, uint32_t key);
 //void debug_print_tree(struct VdbTree t, uint32_t idx, uint32_t depth);

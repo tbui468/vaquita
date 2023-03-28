@@ -63,9 +63,9 @@ struct VdbNode _tree_deserialize_leaf(uint8_t* buf) {
 }
 
 
-void tree_init(struct VdbTree tree, struct VdbSchema* schema) {
-    uint32_t idx = pager_allocate_page(tree.f);
-    struct VdbPage* page = pager_get_page(tree.pager, tree.f, idx);
+void tree_init(struct VdbTree* tree, struct VdbSchema* schema) {
+    uint32_t idx = pager_allocate_page(tree->f);
+    struct VdbPage* page = pager_get_page(tree->pager, tree->f, idx);
 
     struct VdbNode meta;
     meta.type = VDBN_META;
@@ -78,8 +78,8 @@ void tree_init(struct VdbTree tree, struct VdbSchema* schema) {
 }
 
 
-struct VdbNode _tree_get_node(struct VdbTree tree, uint32_t idx) {
-    struct VdbPage* page = pager_get_page(tree.pager, tree.f, idx);
+struct VdbNode _tree_get_node(struct VdbTree* tree, uint32_t idx) {
+    struct VdbPage* page = pager_get_page(tree->pager, tree->f, idx);
 
     enum VdbNodeType type = (enum VdbNodeType)(*((uint32_t*)page->buf));
     struct VdbNode node;

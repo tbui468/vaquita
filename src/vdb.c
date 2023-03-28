@@ -115,27 +115,30 @@ void vdb_free_data(struct VdbData* data) {
     free(data);
 }
 
-/*
-int vdb_create_table(VDBHANDLE h, const char* table_name, struct VdbSchema* schema) {
+int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema) {
     struct DB* db = (struct DB*)h;
 
     char filename[FILENAME_MAX];
-    _vdb_tablename_to_pathname(db, table_name, filename);
+    _vdb_tablename_to_pathname(db, table, filename);
 
     FILE* f = fopen_w(filename, "w+");
-    tree_init(f, schema);
+
+    struct VdbTree tree;
+    tree.pager = db->pager;
+    tree.f = f;
+
+    tree_init(&tree, schema);
     fclose_w(f);
 
     _vdb_load_table(db, filename);
     return 0;
 }
 
-
-int vdb_drop_table(VDBHANDLE h, const char* table_name) {
+int vdb_drop_table(VDBHANDLE h, const char* table) {
     struct DB* db = (struct DB*)h;
 
     char filename[FILENAME_MAX];
-    _vdb_tablename_to_pathname(db, table_name, filename);
+    _vdb_tablename_to_pathname(db, table, filename);
 
     int idx = -1;
     for (uint32_t i = 0; i < db->table_count; i++) {
@@ -159,6 +162,7 @@ int vdb_drop_table(VDBHANDLE h, const char* table_name) {
     return 0;
 }
 
+/*
 int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here

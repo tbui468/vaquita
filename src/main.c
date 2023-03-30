@@ -51,6 +51,9 @@ int main(int argc, char** argv) {
             printf("failed to insert record\n");
         vdb_free_record(d);
     }
+
+
+    vdb_debug_print_tree(h, "students");
 /*
     struct VdbRecord* result;
 
@@ -63,7 +66,6 @@ int main(int argc, char** argv) {
     }
 
 */
-    //vdb_debug_print_tree(h, "students");
     /*
     vdb_debug_print_keys(h, "students", 1);
     vdb_debug_print_keys(h, "students", 20);

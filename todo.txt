@@ -4,6 +4,7 @@ TODO:
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
     Adding records
+        Add key to struct VdbRecord
         Need debug functions to print out nodes/leaves <------START HERE
             need to know if records were successfully added
             Then need a way to traverse tree and track nodes traversed (required for splitting)

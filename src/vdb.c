@@ -169,6 +169,13 @@ int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d) {
     return 0;
 }
 
+
+void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
+    struct DB* db = (struct DB*)h;
+    struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
+    debug_print_tree(&t);
+}
+
 /*
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
     struct DB* db = (struct DB*)h;
@@ -177,11 +184,5 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key)
     struct VdbRecord* result = tree_fetch_record(t, key);
     //TODO: unlock file here
     return result;
-}
-
-void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
-    struct DB* db = (struct DB*)h;
-    struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
-    debug_print_tree(t, 1, 0);
 }
 */

@@ -14,13 +14,13 @@ struct VdbNodePtrList* _pl_alloc() {
     return list;
 }
 
-void _pl_append(struct VdbNodePtrList* list, struct VdbNodePtr* ptr) {
+void _pl_append(struct VdbNodePtrList* list, struct VdbNodePtr ptr) {
     if (list->capacity == list->count) {
         list->capacity *= 2;
         list->pointers = realloc_w(list->pointers, sizeof(struct VdbNodePtr) * list->capacity);
     }
 
-    list->pointers[list->count++] = *ptr;
+    list->pointers[list->count++] = ptr;
 }
 
 void _pl_free(struct VdbNodePtrList* list) {
@@ -37,13 +37,13 @@ struct VdbRecordList* _rl_alloc() {
     return list;
 }
 
-void _rl_append(struct VdbRecordList* list, struct VdbRecord* rec) {
+void _rl_append(struct VdbRecordList* list, struct VdbRecord rec) {
     if (list->capacity == list->count) {
         list->capacity *= 2;
         list->records = realloc_w(list->records, sizeof(struct VdbRecord) * list->capacity);
     }
 
-    list->records[list->count++] = *rec;
+    list->records[list->count++] = rec;
 }
 
 void _rl_free(struct VdbRecordList* list) {
@@ -116,8 +116,7 @@ struct VdbNode _tree_deserialize_intern(uint8_t* buf) {
         uint32_t idx;
         _tree_read_u32(&idx, buf, &idx_off);
         int ptr_off = (int)idx;
-        struct VdbNodePtr ptr = _tree_deserialize_nodeptr(buf + ptr_off);
-        _pl_append(node.as.intern.pl, &ptr);
+        _pl_append(node.as.intern.pl, _tree_deserialize_nodeptr(buf + ptr_off));
     }
 
     return node;
@@ -146,6 +145,7 @@ struct VdbRecord _tree_deserialize_record(uint8_t* buf, struct VdbSchema* schema
     r.count = schema->count;
     r.data = malloc_w(sizeof(struct VdbDatum) * schema->count);
     int off = 0;
+    _tree_read_u32(&r.key, buf, &off);
 
     for (uint32_t i = 0; i < r.count; i++) {
         enum VdbField f = schema->fields[i];
@@ -190,15 +190,14 @@ struct VdbNode _tree_deserialize_leaf(uint8_t* buf, struct VdbSchema* schema) {
     for (uint32_t i = 0; i < rec_count; i++) {
         uint32_t rec_off;
         _tree_read_u32(&rec_off, buf, &idx_off);
-        struct VdbRecord r = _tree_deserialize_record(buf + rec_off, schema);
-        _rl_append(node.as.leaf.rl, &r);
+        _rl_append(node.as.leaf.rl, _tree_deserialize_record(buf + rec_off, schema));
     }
 
     return node;
 }
 
 uint32_t _tree_get_rec_size(struct VdbRecord* rec) {
-    uint32_t data_size = 0;
+    uint32_t data_size = sizeof(uint32_t); //key size
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* f = &rec->data[i];
         switch (f->type) {
@@ -219,6 +218,7 @@ uint32_t _tree_get_rec_size(struct VdbRecord* rec) {
 
 void _tree_serialize_record(uint8_t* buf, struct VdbRecord* rec) {
     int off = 0;
+    _tree_write_u32(buf, rec->key, &off);
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
         switch (d->type) {
@@ -316,11 +316,8 @@ void _tree_init_root(struct VdbTree* tree) {
     struct VdbNode root;
     root.type = VDBN_INTERN;
     root.idx = idx;
-    root.as.intern.pl = malloc_w(sizeof(struct VdbNodePtrList));
-    root.as.intern.pl->count = 1;
-    root.as.intern.pl->capacity = 8;
-    root.as.intern.pl->pointers = malloc_w(sizeof(struct VdbNodePtr) * 8);
-    root.as.intern.pl->pointers[0] = _tree_init_leaf(tree);
+    root.as.intern.pl = _pl_alloc();
+    _pl_append(root.as.intern.pl, _tree_init_leaf(tree));
 
     _tree_serialize_intern(page->buf, &root);
 
@@ -388,25 +385,48 @@ void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
 
     uint32_t key = ++meta.as.meta.pk_counter;
     for (uint32_t i = 0; i < root.as.intern.pl->count; i++) {
-        printf("number: %d\n", i);
         struct VdbNodePtr* ptr = &root.as.intern.pl->pointers[i];
         ptr->key = key; //TODO: temp to make sure adding to leaf works - need to traverse tree instead of doing this
-        printf("key: %d, ptr->key: %d\n", key, ptr->key);
         if (key <= ptr->key) {
-            printf("b\n");
-            printf("%d\n", ptr->idx);
             struct VdbNode leaf = _tree_catch_node(tree, ptr->idx);
-            _rl_append(leaf.as.leaf.rl, rec);
+            rec->key = key;
+            _rl_append(leaf.as.leaf.rl, *rec);
             _tree_release_node(tree, leaf);
             break;
         }
-        printf("d\n");
     }
 
     _tree_release_node(tree, meta);
     _tree_release_node(tree, root);
 }
 
+void _debug_print_node(struct VdbTree* tree, uint32_t idx, int depth) {
+    struct VdbNode node = _tree_catch_node(tree, idx);
 
+    switch (node.type) {
+        case VDBN_INTERN:
+            printf("%*s%d\n", depth * 4, "", node.idx);
+            for (uint32_t i = 0; i < node.as.intern.pl->count; i++) {
+                struct VdbNodePtr* p = &node.as.intern.pl->pointers[i];
+                _debug_print_node(tree, p->idx, depth + 1);
+            }
+            break;
+        case VDBN_LEAF:
+            printf("%*s%d: ", depth * 4, "", node.idx);
+            for (uint32_t i = 0; i < node.as.leaf.rl->count; i++) {
+                struct VdbRecord* r = &node.as.leaf.rl->records[i];
+                printf("%d, ", r->key);
+            }
+            printf("\n");
+            break;
+        default:
+            break;
+    }
+   
+    _tree_release_node(tree, node);
+}
 
+void debug_print_tree(struct VdbTree* tree) {
+    _debug_print_node(tree, 1, 0);
+}
 

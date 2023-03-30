@@ -6,6 +6,7 @@
 #include <stdbool.h>
 
 #define VDB_PAGE_SIZE 512
+#define VDB_OFFSETS_START 256
 
 struct VdbPager {
     struct VdbPage* pages; 
@@ -17,6 +18,7 @@ struct VdbPage {
     uint32_t idx;
     FILE* f;
     struct VdbPage* next;
+    bool locked;
 };
 
 struct VdbPager* pager_init();

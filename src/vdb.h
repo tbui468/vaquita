@@ -43,7 +43,7 @@ struct VdbDatum {
     } as;
 };
 
-struct VdbData {
+struct VdbRecord {
     struct VdbDatum* data;
     uint32_t count;
 };
@@ -52,12 +52,12 @@ VDBHANDLE vdb_create(const char* name);
 VDBHANDLE vdb_open(const char* name);
 void vdb_close(VDBHANDLE h);
 
-void vdb_free_data(struct VdbData* data);
+void vdb_free_record(struct VdbRecord* data);
 int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema);
 int vdb_drop_table(VDBHANDLE h, const char* table);
+int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d);
 
 /*
-int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d);
 struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
 void vdb_debug_print_tree(VDBHANDLE h, const char* table);*/
 

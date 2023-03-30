@@ -103,7 +103,7 @@ void vdb_close(VDBHANDLE h) {
     free(db);
 }
 
-void vdb_free_data(struct VdbData* data) {
+void vdb_free_record(struct VdbRecord* data) {
     for (uint32_t i = 0; i < data->count; i++) {
         struct VdbDatum d = data->data[i];
         if (d.type == VDBF_STR) {
@@ -123,9 +123,7 @@ int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema) {
 
     FILE* f = fopen_w(filename, "w+");
 
-    struct VdbTree tree;
-    tree.pager = db->pager;
-    tree.f = f;
+    struct VdbTree tree = {db->pager, f};
 
     tree_init(&tree, schema);
     fclose_w(f);
@@ -162,22 +160,21 @@ int vdb_drop_table(VDBHANDLE h, const char* table) {
     return 0;
 }
 
-/*
-int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbData* d) {
+int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
-    struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
-    tree_insert_record(t, d);
+    struct VdbTree tree =  {db->pager, _vdb_get_table_file(db, table)};
+    tree_insert_record(&tree, d);
     //TODO: unlock file here
     return 0;
 }
 
-
-struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
+/*
+struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
     struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
-    struct VdbData* result = tree_fetch_record(t, key);
+    struct VdbRecord* result = tree_fetch_record(t, key);
     //TODO: unlock file here
     return result;
 }

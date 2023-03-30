@@ -3,20 +3,21 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Adding and dropping tables
-
     Adding records
+        Need debug functions to print out nodes/leaves <------START HERE
+            need to know if records were successfully added
+            Then need a way to traverse tree and track nodes traversed (required for splitting)
 
     Fetching records
 
-    Deletin records
+    Deleting records
         Should keys be reused?  How does sqlite do it? - sqlite allows reuse if user desires
 
     Switch to binary search in _tree_traverse_to_leaf (just using linear scan right now)
 
     Limit how many blocks are in buffer cache at a time - use least-recently used eviction policy
 
-    Refactor code to make it more readable - splitting leaves is a mess now
+    Refactor vdb.c to make it more readable - it's a bit messy now
 
     Allow fetch to get range of records by primary key - first step into creating an execution engine here
 

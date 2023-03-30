@@ -5,8 +5,8 @@
 #include "vdb.h"
 
 
-struct VdbData* make_data(uint64_t b, char* c, bool a) {
-    struct VdbData* d = malloc(sizeof(struct VdbData));
+struct VdbRecord* make_record(uint64_t b, char* c, bool a) {
+    struct VdbRecord* d = malloc(sizeof(struct VdbRecord));
     struct VdbString* str = malloc(sizeof(struct VdbString));
     str->start = c;
     str->len = strlen(c);
@@ -23,9 +23,9 @@ struct VdbData* make_data(uint64_t b, char* c, bool a) {
     return d;
 }
 
-void print_data_and_free(struct VdbData* result) {
+void print_data_and_free(struct VdbRecord* result) {
     printf("%ld, %.*s, %d\n", result->data[0].as.Int, result->data[1].as.Str->len, result->data[1].as.Str->start, result->data[2].as.Bool);
-    vdb_free_data(result);
+    vdb_free_record(result);
 }
 
 int main(int argc, char** argv) {
@@ -45,15 +45,14 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    /*
-    for (int i = 1; i <= 120; i++) { //TODO: 85 splits, 80 doesn't
-        struct VdbData* d = make_data(i, "dogs", i % 2 == 0);
+    for (int i = 1; i <= 10; i++) {
+        struct VdbRecord* d = make_record(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
-        vdb_free_data(d);
+        vdb_free_record(d);
     }
-
-    struct VdbData* result;
+/*
+    struct VdbRecord* result;
 
     uint32_t l[] = {1, 24, 40, 41, 51, 100};
     for (int i = 0; i < 6; i++) {
@@ -62,6 +61,7 @@ int main(int argc, char** argv) {
         else
             printf("No record found\n");
     }
+
 */
     //vdb_debug_print_tree(h, "students");
     /*

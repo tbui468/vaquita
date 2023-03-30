@@ -25,13 +25,16 @@ struct VdbPage* _pager_load_page(FILE* f, uint32_t idx) {
 struct VdbPage* pager_get_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
     struct VdbPage* cur = pager->pages;
     while (cur) {
-        if (cur->idx == idx && f == cur->f)
+        if (cur->idx == idx && f == cur->f) {
+            cur->locked = true;
             return cur;
-        else
+        } else {
             cur = cur->next;
+        }
     }
 
     struct VdbPage* page = _pager_load_page(f, idx);
+    page->locked = true;
     page->next = pager->pages;
     pager->pages = page;
     pager->page_count++;
@@ -51,4 +54,5 @@ uint32_t pager_allocate_page(FILE* f) {
 void pager_flush_page(struct VdbPage* page) {
     fseek_w(page->f, page->idx * VDB_PAGE_SIZE, SEEK_SET);
     fwrite_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, page->f);
+    page->locked = false;
 }

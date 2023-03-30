@@ -5,19 +5,26 @@
 #include "vdb.h"
 #include "pager.h"
 
-#define OFFSETS_START 256
-
 struct VdbTree {
     struct VdbPager* pager;
     FILE* f;
 };
 
-struct VdbNodeList {
+struct VdbNodePtr {
+    uint32_t key;
+    uint32_t idx;
+};
+
+struct VdbNodePtrList {
     uint32_t count;
+    uint32_t capacity;
+    struct VdbNodePtr* pointers;
 };
 
 struct VdbRecordList {
     uint32_t count;
+    uint32_t capacity;
+    struct VdbRecord* records;
 };
 
 enum VdbNodeType {
@@ -35,7 +42,7 @@ struct VdbNode {
             struct VdbSchema* schema;
         } meta;
         struct {
-            struct VdbNodeList* nl;
+            struct VdbNodePtrList* pl;
         } intern;
         struct {
             struct VdbRecordList* rl;
@@ -45,7 +52,7 @@ struct VdbNode {
 
 
 void tree_init(struct VdbTree* tree, struct VdbSchema* schema);
-//void tree_insert_record(struct VdbTree t, struct VdbData* d);
+void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
 //struct VdbData* tree_fetch_record(struct VdbTree t, uint32_t key);
 //void debug_print_tree(struct VdbTree t, uint32_t idx, uint32_t depth);
 

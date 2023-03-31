@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
     if (vdb_create_table(h, "students", &s) != 0)
         printf("failed to create table\n");
 
+    
     if (vdb_create_table(h, "teachers", &s) != 0)
         printf("failed to create table\n");
 

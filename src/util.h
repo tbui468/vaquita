@@ -4,11 +4,11 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <dirent.h>
+#include <stdint.h>
 
 #define flow(msg) printf("%s - %d\n", __func__, msg)
 
-void err_quit(const char* msg);
-
+//wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);
 int get_pathname(FILE* f, char* buf, ssize_t max_len);
 int fileno_w(FILE* f);
@@ -26,11 +26,16 @@ void* malloc_w(size_t size);
 void* realloc_w(void* ptr, size_t size);
 int remove_w(const char* pathname);
 int mkdir_w(const char* pathname, int mode);
-
 DIR* opendir_w(const char* name);
 int closedir_w(DIR* d);
 struct dirent* readdir_w(DIR* d);
 
+//error handling
+void err_quit(const char* msg);
+
+//utility
 int join_path(char* result, ...);
+void read_u32(uint32_t* dst, uint8_t* buf, int* off);
+void write_u32(uint8_t* dst, uint32_t v, int* off);
 
 #endif //VDB_UTIL_H

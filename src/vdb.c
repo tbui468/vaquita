@@ -115,6 +115,89 @@ void vdb_free_record(struct VdbRecord* data) {
     free(data);
 }
 
+void vdb_serialize_record(uint8_t* buf, struct VdbRecord* rec) {
+    int off = 0;
+    write_u32(buf, rec->key, &off);
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbDatum* d = &rec->data[i];
+        switch (d->type) {
+            case VDBF_INT: {
+                memcpy(buf + off, &d->as.Int, sizeof(uint64_t));
+                off += sizeof(uint64_t);
+                break;
+            }
+            case VDBF_STR: {
+                memcpy(buf + off, &d->as.Str->len, sizeof(uint32_t));
+                off += sizeof(uint32_t);
+                memcpy(buf + off, d->as.Str->start, d->as.Str->len);
+                off += d->as.Str->len; 
+                break;
+            }
+            case VDBF_BOOL: {
+                bool b = d->as.Bool;
+                memcpy(buf + off, &b, sizeof(bool));
+                off += sizeof(bool);
+                break;
+            }
+        }
+    }
+}
+
+struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema) {
+    struct VdbRecord r;
+    r.count = schema->count;
+    r.data = malloc_w(sizeof(struct VdbDatum) * schema->count);
+    int off = 0;
+    read_u32(&r.key, buf, &off);
+
+    for (uint32_t i = 0; i < r.count; i++) {
+        enum VdbField f = schema->fields[i];
+        switch (f) {
+            case VDBF_INT:
+                r.data[i].type = VDBF_INT;
+                r.data[i].as.Int = *((uint64_t*)(buf + off));
+                off += sizeof(uint64_t);
+                break;
+            case VDBF_STR:
+                r.data[i].type = VDBF_STR;
+                r.data[i].as.Str = malloc_w(sizeof(struct VdbString));
+                read_u32(&r.data[i].as.Str->len, buf, &off);
+                r.data[i].as.Str->start = malloc_w(sizeof(char) * r.data[i].as.Str->len);
+                memcpy(r.data[i].as.Str->start, buf + off, r.data[i].as.Str->len);
+                off += r.data[i].as.Str->len;
+                break;
+            case VDBF_BOOL:
+                r.data[i].type = VDBF_BOOL;
+                r.data[i].as.Bool = *((bool*)(buf + off));
+                off += sizeof(bool);
+                break;
+        }
+    }
+
+    return r;
+}
+
+uint32_t vdb_get_rec_size(struct VdbRecord* rec) {
+    uint32_t data_size = sizeof(uint32_t); //key size
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbDatum* f = &rec->data[i];
+        switch (f->type) {
+            case VDBF_INT:
+                data_size += sizeof(uint64_t);
+                break;
+            case VDBF_STR:
+                data_size += sizeof(uint32_t) + f->as.Str->len;
+                break;
+            case VDBF_BOOL:
+                data_size += sizeof(bool);
+                break;
+        }
+    }
+
+    return data_size;
+}
+
+
 int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema) {
     struct DB* db = (struct DB*)h;
 

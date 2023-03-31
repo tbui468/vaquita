@@ -4,6 +4,7 @@ set(Sources
     util.c
     tree.c
     pager.c
+    node.c
     )
 
 set(Headers
@@ -11,6 +12,7 @@ set(Headers
     util.h
     tree.h
     pager.h
+    node.h
     )
 
 add_executable(

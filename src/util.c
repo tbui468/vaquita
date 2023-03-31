@@ -204,3 +204,13 @@ int join_path(char* result, ...) {
 
     return len;
 }
+
+void read_u32(uint32_t* dst, uint8_t* buf, int* off) {
+    *dst = *((uint32_t*)(buf + *off));
+    *off += sizeof(uint32_t);
+}
+
+void write_u32(uint8_t* dst, uint32_t v, int* off) {
+    *((uint32_t*)(dst + *off)) = v;
+    *off += sizeof(uint32_t);
+}

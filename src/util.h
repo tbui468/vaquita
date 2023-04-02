@@ -8,6 +8,16 @@
 
 #define flow(msg) printf("%s - %d\n", __func__, msg)
 
+
+struct U32List {
+    uint32_t* values;
+    uint32_t count;
+    uint32_t capacity;
+};
+struct U32List* u32l_alloc();
+void u32l_append(struct U32List* list, uint32_t v);
+void u32l_free(struct U32List* list);
+
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);
 int get_pathname(FILE* f, char* buf, ssize_t max_len);

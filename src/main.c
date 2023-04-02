@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    for (int i = 1; i <= 10; i++) {
+    for (int i = 1; i <= 50; i++) {
         struct VdbRecord* d = make_record(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 #include "node.h"
 #include "util.h"
@@ -218,5 +219,38 @@ void node_free(struct VdbNode* node) {
         case VDBN_LEAF:
             _rl_free(node->as.leaf.rl);
             break;
+    }
+}
+
+bool _node_intern_is_full(struct VdbNode* node, uint32_t insert_size) {
+    int empty = VDB_PAGE_SIZE - VDB_OFFSETS_START - insert_size;
+
+    for (uint32_t i = 0; i < node->as.intern.pl->count; i++) {
+        empty -= sizeof(uint32_t) * 3; //idx size + nodeptr size  
+    }
+
+    return empty < 0;
+}
+
+bool _node_leaf_is_full(struct VdbNode* node, uint32_t insert_size) {
+    int empty = VDB_PAGE_SIZE - VDB_OFFSETS_START - insert_size;
+
+    for (uint32_t i = 0; i < node->as.leaf.rl->count; i++) {
+        empty -= sizeof(uint32_t);
+        struct VdbRecord* rec = &node->as.leaf.rl->records[i];
+        empty -= vdb_get_rec_size(rec);
+    }
+
+    return empty < 0;
+}
+
+bool node_is_full(struct VdbNode* node, uint32_t insert_size) {
+    switch (node->type) {
+        case VDBN_INTERN:
+            return _node_intern_is_full(node, insert_size);
+        case VDBN_LEAF:
+            return _node_leaf_is_full(node, insert_size);
+        default:
+            return false; 
     }
 }

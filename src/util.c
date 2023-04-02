@@ -7,6 +7,29 @@
 
 #include "util.h"
 
+struct U32List* u32l_alloc() {
+    struct U32List* list = malloc_w(sizeof(struct U32List));
+    list->count = 0;
+    list->capacity = 8;
+    list->values = malloc_w(sizeof(uint32_t) * list->capacity);
+
+    return list;
+}
+
+void u32l_append(struct U32List* list, uint32_t v) {
+    if (list->capacity == list->count) {
+        list->capacity *= 2;
+        list->values = realloc_w(list->values, sizeof(uint32_t) * list->capacity);
+    }
+
+    list->values[list->count++] = v;
+}
+
+void u32l_free(struct U32List* list) {
+    free(list->values);
+    free(list);
+}
+
 int get_filename(FILE* f, char* buf, ssize_t max_len) {
     get_pathname(f, buf, max_len);
     char* end = strrchr(buf, '/');

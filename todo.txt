@@ -3,9 +3,13 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
+    Adding records after 11th is bugged.  A single leaf should be able to hold multiple (11) records,
+        but each record now takes up own leaf for some reason
+        _tree_traverse_to is always return index 2 for some reason (should be index 3 after 12th record is added) <----START HERE
+        Could simplify by dealing with VdbNodes in tree functions instead of using indices...
+
     Adding records
         Adding records now is not check if leaf is full
-            Add a function to deterimine if intern or leaf is full
             if full, need to add new leaf to the right
                 if a leaf can't be added, add a new internal node to the right
                     if internal is already root, create new root and make the old root the left child.  Then add new right child

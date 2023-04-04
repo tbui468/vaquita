@@ -3,10 +3,8 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Changing page size or offsets start in pager.h causes seg faulting - why???
-        Fix this before implementing two other internal splitting cases
-
-    Implement internal splitting if node is not root and parent has extra space
+    Have the debug code print out the leaves of an internal node in a single line so
+        that we can see more of the tree 
 
     Implement internal splitting if node is not root and parent is full
 

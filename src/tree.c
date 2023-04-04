@@ -153,15 +153,14 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
         node_append_nodeptr(&intern, left_ptr);
         node_append_nodeptr(&intern, right_ptr);
 
+        _tree_release_node(tree, intern);
         _tree_release_node(tree, meta);
         _tree_release_node(tree, left);
         _tree_release_node(tree, right);
-        _tree_release_node(tree, intern);
 
         return right_idx;
     }
 
-    /*
     uint32_t parent_idx = 0;
     for (uint32_t i = 1; i < idx_list->count; i++) {
         if (idx_list->values[i] == idx) {
@@ -172,17 +171,26 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
 
     struct VdbNode parent = _tree_catch_node(tree, parent_idx);
     if (node_is_full(&parent, node_nodeptr_size())) {
+        /*
         _tree_release_node(tree, intern);
         _tree_release_node(tree, parent);
-        _tree_split_internal(tree, idx_list, parent_idx);
-        //which idx is the one we are looking at???
-    }*/
+        _tree_split_internal(tree, idx_list, parent_idx);*/
+        return 0;
+    } else {
+        uint32_t new_intern_idx = _tree_init_intern(tree);
+        struct VdbNode new_intern = _tree_catch_node(tree, new_intern_idx);
 
-    //do all the stuff necessary to idx_list
-    //free idx_list
-    //retraverse tree if necessary and assign idx_list to new
-    //assign idx_list pointer to new list created after splitting internal
-    return 0; //TODO: just to silence warning for now
+        struct VdbNodePtr* ptr = &parent.as.intern.pl->pointers[parent.as.intern.pl->count - 1];
+        struct VdbNodePtr new_ptr = {ptr->key--, new_intern_idx};
+        node_append_nodeptr(&parent, new_ptr);
+
+        _tree_release_node(tree, new_intern);
+        _tree_release_node(tree, parent);
+        _tree_release_node(tree, intern);
+        _tree_release_node(tree, meta);
+        return new_intern_idx;
+    }
+
 }
 
 uint32_t _tree_split_leaf(struct VdbTree* tree, struct U32List* idx_list) {

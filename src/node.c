@@ -226,7 +226,7 @@ bool _node_intern_is_full(struct VdbNode* node, uint32_t insert_size) {
     int empty = VDB_PAGE_SIZE - VDB_OFFSETS_START - insert_size;
 
     for (uint32_t i = 0; i < node->as.intern.pl->count; i++) {
-        empty -= sizeof(uint32_t) * 3; //idx size + nodeptr size  
+        empty -= node_nodeptr_size();
     }
 
     return empty < 0;
@@ -253,4 +253,12 @@ bool node_is_full(struct VdbNode* node, uint32_t insert_size) {
         default:
             return false; 
     }
+}
+
+uint32_t node_nodeptr_size() {
+    return sizeof(uint32_t) * 3;
+}
+
+bool node_is_root(struct VdbNode* node) {
+    return node->idx == 1;
 }

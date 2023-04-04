@@ -53,5 +53,7 @@ void node_append_nodeptr(struct VdbNode* node, struct VdbNodePtr ptr);
 void node_append_record(struct VdbNode* node, struct VdbRecord rec);
 void node_free(struct VdbNode* node);
 bool node_is_full(struct VdbNode* node, uint32_t insert_size);
+uint32_t node_nodeptr_size();
+bool node_is_root(struct VdbNode* node);
 
 #endif //VDB_NODE_H

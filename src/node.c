@@ -195,6 +195,10 @@ void node_append_nodeptr(struct VdbNode* node, struct VdbNodePtr ptr) {
     _pl_append(node->as.intern.pl, ptr);
 }
 
+void node_clear_nodeptrs(struct VdbNode* node) {
+    node->as.intern.pl->count = 0;
+}
+
 struct VdbNode node_init_leaf(uint32_t idx) {
     struct VdbNode leaf;
     leaf.type = VDBN_LEAF;

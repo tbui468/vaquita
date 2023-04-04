@@ -134,17 +134,30 @@ struct U32List* _tree_traverse_to(struct VdbTree* tree, uint32_t key) {
 //      this could solve some problems with not knowing
 uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, uint32_t idx) {
     struct VdbNode intern = _tree_catch_node(tree, idx);
+    struct VdbNode meta = _tree_catch_node(tree, 0);
     if (node_is_root(&intern)) {
-        /*
-        printf("yep\n");
-        uint32_t left_idx = _tree_init_intern(tree);*/
+        uint32_t left_idx = _tree_init_intern(tree);
         uint32_t right_idx = _tree_init_intern(tree);
-        //make left and right nodes
-        //copy data of current root to left node
-        //clear root, and only add left and right nodes (with right node being right pointer)
-        //right node also needs access to pk_counter since we need to set the right pointer for that
-        //release nodes
-        //retraverse tree to update idx_list
+
+        struct VdbNode left = _tree_catch_node(tree, left_idx);
+        struct VdbNode right = _tree_catch_node(tree, right_idx);
+
+        for (uint32_t i = 0; i < intern.as.intern.pl->count; i++) {
+            struct VdbNodePtr* ptr = &intern.as.intern.pl->pointers[i];
+            node_append_nodeptr(&left, *ptr);
+        }
+
+        node_clear_nodeptrs(&intern);
+        struct VdbNodePtr left_ptr = {meta.as.meta.pk_counter - 1, left_idx};
+        struct VdbNodePtr right_ptr = {meta.as.meta.pk_counter, right_idx};
+        node_append_nodeptr(&intern, left_ptr);
+        node_append_nodeptr(&intern, right_ptr);
+
+        _tree_release_node(tree, meta);
+        _tree_release_node(tree, left);
+        _tree_release_node(tree, right);
+        _tree_release_node(tree, intern);
+
         return right_idx;
     }
 
@@ -172,7 +185,7 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
     return 0; //TODO: just to silence warning for now
 }
 
-void _tree_split_leaf(struct VdbTree* tree, struct U32List* idx_list) {
+uint32_t _tree_split_leaf(struct VdbTree* tree, struct U32List* idx_list) {
     struct VdbNode parent = _tree_catch_node(tree, idx_list->values[idx_list->count - 2]);
     
     struct VdbNodePtr* prev_right = &parent.as.intern.pl->pointers[parent.as.intern.pl->count - 1];
@@ -183,14 +196,15 @@ void _tree_split_leaf(struct VdbTree* tree, struct U32List* idx_list) {
 
     if (node_is_full(&parent, node_nodeptr_size())) {
         _tree_release_node(tree, parent);
-        _tree_split_internal(tree, idx_list, parent.idx);
-        parent = _tree_catch_node(tree, idx_list->values[idx_list->count - 2]);
+        uint32_t new_parent_idx = _tree_split_internal(tree, idx_list, parent.idx);
+        parent = _tree_catch_node(tree, new_parent_idx);
     }
 
     node_append_nodeptr(&parent, new_right);
-    idx_list->values[idx_list->count - 1] = new_right.idx;
 
     _tree_release_node(tree, parent);
+
+    return new_right_idx;
 }
 
 void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
@@ -204,8 +218,8 @@ void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t insert_size = vdb_get_rec_size(rec) + sizeof(uint32_t); //record size + index size
     if (node_is_full(&leaf, insert_size)) {
         _tree_release_node(tree, leaf);
-        _tree_split_leaf(tree, idx_list);
-        leaf = _tree_catch_node(tree, idx_list->values[idx_list->count - 1]);
+        uint32_t new_leaf_idx = _tree_split_leaf(tree, idx_list);
+        leaf = _tree_catch_node(tree, new_leaf_idx);
     }
 
     rec->key = key;

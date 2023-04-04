@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+//#define VDB_PAGE_SIZE 512
+//#define VDB_OFFSETS_START 256
 #define VDB_PAGE_SIZE 512
 #define VDB_OFFSETS_START 256
 

@@ -50,6 +50,7 @@ struct VdbNode node_init_intern(uint32_t idx);
 struct VdbNode node_init_leaf(uint32_t idx);
 void node_serialize(uint8_t* buf, struct VdbNode* node);
 void node_append_nodeptr(struct VdbNode* node, struct VdbNodePtr ptr);
+void node_clear_nodeptrs(struct VdbNode* node);
 void node_append_record(struct VdbNode* node, struct VdbRecord rec);
 void node_free(struct VdbNode* node);
 bool node_is_full(struct VdbNode* node, uint32_t insert_size);

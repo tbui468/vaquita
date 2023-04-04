@@ -130,8 +130,6 @@ struct U32List* _tree_traverse_to(struct VdbTree* tree, uint32_t key) {
     return idx_list;
 }
 
-//TODO: could have split_internal also return the idx of the p
-//      this could solve some problems with not knowing
 uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, uint32_t idx) {
     struct VdbNode intern = _tree_catch_node(tree, idx);
     struct VdbNode meta = _tree_catch_node(tree, 0);
@@ -161,6 +159,10 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
         return right_idx;
     }
 
+
+    _tree_release_node(tree, meta);
+    _tree_release_node(tree, intern);
+
     uint32_t parent_idx = 0;
     for (uint32_t i = 1; i < idx_list->count; i++) {
         if (idx_list->values[i] == idx) {
@@ -171,11 +173,24 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
 
     struct VdbNode parent = _tree_catch_node(tree, parent_idx);
     if (node_is_full(&parent, node_nodeptr_size())) {
-        /*
-        _tree_release_node(tree, intern);
+
         _tree_release_node(tree, parent);
-        _tree_split_internal(tree, idx_list, parent_idx);*/
-        return 0;
+        uint32_t cached_parent_idx = parent_idx;
+        parent_idx = _tree_split_internal(tree, idx_list, parent_idx);
+        parent = _tree_catch_node(tree, parent_idx);
+        struct VdbNode cached_parent = _tree_catch_node(tree, cached_parent_idx);
+
+        uint32_t new_intern_idx = _tree_init_intern(tree);
+        struct VdbNode new_intern = _tree_catch_node(tree, new_intern_idx);
+
+        struct VdbNodePtr* ptr = &cached_parent.as.intern.pl->pointers[cached_parent.as.intern.pl->count - 1];
+        struct VdbNodePtr new_ptr = {ptr->key + 1, new_intern_idx};
+        node_append_nodeptr(&parent, new_ptr);
+
+        _tree_release_node(tree, cached_parent);
+        _tree_release_node(tree, new_intern);
+        _tree_release_node(tree, parent);
+        return new_intern_idx;
     } else {
         uint32_t new_intern_idx = _tree_init_intern(tree);
         struct VdbNode new_intern = _tree_catch_node(tree, new_intern_idx);
@@ -186,8 +201,6 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
 
         _tree_release_node(tree, new_intern);
         _tree_release_node(tree, parent);
-        _tree_release_node(tree, intern);
-        _tree_release_node(tree, meta);
         return new_intern_idx;
     }
 
@@ -250,12 +263,13 @@ void _debug_print_node(struct VdbTree* tree, uint32_t idx, int depth) {
             }
             break;
         case VDBN_LEAF:
+            /*
             printf("%*s%d: ", depth * 4, "", node.idx);
             for (uint32_t i = 0; i < node.as.leaf.rl->count; i++) {
                 struct VdbRecord* r = &node.as.leaf.rl->records[i];
                 printf("%d, ", r->key);
             }
-            printf("\n");
+            printf("\n");*/
             break;
         default:
             break;

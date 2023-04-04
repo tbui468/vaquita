@@ -3,12 +3,6 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Have the debug code print out the leaves of an internal node in a single line so
-        that we can see more of the tree 
-
-    Implement internal splitting if node is not root and parent is full
-
-
     Note: Need to release all nodes before we start modifying a tree (this was problem with why split_leaf was not working)
         if not, then releasing old nodes later may overwrite changes
 

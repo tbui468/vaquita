@@ -57,12 +57,12 @@ void vdb_free_record(struct VdbRecord* data);
 void vdb_serialize_record(uint8_t* buf, struct VdbRecord* rec);
 struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema);
 uint32_t vdb_get_rec_size(struct VdbRecord* rec);
+struct VdbRecord* vdb_copy_record(struct VdbRecord* rec);
 
 int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema);
 int vdb_drop_table(VDBHANDLE h, const char* table);
 int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d);
 void vdb_debug_print_tree(VDBHANDLE h, const char* table);
-
-//struct VdbData* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
+struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);
 
 #endif //VDB_H

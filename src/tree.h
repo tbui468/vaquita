@@ -14,6 +14,6 @@ struct VdbTree {
 void tree_init(struct VdbTree* tree, struct VdbSchema* schema);
 void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
 void debug_print_tree(struct VdbTree* tree);
-//struct VdbData* tree_fetch_record(struct VdbTree t, uint32_t key);
+struct VdbRecord* tree_fetch_record(struct VdbTree* t, uint32_t key);
 
 #endif //VDB_TREE_H

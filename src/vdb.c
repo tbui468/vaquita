@@ -197,6 +197,36 @@ uint32_t vdb_get_rec_size(struct VdbRecord* rec) {
     return data_size;
 }
 
+struct VdbRecord* vdb_copy_record(struct VdbRecord* rec) {
+    struct VdbRecord* r = malloc_w(sizeof(struct VdbRecord));
+    r->count = rec->count;
+    r->key = rec->key;
+    r->data = malloc_w(sizeof(struct VdbDatum) * r->count);
+
+    for (uint32_t i = 0; i < r->count; i++) {
+        struct VdbDatum* d = &rec->data[i];
+        switch (d->type) {
+            case VDBF_INT:
+                r->data[i].type = VDBF_INT;
+                r->data[i].as.Int = d->as.Int;
+                break;
+            case VDBF_STR:
+                r->data[i].type = VDBF_STR;
+                r->data[i].as.Str = malloc_w(sizeof(struct VdbString));
+                r->data[i].as.Str->len = d->as.Str->len;
+                r->data[i].as.Str->start = malloc_w(sizeof(char) * r->data[i].as.Str->len);
+                memcpy(r->data[i].as.Str->start, d->as.Str->start, r->data[i].as.Str->len);
+                break;
+            case VDBF_BOOL:
+                r->data[i].type = VDBF_BOOL;
+                r->data[i].as.Bool = d->as.Bool;
+                break;
+        }
+    }
+
+    return r;
+}
+
 
 int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema) {
     struct DB* db = (struct DB*)h;
@@ -259,13 +289,11 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* table) {
     debug_print_tree(&t);
 }
 
-/*
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key) {
     struct DB* db = (struct DB*)h;
     //TODO: lock file here
     struct VdbTree t =  {db->pager, _vdb_get_table_file(db, table)};
-    struct VdbRecord* result = tree_fetch_record(t, key);
+    struct VdbRecord* result = tree_fetch_record(&t, key);
     //TODO: unlock file here
     return result;
 }
-*/

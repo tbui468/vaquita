@@ -55,10 +55,10 @@ int main(int argc, char** argv) {
 
 
     vdb_debug_print_tree(h, "students");
-/*
+
     struct VdbRecord* result;
 
-    uint32_t l[] = {1, 24, 40, 41, 51, 100};
+    uint32_t l[] = {1, 24, 40, 41, 600, 700};
     for (int i = 0; i < 6; i++) {
         if ((result = vdb_fetch_record(h, "students", l[i])))
             print_data_and_free(result);
@@ -66,7 +66,6 @@ int main(int argc, char** argv) {
             printf("No record found\n");
     }
 
-*/
     /*
     vdb_debug_print_keys(h, "students", 1);
     vdb_debug_print_keys(h, "students", 20);

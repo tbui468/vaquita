@@ -251,6 +251,58 @@ void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     _tree_release_node(tree, leaf);
 }
 
+//TODO: could probably merge part of this function with _tree_traverse_to since 
+//this function is just the top half of that function (we just don't update keys here
+void _tree_do_fetch_record(struct VdbTree* tree, struct VdbNode* node, uint32_t key, struct U32List* idx_list) {
+    u32l_append(idx_list, node->idx);
+
+    for (uint32_t i = 0; i < node->as.intern.pl->count; i++) {
+        struct VdbNodePtr* ptr = &node->as.intern.pl->pointers[i];
+        if (key <= ptr->key) {
+            struct VdbNode child = _tree_catch_node(tree, ptr->idx);
+            if (child.type == VDBN_LEAF) {
+                u32l_append(idx_list, ptr->idx);
+            } else {
+                _tree_do_traversal(tree, &child, key, idx_list);
+            }
+            _tree_release_node(tree, child);
+            return;
+        }
+    }
+}
+
+struct VdbRecord* tree_fetch_record(struct VdbTree* tree, uint32_t key) {
+    struct U32List* idx_list = u32l_alloc();
+    struct VdbNode root = _tree_catch_node(tree, 1);
+    _tree_do_fetch_record(tree, &root, key, idx_list);
+    _tree_release_node(tree, root);
+
+
+    if (idx_list->count == 0) {
+        u32l_free(idx_list);
+        return NULL;
+    }
+
+    struct VdbNode node = _tree_catch_node(tree, idx_list->values[idx_list->count - 1]);
+    if (node.type == VDBN_INTERN) {
+        u32l_free(idx_list);
+        _tree_release_node(tree, node);
+        return NULL;
+    } else {
+        struct VdbRecord* result = NULL;
+        for (uint32_t i = 0; i < node.as.leaf.rl->count; i++) {
+            struct VdbRecord* r = &node.as.leaf.rl->records[i];
+            if (r->key == key) {
+                result = vdb_copy_record(r);
+                break;
+            }
+        }
+        u32l_free(idx_list);
+        _tree_release_node(tree, node);
+        return result;
+    }
+}
+
 void _debug_print_node(struct VdbTree* tree, uint32_t idx, int depth) {
     struct VdbNode node = _tree_catch_node(tree, idx);
 
@@ -263,13 +315,13 @@ void _debug_print_node(struct VdbTree* tree, uint32_t idx, int depth) {
             }
             break;
         case VDBN_LEAF:
-            /*
+            
             printf("%*s%d: ", depth * 4, "", node.idx);
             for (uint32_t i = 0; i < node.as.leaf.rl->count; i++) {
                 struct VdbRecord* r = &node.as.leaf.rl->records[i];
                 printf("%d, ", r->key);
             }
-            printf("\n");*/
+            printf("\n");
             break;
         default:
             break;

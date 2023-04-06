@@ -29,6 +29,34 @@ void _pl_free(struct VdbNodePtrList* list) {
     free(list);
 }
 
+struct VdbStringList* _sl_alloc() {
+    struct VdbStringList* list = malloc_w(sizeof(struct VdbStringList));
+    list->count = 0;
+    list->capacity = 8;
+    list->strings = malloc_w(sizeof(struct VdbString*) * list->capacity);
+
+    return list;
+}
+
+void _sl_append(struct VdbStringList* list, struct VdbString* s) {
+    if (list->capacity == list->count) {
+        list->capacity *= 2;
+        list->strings = realloc_w(list->strings, sizeof(struct VdbString*) * list->capacity);
+    }
+
+    list->strings[list->count++] = s;
+}
+
+void _sl_free(struct VdbStringList* list) {
+    for (uint32_t i = 0; i < list->count; i++) {
+        struct VdbString* s = list->strings[i];
+        free(s->start);
+        free(s);
+    }
+    free(list->strings);
+    free(list);
+}
+
 struct VdbRecordList* _rl_alloc() {
     struct VdbRecordList* list = malloc_w(sizeof(struct VdbRecordList));
     list->count = 0;
@@ -68,6 +96,7 @@ struct VdbNode node_deserialize_meta(uint8_t* buf) {
     read_u32(&node.type, buf, &off);
     read_u32(&node.idx, buf, &off);
     read_u32(&node.as.meta.pk_counter, buf, &off);
+    read_u32(&node.as.meta.data_idx, buf, &off);
 
     node.as.meta.schema = malloc_w(sizeof(struct VdbSchema));
     read_u32(&node.as.meta.schema->count, buf, &off);
@@ -86,6 +115,7 @@ void _node_serialize_meta(uint8_t* buf, struct VdbNode* node) {
     write_u32(buf, (uint32_t)node->type, &off);
     write_u32(buf, (uint32_t)node->idx, &off);
     write_u32(buf, (uint32_t)node->as.meta.pk_counter, &off);
+    write_u32(buf, (uint32_t)node->as.meta.data_idx, &off);
     write_u32(buf, (uint32_t)node->as.meta.schema->count, &off);
     for (uint32_t i = 0; i < node->as.meta.schema->count; i++) {
         uint32_t field = node->as.meta.schema->fields[i];
@@ -168,6 +198,48 @@ void _node_serialize_leaf(uint8_t* buf, struct VdbNode* node) {
     }
 }
 
+struct VdbNode node_deserialize_data(uint8_t* buf) {
+    struct VdbNode node;
+    int off = 0;
+    read_u32(&node.type, buf, &off);
+    read_u32(&node.idx, buf, &off);
+    read_u32(&node.as.data.next, buf, &off);
+
+    uint32_t string_count;
+    read_u32(&string_count, buf, &off);
+
+    node.as.data.sl = _sl_alloc();
+    int idx_off = VDB_OFFSETS_START;
+   
+    for (uint32_t i = 0; i < string_count; i++) {
+        uint32_t string_off;
+        read_u32(&string_off, buf, &idx_off);
+        _sl_append(node.as.data.sl, vdb_deserialize_string(buf + string_off));
+    }
+
+    return node;
+}
+
+void _node_serialize_data(uint8_t* buf, struct VdbNode* node) {
+    int off = 0;
+    write_u32(buf, (uint32_t)node->type, &off);
+    write_u32(buf, (uint32_t)node->idx, &off);
+    write_u32(buf, (uint32_t)node->as.data.next, &off);
+    write_u32(buf, (uint32_t)node->as.data.sl->count, &off);
+
+    off = VDB_OFFSETS_START;
+    uint32_t string_off = VDB_PAGE_SIZE;
+
+    for (uint32_t i = 0; i < node->as.data.sl->count; i++) {
+        struct VdbString* s = node->as.data.sl->strings[i];
+        string_off -= sizeof(uint32_t)* 2 + s->len; //next + size + data
+        write_u32(buf, string_off, &off);
+        int off = string_off;
+        write_u32(buf, 0, &off);
+        write_u32(buf, s->len, &off);
+        memcpy(buf + off, s->start, s->len);
+    }
+}
 
 void node_serialize(uint8_t* buf, struct VdbNode* node) {
     switch (node->type) {
@@ -179,6 +251,9 @@ void node_serialize(uint8_t* buf, struct VdbNode* node) {
             break;
         case VDBN_LEAF:
             _node_serialize_leaf(buf, node);
+            break;
+        case VDBN_DATA:
+            _node_serialize_data(buf, node);
             break;
     }
 }
@@ -211,6 +286,19 @@ void node_append_record(struct VdbNode* node, struct VdbRecord rec) {
     _rl_append(node->as.leaf.rl, rec);
 }
 
+struct VdbNode node_init_data(uint32_t idx) {
+    struct VdbNode data;
+    data.type = VDBN_DATA;
+    data.idx = idx;
+    data.as.data.next = 0;
+    data.as.data.sl = _sl_alloc();
+    return data;
+}
+
+void node_append_string(struct VdbNode* data, struct VdbString* s) {
+    _sl_append(data->as.data.sl, s);
+}
+
 void node_free(struct VdbNode* node) {
     switch (node->type) {
         case VDBN_META:
@@ -223,6 +311,8 @@ void node_free(struct VdbNode* node) {
         case VDBN_LEAF:
             _rl_free(node->as.leaf.rl);
             break;
+        case VDBN_DATA:
+            _sl_free(node->as.data.sl);
     }
 }
 

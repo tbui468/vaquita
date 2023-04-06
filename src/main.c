@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     }
 
 
-    vdb_debug_print_tree(h, "students");
+//    vdb_debug_print_tree(h, "students");
 
     struct VdbRecord* result;
 

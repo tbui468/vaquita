@@ -227,6 +227,15 @@ struct VdbRecord* vdb_copy_record(struct VdbRecord* rec) {
     return r;
 }
 
+struct VdbString* vdb_deserialize_string(uint8_t* buf) {
+    struct VdbString* s = malloc_w(sizeof(struct VdbString));
+
+    //first 4 bytes is next pointer
+    memcpy(&s->len, buf + sizeof(uint32_t), sizeof(uint32_t));
+    memcpy(&s->start, buf + sizeof(uint32_t) * 2, s->len);
+
+    return s; 
+}
 
 int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema) {
     struct DB* db = (struct DB*)h;

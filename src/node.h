@@ -20,10 +20,17 @@ struct VdbRecordList {
     struct VdbRecord* records;
 };
 
+struct VdbStringList {
+    uint32_t count;
+    uint32_t capacity;
+    struct VdbString** strings;
+};
+
 enum VdbNodeType {
     VDBN_META,
     VDBN_INTERN,
-    VDBN_LEAF
+    VDBN_LEAF,
+    VDBN_DATA
 };
 
 struct VdbNode {
@@ -32,6 +39,7 @@ struct VdbNode {
     union {
         struct {
             uint32_t pk_counter;
+            uint32_t data_idx;
             struct VdbSchema* schema;
         } meta;
         struct {
@@ -40,14 +48,20 @@ struct VdbNode {
         struct {
             struct VdbRecordList* rl;
         } leaf;
+        struct {
+            uint32_t next;
+            struct VdbStringList* sl;
+        } data;
     } as;
 };
 
 struct VdbNode node_deserialize_meta(uint8_t* buf);
 struct VdbNode node_deserialize_intern(uint8_t* buf);
 struct VdbNode node_deserialize_leaf(uint8_t* buf, struct VdbSchema* schema);
+struct VdbNode node_deserialize_data(uint8_t* buf);
 struct VdbNode node_init_intern(uint32_t idx);
 struct VdbNode node_init_leaf(uint32_t idx);
+struct VdbNode node_init_data(uint32_t idx);
 void node_serialize(uint8_t* buf, struct VdbNode* node);
 void node_append_nodeptr(struct VdbNode* node, struct VdbNodePtr ptr);
 void node_clear_nodeptrs(struct VdbNode* node);

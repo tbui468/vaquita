@@ -59,6 +59,8 @@ struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema);
 uint32_t vdb_get_rec_size(struct VdbRecord* rec);
 struct VdbRecord* vdb_copy_record(struct VdbRecord* rec);
 
+struct VdbString* vdb_deserialize_string(uint8_t* buf);
+
 int vdb_create_table(VDBHANDLE h, const char* table, struct VdbSchema* schema);
 int vdb_drop_table(VDBHANDLE h, const char* table);
 int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d);

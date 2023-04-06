@@ -3,33 +3,83 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Combine common code in _tree_do_fetch_record and _tree_traverse_to
-        There's common code that can be combined into a separate function
+    Efficiency of dbms can be estimated with number IO operations
+
+    Make a new data block when initializing tree
+        Data structures for data block is all done
+        integrate data blocks into program <--------START HERE
+
+    Add a new block type: data block
+        when should a new data block be allocated?
+        tree header should hold pointer to first data block, 
+            and each data block header should have a pointer to the next data block (or 0 if last block)
+            this is required when searching for free blocks
+
+    Big problem is variable length data
+        Could do this: add a fourth type of block that purely stores variable length data
+        
+        string representation in leaf block:
+            data block idx
+            string index offset
+
+        string representation in data block:
+            uint32_t next
+            uint32_t size
+            char* data
+
+        Occasionally defrag the data blocks
+
+        This solves major problems with deleting and updating records since all that really needs
+            to be changed is the data blocks.  Reusing keys becomes really simple.  Updating requires
+            modifying data blocks, but this is simplier than trying to change leaf blocks
 
     void vdb_delete_record(VDBHANDLE h, const char* table, uint32_t key)
         don't worry about reusing keys for now
+        set the key to 0 (since primary keys will start from 1) to signify free record
+        set key to next pointer
+        may need to serialize record size (aren't doing that right now)
+        set count to size of record (including key and count)
+
+        block header should hold ptr to first free record
+            Need to load this into tree data structures when reading in a block
+        
+        Each serialized record may need: next, key, size (includes next, key, size and record data), record data ...
+            When a record is deleted, use next as a pointer to next free record
+
+        Inserting records now may reuse an old key that had its data record deleted
+
+    void vdb_update_record(VDBHANDLE h, const char* table, uint32_t key, struct VdbRecord* rec);
+        this becomes problematic with variable length data (eg, strings)
+        what happens if the block doesn't have enough space???
+
+    Write code to insert/fetch a ton of records for:
+        1. testing if insert and fetch actually work
+        2. measure efficiency of program (so that future changes can measure quality)
+
+    System should not write blocks when release
+        each block should have a pin field that is incremented for each time it's caught
+        decrement the pin count by one each time it's released
+        also have a dirty field set to true if the contents of the block are modified
+        when the pager needs to evict a page, check if pin count == 0 before evicting
+        write to disk if page is evicted and dirty bit is set
 
     Basic query to get range of records (eg, keys between 4 and 10)
+        SELECT * FROM students
+        SELECT name, age FROM students
+        SELECT * FROM students WHERE age < 10
 
     Look up relational algebra predicates and implement basic queries
+        projection (SELECT)
+        selection (WHERE)
+       
+    Logger module
+        Use a write-ahead log to make sure database doesn't become corrupt if the system fails (crash, electricty dies, etc) while writing 
 
     Note: Need to release all nodes before we start modifying a tree (this was problem with why split_leaf was not working)
         if not, then releasing old nodes later may overwrite changes
 
         How about this: when a node is current used, set a flag somewhere in it
             if this flag is set, assert false so that we know that we know that it's a problem
-
-    Adding record with key 211 fills up current internal (also happens to be root) and seg faults
-        Split internal node when full
-            This should be called when splitting leaves (if adding a new leaf fills internal parent)
-
-    Adding records
-        Adding records now is not check if leaf is full
-            if full, need to add new leaf to the right
-                if a leaf can't be added, add a new internal node to the right
-                    if internal is already root, create new root and make the old root the left child.  Then add new right child
-
-    Fetching records
 
     Deleting records
         Should keys be reused?  How does sqlite do it? - sqlite allows reuse if user desires

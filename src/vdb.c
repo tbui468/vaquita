@@ -177,7 +177,7 @@ struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema) 
     return r;
 }
 
-uint32_t vdb_get_rec_size(struct VdbRecord* rec) {
+uint32_t vdb_fixed_rec_size(struct VdbRecord* rec) {
     uint32_t data_size = sizeof(uint32_t); //key size
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* f = &rec->data[i];
@@ -186,7 +186,7 @@ uint32_t vdb_get_rec_size(struct VdbRecord* rec) {
                 data_size += sizeof(uint64_t);
                 break;
             case VDBF_STR:
-                data_size += sizeof(uint32_t) + f->as.Str->len;
+                data_size += sizeof(uint32_t); //data block idx + offset
                 break;
             case VDBF_BOOL:
                 data_size += sizeof(bool);
@@ -305,4 +305,12 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key)
     struct VdbRecord* result = tree_fetch_record(&t, key);
     //TODO: unlock file here
     return result;
+}
+
+bool vdb_schema_includes_var_len(struct VdbSchema* schema) {
+    for (uint32_t i = 0; i < schema->count; i++) {
+        if (schema->fields[i] == VDBF_STR)
+            return true;
+    }
+    return false;
 }

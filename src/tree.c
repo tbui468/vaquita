@@ -6,10 +6,26 @@
 #include "node.h"
 #include "util.h"
 
+struct VdbNode _tree_catch_node(struct VdbTree* tree, uint32_t idx);
 
 void _tree_release_node(struct VdbTree* tree, struct VdbNode node) {
     struct VdbPage* page = pager_get_page(tree->pager, tree->f, node.idx);
-    node_serialize(page->buf, &node);
+
+    if (node.type == VDBN_LEAF) {
+        struct VdbNode meta = _tree_catch_node(tree, 0);
+        bool need_data_block = vdb_schema_includes_var_len(meta.as.meta.schema);
+        _tree_release_node(tree, meta);
+
+        if (need_data_block && node.as.leaf.data_idx == 0) {
+            node.as.leaf.data_idx = pager_allocate_page(tree->f);
+        }
+
+        struct VdbPage* data_page = pager_get_page(tree->pager, tree->f, node.as.leaf.data_idx);
+        node_serialize(page->buf, data_page->buf, &node);
+        pager_flush_page(data_page);
+    } else {
+        node_serialize(page->buf, NULL, &node);
+    }
 
     pager_flush_page(page);
     node_free(&node);
@@ -28,13 +44,19 @@ struct VdbNode _tree_catch_node(struct VdbTree* tree, uint32_t idx) {
             node = node_deserialize_intern(page->buf);
             break;
         case VDBN_LEAF: {
+            uint32_t data_idx = node_read_data_idx(page->buf);
             struct VdbNode meta = _tree_catch_node(tree, 0);
-            node = node_deserialize_leaf(page->buf, meta.as.meta.schema);
+            if (data_idx != 0) {
+                struct VdbPage* data_page = pager_get_page(tree->pager, tree->f, data_idx); 
+                node = node_deserialize_leaf(page->buf, data_page->buf, meta.as.meta.schema);
+            } else {
+                node = node_deserialize_leaf(page->buf, NULL, meta.as.meta.schema);
+            }
             _tree_release_node(tree, meta);
             break;
         }
         case VDBN_DATA: {
-            node = node_deserialize_data(page->buf);
+            printf("should never manually pin a data node\n");
             break;
         }
     }
@@ -53,7 +75,7 @@ void _tree_init_meta(struct VdbTree* tree, struct VdbSchema* schema) {
     meta.as.meta.pk_counter = 0;
     meta.as.meta.schema = schema;
 
-    node_serialize(page->buf, &meta);
+    node_serialize(page->buf, NULL, &meta);
     pager_flush_page(page);
 
 }
@@ -63,7 +85,7 @@ uint32_t _tree_init_leaf(struct VdbTree* tree) {
     struct VdbPage* page = pager_get_page(tree->pager, tree->f, idx);
 
     struct VdbNode leaf = node_init_leaf(idx);
-    node_serialize(page->buf, &leaf);
+    node_serialize(page->buf, NULL, &leaf);
 
     node_free(&leaf);
     pager_flush_page(page);
@@ -76,22 +98,9 @@ uint32_t _tree_init_intern(struct VdbTree* tree) {
     struct VdbPage* page = pager_get_page(tree->pager, tree->f, idx);
 
     struct VdbNode root = node_init_intern(idx);
-    node_serialize(page->buf, &root);
+    node_serialize(page->buf, NULL, &root);
 
     node_free(&root);
-    pager_flush_page(page);
-
-    return idx;
-}
-
-uint32_t _tree_init_data(struct VdbTree* tree) {
-    uint32_t idx = pager_allocate_page(tree->f);
-    struct VdbPage* page = pager_get_page(tree->pager, tree->f, idx);
-
-    struct VdbNode data = node_init_data(idx);
-    node_serialize(page->buf, &data);
-
-    node_free(&data);
     pager_flush_page(page);
 
     return idx;
@@ -101,17 +110,12 @@ void tree_init(struct VdbTree* tree, struct VdbSchema* schema) {
     _tree_init_meta(tree, schema);
     uint32_t root_idx = _tree_init_intern(tree);
     uint32_t leaf_idx = _tree_init_leaf(tree);
-    uint32_t data_idx = _tree_init_data(tree);
 
     struct VdbNode root = _tree_catch_node(tree, root_idx);
     struct VdbNodePtr ptr = {0, leaf_idx};
     node_append_nodeptr(&root, ptr);
 
-    struct VdbNode meta = _tree_catch_node(tree, 0);
-    meta.as.meta.data_idx = data_idx;
-
     _tree_release_node(tree, root);
-    _tree_release_node(tree, meta);
 }
 
 void _tree_do_traversal(struct VdbTree* tree, struct VdbNode* node, uint32_t key, struct U32List* idx_list) {
@@ -231,7 +235,6 @@ uint32_t _tree_split_internal(struct VdbTree* tree, struct U32List* idx_list, ui
 
 uint32_t _tree_split_leaf(struct VdbTree* tree, struct U32List* idx_list) {
     struct VdbNode parent = _tree_catch_node(tree, idx_list->values[idx_list->count - 2]);
-    
     struct VdbNodePtr* prev_right = &parent.as.intern.pl->pointers[parent.as.intern.pl->count - 1];
 
     uint32_t new_right_idx = _tree_init_leaf(tree);
@@ -259,7 +262,7 @@ void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
 
     //check if leaf is large enough to hold new rec
     struct VdbNode leaf = _tree_catch_node(tree, idx_list->values[idx_list->count - 1]);
-    uint32_t insert_size = vdb_get_rec_size(rec) + sizeof(uint32_t); //record size + index size
+    uint32_t insert_size = vdb_fixed_rec_size(rec) + sizeof(uint32_t); //record size + index size
     if (node_is_full(&leaf, insert_size)) {
         _tree_release_node(tree, leaf);
         uint32_t new_leaf_idx = _tree_split_leaf(tree, idx_list);

@@ -55,7 +55,6 @@ void vdb_close(VDBHANDLE h);
 
 bool vdb_schema_includes_var_len(struct VdbSchema* schema);
 void vdb_free_record(struct VdbRecord* data);
-void vdb_serialize_record(uint8_t* buf, struct VdbRecord* rec);
 struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema);
 uint32_t vdb_fixed_rec_size(struct VdbRecord* rec);
 struct VdbRecord* vdb_copy_record(struct VdbRecord* rec);

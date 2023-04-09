@@ -130,8 +130,48 @@ void _node_serialize_intern(uint8_t* buf, struct VdbNode* node) {
     }
 }
 
+struct VdbRecord _node_deserialize_record(uint8_t* buf, uint8_t* data_buf, struct VdbSchema* schema) {
+    int buf_off = 0;
+
+    struct VdbRecord r;
+    r.count = schema->count;
+    r.data = malloc_w(sizeof(struct VdbDatum) * r.count);
+    read_u32(&r.key, buf, &buf_off);
+
+    for (uint32_t i = 0; i < r.count; i++) {
+        enum VdbField f = schema->fields[i];
+        switch (f) {
+            case VDBF_INT:
+                r.data[i].type = VDBF_INT;
+                r.data[i].as.Int = *((uint64_t*)(buf + buf_off));
+                buf_off += sizeof(uint64_t);
+                break;
+            case VDBF_STR: {
+                uint32_t ustring_off;
+                read_u32(&ustring_off, buf, &buf_off);
+                int string_off = ustring_off;
+
+                r.data[i].type = VDBF_STR;
+                r.data[i].as.Str = malloc_w(sizeof(struct VdbString));
+                uint32_t next;
+                read_u32(&next, data_buf, &string_off);
+                read_u32(&r.data[i].as.Str->len, data_buf, &string_off);
+                r.data[i].as.Str->start = malloc_w(sizeof(char) * r.data[i].as.Str->len);
+                memcpy(r.data[i].as.Str->start, data_buf + string_off, r.data[i].as.Str->len);
+                break;
+            }
+            case VDBF_BOOL:
+                r.data[i].type = VDBF_BOOL;
+                r.data[i].as.Bool = *((bool*)(buf + buf_off));
+                buf_off += sizeof(bool);
+                break;
+        }
+    }
+
+    return r;
+}
+
 struct VdbNode node_deserialize_leaf(uint8_t* buf, uint8_t* data_buf, struct VdbSchema* schema) {
-    //TODO: integrate data buffer
     struct VdbNode node;
     int off = 0;
     read_u32(&node.type, buf, &off);
@@ -148,51 +188,14 @@ struct VdbNode node_deserialize_leaf(uint8_t* buf, uint8_t* data_buf, struct Vdb
         uint32_t rec_off;
         read_u32(&rec_off, buf, &idx_off);
 
-        //this needs to work with data node
-        struct VdbRecord r;
-        r.count = schema->count;
-        r.data = malloc_w(sizeof(struct VdbDatum) * schema->count);
-        int off = rec_off;
-        read_u32(&r.key, buf, &off);
-
-        for (uint32_t j = 0; j < r.count; j++) {
-            enum VdbField f = schema->fields[j];
-            switch (f) {
-                case VDBF_INT:
-                    r.data[j].type = VDBF_INT;
-                    r.data[j].as.Int = *((uint64_t*)(buf + off));
-                    off += sizeof(uint64_t);
-                    break;
-                case VDBF_STR: {
-                    uint32_t ustring_off;
-                    read_u32(&ustring_off, buf, &off);
-                    int string_off = ustring_off;
-                    r.data[j].type = VDBF_STR;
-                    r.data[j].as.Str = malloc_w(sizeof(struct VdbString));
-                    uint32_t next;
-                    read_u32(&next, data_buf, &string_off);
-                    read_u32(&r.data[j].as.Str->len, data_buf, &string_off);
-                    r.data[j].as.Str->start = malloc_w(sizeof(char) * r.data[j].as.Str->len);
-                    memcpy(r.data[j].as.Str->start, data_buf + string_off, r.data[j].as.Str->len);
-                    break;
-                }
-                case VDBF_BOOL:
-                    r.data[j].type = VDBF_BOOL;
-                    r.data[j].as.Bool = *((bool*)(buf + off));
-                    off += sizeof(bool);
-                    break;
-            }
-        }
-
+        struct VdbRecord r = _node_deserialize_record(buf + rec_off, data_buf, schema);
         _rl_append(node.as.leaf.rl, r);
     }
 
     return node;
 }
 
-void _node_serialize_leaf(uint8_t* buf, uint8_t* data_buf, struct VdbNode* node) {
-    //TODO: integrate data buffer
-
+struct U32List* _node_serialize_var_len_data(uint8_t* data_buf, struct VdbNode* node) {
     struct U32List* string_off_list = u32l_alloc();
     if (data_buf)  {
         int data_off = 0;
@@ -217,7 +220,37 @@ void _node_serialize_leaf(uint8_t* buf, uint8_t* data_buf, struct VdbNode* node)
         } 
     }
 
-    //string offsets are written in data_buf at this point
+    return string_off_list;
+}
+
+void _node_serialize_fixed_len_record(uint8_t* buf, struct VdbRecord* rec, struct U32List* string_offsets, int* off_idx) {
+    int off = 0;
+    write_u32(buf, rec->key, &off);
+    for (uint32_t j = 0; j < rec->count; j++) {
+        struct VdbDatum* d = &rec->data[j];
+        switch (d->type) {
+            case VDBF_INT: {
+                memcpy(buf + off, &d->as.Int, sizeof(uint64_t));
+                off += sizeof(uint64_t);
+                break;
+            }
+            case VDBF_STR: {
+                write_u32(buf, string_offsets->values[*off_idx], &off);
+                *off_idx += 1;
+                break;
+            }
+            case VDBF_BOOL: {
+                bool b = d->as.Bool;
+                memcpy(buf + off, &b, sizeof(bool));
+                off += sizeof(bool);
+                break;
+            }
+        }
+    }
+}
+
+void _node_serialize_leaf(uint8_t* buf, uint8_t* data_buf, struct VdbNode* node) {
+    struct U32List* string_off_list = _node_serialize_var_len_data(data_buf, node);
 
     int off = 0;
     write_u32(buf, (uint32_t)node->type, &off);
@@ -232,31 +265,8 @@ void _node_serialize_leaf(uint8_t* buf, uint8_t* data_buf, struct VdbNode* node)
         struct VdbRecord* rec = &node->as.leaf.rl->records[i];
         rec_off -= vdb_fixed_rec_size(rec);
         write_u32(buf, rec_off, &off);
-        //vdb_serialize_record(buf + rec_off, rec);
-        //serialize record here
-        int off = 0;
-        write_u32(buf + rec_off, rec->key, &off);
-        for (uint32_t j = 0; j < rec->count; j++) {
-            struct VdbDatum* d = &rec->data[j];
-            switch (d->type) {
-                case VDBF_INT: {
-                    memcpy(buf + rec_off + off, &d->as.Int, sizeof(uint64_t));
-                    off += sizeof(uint64_t);
-                    break;
-                }
-                case VDBF_STR: {
-                    write_u32(buf + rec_off, string_off_list->values[k], &off);
-                    k += 1;
-                    break;
-                }
-                case VDBF_BOOL: {
-                    bool b = d->as.Bool;
-                    memcpy(buf + rec_off + off, &b, sizeof(bool));
-                    off += sizeof(bool);
-                    break;
-                }
-            }
-        }
+
+        _node_serialize_fixed_len_record(buf + rec_off, rec, string_off_list, &k);
     }
 
     u32l_free(string_off_list);

@@ -115,34 +115,6 @@ void vdb_free_record(struct VdbRecord* data) {
     free(data);
 }
 
-void vdb_serialize_record(uint8_t* buf, struct VdbRecord* rec) {
-    int off = 0;
-    write_u32(buf, rec->key, &off);
-    for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
-        switch (d->type) {
-            case VDBF_INT: {
-                memcpy(buf + off, &d->as.Int, sizeof(uint64_t));
-                off += sizeof(uint64_t);
-                break;
-            }
-            case VDBF_STR: {
-                memcpy(buf + off, &d->as.Str->len, sizeof(uint32_t));
-                off += sizeof(uint32_t);
-                memcpy(buf + off, d->as.Str->start, d->as.Str->len);
-                off += d->as.Str->len; 
-                break;
-            }
-            case VDBF_BOOL: {
-                bool b = d->as.Bool;
-                memcpy(buf + off, &b, sizeof(bool));
-                off += sizeof(bool);
-                break;
-            }
-        }
-    }
-}
-
 struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema) {
     struct VdbRecord r;
     r.count = schema->count;

@@ -4,14 +4,11 @@ TODO:
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
 
-    Seems to compile and run (with insert and fetch working), but node_de/serialize_leaf is hella ugly and hard to read
-        A rewrite is in order, but also keep in mind on how to deal with data node overflows <------START HERE
-
     Rewrite de/serialization of leaf node to use multiple data buffers (in case of node overflow)
         both serialization and deserializtion of leaves will require a list of buffers (since data nodes can overflow)
         struct VdbBuffer {
             uint8_t* buf;
-            uint32_t size;
+            uint32_t size; <------fixed to page size
         }
         struct VdbBufferList {
             struct VdbBuffer* bufs;

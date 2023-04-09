@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
-    for (int i = 1; i <= 3; i++) { //Adding 211 will require splitting internal leaf
+    for (int i = 1; i <= 300; i++) { //Adding 211 will require splitting internal leaf
         struct VdbRecord* d = make_record(i, "dogs", i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 
     struct VdbRecord* result;
 
-    uint32_t l[] = {1, 2, 3, 4, 600, 700};
+    uint32_t l[] = {1, 2, 300, 4, 600, 700};
     for (int i = 0; i < 6; i++) {
         if ((result = vdb_fetch_record(h, "students", l[i])))
             print_data_and_free(result);

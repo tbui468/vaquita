@@ -262,7 +262,8 @@ void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
 
     //check if leaf is large enough to hold new rec
     struct VdbNode leaf = _tree_catch_node(tree, idx_list->values[idx_list->count - 1]);
-    uint32_t insert_size = vdb_fixed_rec_size(rec) + sizeof(uint32_t); //record size + index size
+    struct VdbRecordSize rs = vdb_rec_size(rec);
+    uint32_t insert_size = rs.fixed + sizeof(uint32_t); //fixed record size + index size
     if (node_is_full(&leaf, insert_size)) {
         _tree_release_node(tree, leaf);
         uint32_t new_leaf_idx = _tree_split_leaf(tree, idx_list);

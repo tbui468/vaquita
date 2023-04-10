@@ -46,15 +46,20 @@ int main(int argc, char** argv) {
     if (vdb_drop_table(h, "teachers") != 0)
         printf("failed to drop table\n");
 
+    char str[1000] = {0};
+    memset(str, 'x', sizeof(str));
+    str[999] = '\0';
+    printf("%s\n", str);
+
     for (int i = 1; i <= 300; i++) { //Adding 211 will require splitting internal leaf
-        struct VdbRecord* d = make_record(i, "dogs", i % 2 == 0);
+        //struct VdbRecord* d = make_record(i, "dogs", i % 2 == 0);
+        struct VdbRecord* d = make_record(i, str, i % 2 == 0);
         if (vdb_insert_record(h, "students", d) != 0)
             printf("failed to insert record\n");
         vdb_free_record(d);
     }
 
-
-    vdb_debug_print_tree(h, "students");
+    //vdb_debug_print_tree(h, "students");
 
     struct VdbRecord* result;
 

@@ -1,8 +1,13 @@
-TODO:
     Efficiency of dbms can be estimated with number IO operations
     Use gdb to walk through code (Cherno recommended debugger to learn to read code)
         https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
         Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
+
+    Depending on record sizes in a given leaf, serialize to / deserialize from multiple data blocks 
+        before serializing leaf, check size of all records (fixed and variable length, including offset)
+        and allocate (if not already allocated) enough data blocks for leaf
+
+        node_required_data_blocks(leaf) should return the number of required data blocks
 
     Rewrite de/serialization of leaf node to use multiple data buffers (in case of node overflow)
         both serialization and deserializtion of leaves will require a list of buffers (since data nodes can overflow)

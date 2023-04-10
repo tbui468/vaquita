@@ -149,25 +149,31 @@ struct VdbRecord vdb_deserialize_record(uint8_t* buf, struct VdbSchema* schema) 
     return r;
 }
 
-uint32_t vdb_fixed_rec_size(struct VdbRecord* rec) {
-    uint32_t data_size = sizeof(uint32_t); //key size
+struct VdbRecordSize vdb_rec_size(struct VdbRecord* rec) {
+    struct VdbRecordSize rs;
+    rs.fixed = sizeof(uint32_t); //key size
+    rs.variable = 0;
+
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* f = &rec->data[i];
-        switch (f->type) {
+        struct VdbDatum* d = &rec->data[i];
+        switch (d->type) {
             case VDBF_INT:
-                data_size += sizeof(uint64_t);
+                rs.fixed += sizeof(uint64_t);
                 break;
             case VDBF_STR:
-                data_size += sizeof(uint32_t); //data block idx + offset
+                rs.fixed += sizeof(uint32_t); //data block offset
+                rs.variable += sizeof(uint32_t) * 2; //next ptr and length
+                rs.variable += d->as.Str->len; 
                 break;
             case VDBF_BOOL:
-                data_size += sizeof(bool);
+                rs.fixed += sizeof(bool);
                 break;
         }
     }
 
-    return data_size;
+    return rs;
 }
+
 
 struct VdbRecord* vdb_copy_record(struct VdbRecord* rec) {
     struct VdbRecord* r = malloc_w(sizeof(struct VdbRecord));

@@ -263,7 +263,8 @@ void _node_serialize_leaf(uint8_t* buf, uint8_t* data_buf, struct VdbNode* node)
     int k = 0;
     for (uint32_t i = 0; i < node->as.leaf.rl->count; i++) {
         struct VdbRecord* rec = &node->as.leaf.rl->records[i];
-        rec_off -= vdb_fixed_rec_size(rec);
+        struct VdbRecordSize rs = vdb_rec_size(rec);
+        rec_off -= rs.fixed;
         write_u32(buf, rec_off, &off);
 
         _node_serialize_fixed_len_record(buf + rec_off, rec, string_off_list, &k);
@@ -360,7 +361,8 @@ bool _node_leaf_is_full(struct VdbNode* node, uint32_t insert_size) {
     for (uint32_t i = 0; i < node->as.leaf.rl->count; i++) {
         empty -= sizeof(uint32_t);
         struct VdbRecord* rec = &node->as.leaf.rl->records[i];
-        empty -= vdb_fixed_rec_size(rec);
+        struct VdbRecordSize rs = vdb_rec_size(rec);
+        empty -= rs.fixed;
     }
 
     return empty < 0;

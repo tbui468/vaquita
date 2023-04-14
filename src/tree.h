@@ -1,19 +1,28 @@
 #ifndef VDB_TREE_H
 #define VDB_TREE_H
 
-#include <stdio.h>
-#include "vdb.h"
-#include "pager.h"
-#include "node.h"
+#include <stdint.h>
+#include "data.h"
 
 struct VdbTree {
-    struct VdbPager* pager;
-    FILE* f;
+    char* name;
+    struct VdbSchema* schema;
+    //root
 };
 
-void tree_init(struct VdbTree* tree, struct VdbSchema* schema);
-void tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
-void debug_print_tree(struct VdbTree* tree);
-struct VdbRecord* tree_fetch_record(struct VdbTree* t, uint32_t key);
+struct VdbTreeList {
+    struct VdbTree** trees;
+    uint32_t count;
+    uint32_t capacity;
+};
+
+struct VdbTree* tree_init(const char* name, struct VdbSchema* schema);
+void tree_free(struct VdbTree* tree);
+
+struct VdbTreeList* treelist_init();
+void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree);
+void treelist_remove(struct VdbTreeList* tl, const char* name);
+void treelist_free(struct VdbTreeList* tl);
+
 
 #endif //VDB_TREE_H

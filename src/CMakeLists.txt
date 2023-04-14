@@ -2,17 +2,15 @@ set(Sources
     main.c
     vdb.c
     util.c
+    data.c
     tree.c
-    pager.c
-    node.c
     )
 
 set(Headers
     vdb.h
     util.h
+    data.h
     tree.h
-    pager.h
-    node.h
     )
 
 add_executable(

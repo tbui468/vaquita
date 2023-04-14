@@ -8,7 +8,6 @@
 
 #define flow(msg) printf("%s - %d\n", __func__, msg)
 
-
 struct U32List {
     uint32_t* values;
     uint32_t count;

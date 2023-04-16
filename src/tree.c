@@ -1,22 +1,53 @@
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "util.h"
 #include "tree.h"
-#include "data.h"
 
 struct VdbTree* tree_init(const char* name, struct VdbSchema* schema) {
     struct VdbTree* tree = malloc_w(sizeof(struct VdbTree));
     tree->name = strdup(name);
-    tree->schema = vdbdata_copy_schema(schema);
+    tree->pk_counter = 0;
+    tree->node_idx_counter = 0;
+    tree->schema = vdb_schema_copy(schema);
+    tree->root = NULL;
 
     return tree;
 }
 
 void tree_free(struct VdbTree* tree) {
     free(tree->name);
-    vdbdata_free_schema(tree->schema);
+    vdb_schema_free(tree->schema);
     free(tree);
+}
+
+struct VdbNode* _vdb_tree_traverse_to(struct VdbNode* node, uint32_t key) {
+    assert(node->type == VDBN_INTERN);
+
+    for (uint32_t i = 0; i < node->as.intern.nodes->count; i++) {
+        struct VdbNode* n = node->as.intern.nodes->nodes[i];
+        if (n->type == VDBN_LEAF) {
+            return n;
+        } else if (n->type == VDBN_INTERN) {
+            if (key <= n->as.intern.right->idx) {
+                return _vdb_tree_traverse_to(n, key);
+            }
+        }
+    }
+
+    if (node->as.intern.right->type == VDBN_LEAF) {
+        return node->as.intern.right;
+    }
+
+    return _vdb_tree_traverse_to(node->as.intern.right, key);
+}
+
+void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
+    struct VdbNode* root = tree->root;
+
+    struct VdbNode* leaf = _vdb_tree_traverse_to(root, rec->key);
+    vdb_recordlist_append_record(leaf->as.leaf.records, rec);
 }
 
 struct VdbTreeList* treelist_init() {
@@ -37,6 +68,18 @@ void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree) {
     tl->trees[tl->count++] = tree;
 }
 
+struct VdbTree* treelist_get_tree(struct VdbTreeList* tl, const char* name) {
+    struct VdbTree* t;
+    uint32_t i;
+    for (i = 0; i < tl->count; i++) {
+        t = tl->trees[i];
+        if (strncmp(name, t->name, strlen(name)) == 0)
+            return t;
+    }
+
+    return NULL;
+}
+
 void treelist_remove(struct VdbTreeList* tl, const char* name) {
     struct VdbTree* t = NULL;
     uint32_t i;
@@ -50,8 +93,6 @@ void treelist_remove(struct VdbTreeList* tl, const char* name) {
         tl->trees[i] = tl->trees[--tl->count];
         tree_free(t);
     }
-    //remove tree with given name from treelist
-    //free that tree
 }
 
 void treelist_free(struct VdbTreeList* tl) {

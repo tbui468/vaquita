@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "data.h"
+#include "schema.h"
 
 typedef void* VDBHANDLE;
 
@@ -25,6 +25,7 @@ void vdb_drop_table(VDBHANDLE h, const char* name);
 
 void vdb_insert_record(VDBHANDLE h, const char* name, ...);
 
+void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 /*
 int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d);
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);*/

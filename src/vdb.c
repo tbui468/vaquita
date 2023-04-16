@@ -3,7 +3,8 @@
 #include <string.h>
 
 #include "vdb.h"
-#include "data.h"
+#include "schema.h"
+#include "record.h"
 #include "util.h"
 #include "tree.h"
 
@@ -26,26 +27,32 @@ void vdb_close(VDBHANDLE h) {
 struct VdbSchema* vdb_alloc_schema(int count, ...) {
     va_list args;
     va_start(args, count);
-    struct VdbSchema* schema = vdbdata_alloc_schema(count, args);
+    struct VdbSchema* schema = vdb_schema_alloc(count, args);
     va_end(args);
     return schema;
 }
 
 void vdb_free_schema(struct VdbSchema* schema) {
-    vdbdata_free_schema(schema);
+    vdb_schema_free(schema);
 }
 
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
-    //find correct tree
-    //get schema from that tree
+
+    struct VdbTree* tree = treelist_get_tree(db->trees, name);
 
     va_list args;
     va_start(args, name);
-    struct VdbRecord* rec = vdbdata_alloc_record(schema, args);
+    struct VdbRecord* rec = vdb_record_alloc(++tree->pk_counter, tree->schema, args);
     va_end(args);
 
-    //insert record into tree    
+    //TODO: this should really be part of vdb_tree_init
+    if (!tree->root) {
+        tree->root = vdb_node_init_intern(++tree->node_idx_counter);
+        tree->root->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter);
+    }
+
+    vdb_tree_insert_record(tree, rec);
 }
 
 void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
@@ -60,3 +67,16 @@ void vdb_drop_table(VDBHANDLE h, const char* name) {
 
     treelist_remove(db->trees, name);
 }
+
+void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
+
+}
+
+void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
+    struct Vdb* db = (struct Vdb*)h;
+
+    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+    _vdb_debug_print_node(tree->root, 0);
+}
+
+

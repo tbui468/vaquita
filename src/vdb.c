@@ -46,11 +46,6 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct VdbRecord* rec = vdb_record_alloc(++tree->pk_counter, tree->schema, args);
     va_end(args);
 
-    //TODO: this should really be part of vdb_tree_init
-    if (!tree->root) {
-        tree->root = vdb_node_init_intern(++tree->node_idx_counter);
-        tree->root->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter);
-    }
 
     vdb_tree_insert_record(tree, rec);
 }
@@ -69,7 +64,27 @@ void vdb_drop_table(VDBHANDLE h, const char* name) {
 }
 
 void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
+    printf("%*d", depth * 2, node->idx);
 
+    if (node->type == VDBN_INTERN) {
+        printf("\n");
+        for (uint32_t i = 0; i < node->as.intern.nodes->count; i++) {
+            struct VdbNode* n = node->as.intern.nodes->nodes[i];
+            _vdb_debug_print_node(n, depth + 1);
+        }
+
+        _vdb_debug_print_node(node->as.intern.right, depth + 1);
+    } else {
+        printf(": ");
+        for (uint32_t i = 0; i < node->as.leaf.records->count; i++) {
+            struct VdbRecord* r = node->as.leaf.records->records[i];
+            printf("%d", r->key);
+            if (i < node->as.leaf.records->count - 1) {
+                printf(", ");
+            }
+        }
+        printf("\n");
+    }
 }
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {

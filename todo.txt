@@ -12,8 +12,11 @@
         into legacy code
 
 **************************************************************************
-    Write function to print out tree - need to check if insert_record is working correctly
-        void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) <-------START HERE
+    Write function that checks if leaf is full (just set it to 5 records for now)
+
+    split leaf if full
+    
+    split internal for three cases (if root, if parent has enough space, if parent is full)
 
     Finish functions for creating / dropping tables
 

@@ -11,7 +11,10 @@ struct VdbTree* tree_init(const char* name, struct VdbSchema* schema) {
     tree->pk_counter = 0;
     tree->node_idx_counter = 0;
     tree->schema = vdb_schema_copy(schema);
-    tree->root = NULL;
+
+    //init both root and first leaf (right pointer)
+    tree->root = vdb_node_init_intern(++tree->node_idx_counter);
+    tree->root->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter);
 
     return tree;
 }

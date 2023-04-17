@@ -1,32 +1,36 @@
 #include <stddef.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "node.h"
 #include "util.h"
 #include "record.h"
 
-struct VdbNode* vdb_node_init_intern(uint32_t idx) {
+struct VdbNode* vdb_node_init_intern(uint32_t idx, struct VdbNode* parent) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
     node->type = VDBN_INTERN;
     node->idx = idx;
+    node->parent = parent;
     node->as.intern.right = NULL;
     node->as.intern.nodes = vdb_nodelist_alloc();
     return node;
 }
 
-struct VdbNode* vdb_node_init_leaf(uint32_t idx) {
+struct VdbNode* vdb_node_init_leaf(uint32_t idx, struct VdbNode* parent) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
     node->type = VDBN_LEAF;
     node->idx = idx;
+    node->parent = parent;
     node->as.leaf.data = NULL;
     node->as.leaf.records = vdb_recordlist_alloc();
     return node;
 }
 
-struct VdbNode* vdb_node_init_data(uint32_t idx) {
+struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
     node->type = VDBN_DATA;
     node->idx = idx;
+    node->parent = parent;
     node->as.data.next = NULL;
     return node;
 }
@@ -43,6 +47,13 @@ void vdb_node_free(struct VdbNode* node) {
             break;
     }
     free(node);
+}
+
+bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec) {
+    assert(node->type == VDBN_LEAF);
+    rec = rec; //to silence warning for now
+    //TODO: should check if record will fit into leaf
+    return node->as.leaf.records->count >= 5;
 }
 
 struct VdbNodeList* vdb_nodelist_alloc() {

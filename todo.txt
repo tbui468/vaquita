@@ -12,9 +12,7 @@
         into legacy code
 
 **************************************************************************
-    Write function that checks if leaf is full (just set it to 5 records for now)
-
-    split leaf if full
+    write code to simulate full internal leaf
     
     split internal for three cases (if root, if parent has enough space, if parent is full)
 

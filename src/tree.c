@@ -13,8 +13,8 @@ struct VdbTree* tree_init(const char* name, struct VdbSchema* schema) {
     tree->schema = vdb_schema_copy(schema);
 
     //init both root and first leaf (right pointer)
-    tree->root = vdb_node_init_intern(++tree->node_idx_counter);
-    tree->root->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter);
+    tree->root = vdb_node_init_intern(++tree->node_idx_counter, NULL);
+    tree->root->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter, tree->root);
 
     return tree;
 }
@@ -30,8 +30,10 @@ struct VdbNode* _vdb_tree_traverse_to(struct VdbNode* node, uint32_t key) {
 
     for (uint32_t i = 0; i < node->as.intern.nodes->count; i++) {
         struct VdbNode* n = node->as.intern.nodes->nodes[i];
-        if (n->type == VDBN_LEAF) {
-            return n;
+        if (n->type == VDBN_LEAF && n->as.leaf.records->count > 0) {
+            uint32_t last_rec_key = n->as.leaf.records->records[n->as.leaf.records->count - 1]->key;
+            if (key <= last_rec_key)
+                return n;
         } else if (n->type == VDBN_INTERN) {
             if (key <= n->as.intern.right->idx) {
                 return _vdb_tree_traverse_to(n, key);
@@ -46,10 +48,27 @@ struct VdbNode* _vdb_tree_traverse_to(struct VdbNode* node, uint32_t key) {
     return _vdb_tree_traverse_to(node->as.intern.right, key);
 }
 
+struct VdbNode* _vdb_tree_split_leaf(struct VdbTree* tree, struct VdbNode* node) {
+    assert(node->type == VDBN_LEAF);
+
+    //assume parent is not full for now
+    //assume leaf is always right most child of parent for now
+    
+    struct VdbNode* parent = node->parent;
+    vdb_nodelist_append_node(parent->as.intern.nodes, parent->as.intern.right);
+    parent->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter, parent);
+
+    return parent->as.intern.right;
+}
+
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     struct VdbNode* root = tree->root;
-
     struct VdbNode* leaf = _vdb_tree_traverse_to(root, rec->key);
+
+    if (vdb_node_leaf_full(leaf, rec)) {
+        leaf = _vdb_tree_split_leaf(tree, leaf);
+    }
+
     vdb_recordlist_append_record(leaf->as.leaf.records, rec);
 }
 

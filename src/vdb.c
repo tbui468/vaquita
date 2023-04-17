@@ -46,7 +46,6 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct VdbRecord* rec = vdb_record_alloc(++tree->pk_counter, tree->schema, args);
     va_end(args);
 
-
     vdb_tree_insert_record(tree, rec);
 }
 

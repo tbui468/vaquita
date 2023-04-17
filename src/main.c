@@ -17,6 +17,8 @@ int main(int argc, char** argv) {
         vdb_insert_record(h, "students", i, words[i % 3], i % 2 == 0);
     }
 
+    vdb_update_record(h, "students", 100, 0, "lions", true);
+
     int keys[] = {1, 2, 3, 49, 100, 101};
 
     vdb_debug_print_tree(h, "students");

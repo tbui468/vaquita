@@ -12,8 +12,7 @@
         into legacy code
 
 **************************************************************************
-    update
-    delete (just change key to 0 for now)
+    delete - remove from list and free
 
     Finish functions for creating / dropping tables
 

@@ -39,9 +39,21 @@ void vdb_free_schema(struct VdbSchema* schema) {
     vdb_schema_free(schema);
 }
 
-void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
+void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = tree_init(name, schema);
+
+    treelist_append(db->trees, tree);
+}
+
+void vdb_drop_table(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
 
+    treelist_remove(db->trees, name);
+}
+
+void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
+    struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = treelist_get_tree(db->trees, name);
 
     va_list args;
@@ -52,22 +64,8 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     vdb_tree_insert_record(tree, rec);
 }
 
-void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
-    struct Vdb* db = (struct Vdb*)h;
-
-    struct VdbTree* tree = tree_init(name, schema);
-    treelist_append(db->trees, tree);
-}
-
-void vdb_drop_table(VDBHANDLE h, const char* name) {
-    struct Vdb* db = (struct Vdb*)h;
-
-    treelist_remove(db->trees, name);
-}
-
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct Vdb* db = (struct Vdb*)h;
-
     struct VdbTree* tree = treelist_get_tree(db->trees, name);
 
     struct VdbRecord* rec = vdb_tree_fetch_record(tree, key);
@@ -76,6 +74,18 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) 
         rec = vdb_record_copy(rec);
 
     return rec;
+}
+
+bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+
+    va_list args;
+    va_start(args, key);
+    struct VdbRecord* rec = vdb_record_alloc(key, tree->schema, args);
+    va_end(args);
+
+    return vdb_tree_update_record(tree, rec);
 }
 
 void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {

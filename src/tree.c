@@ -116,15 +116,27 @@ struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key) {
     struct VdbNode* root = tree->root;
     struct VdbNode* leaf = _vdb_tree_traverse_to(root, key);
 
-    //TODO: switch from linear to binary search
-    struct VdbRecord* rec = NULL;
-    for (uint32_t i = 0; i < leaf->as.leaf.records->count; i++) {
-        rec = leaf->as.leaf.records->records[i];
-        if (rec->key == key)
-            break;
+    return vdb_recordlist_get_record(leaf->as.leaf.records, key);
+}
+
+bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
+    struct VdbNode* root = tree->root;
+    struct VdbNode* leaf = _vdb_tree_traverse_to(root, rec->key);
+
+    if (!leaf) {
+        return false;
     }
 
-    return rec;
+    for (uint32_t i = 0; i < leaf->as.leaf.records->count; i++) {
+        struct VdbRecord* r = leaf->as.leaf.records->records[i];
+        if (r->key == rec->key) {
+            leaf->as.leaf.records->records[i] = rec;
+            vdb_record_free(r);
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 struct VdbTreeList* treelist_init() {

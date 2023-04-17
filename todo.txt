@@ -12,8 +12,8 @@
         into legacy code
 
 **************************************************************************
-    Fetch records
-        Make sure that binary search works
+    update
+    delete (just change key to 0 for now)
 
     Finish functions for creating / dropping tables
 

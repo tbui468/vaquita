@@ -3,21 +3,15 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
-struct VdbSchema* vdb_schema_alloc(int count, ...) {
+struct VdbSchema* vdb_schema_alloc(int count, va_list args) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     schema->count = count;
     schema->fields = malloc_w(sizeof(enum VdbField) * count);
 
-    va_list ap;
-    va_start(ap, count);
-
     for (int i = 0; i < count; i++) {
-        schema->fields[i] = va_arg(ap, enum VdbField);
+        schema->fields[i] = va_arg(args, int);
     }
-
-    va_end(ap);
 
     return schema;
 }

@@ -23,6 +23,7 @@ struct VdbTreeList {
 struct VdbTree* tree_init(const char* name, struct VdbSchema* schema);
 void tree_free(struct VdbTree* tree);
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
+struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 
 struct VdbTreeList* treelist_init();
 void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree);

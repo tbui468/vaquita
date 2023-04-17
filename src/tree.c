@@ -28,6 +28,7 @@ void tree_free(struct VdbTree* tree) {
 struct VdbNode* _vdb_tree_traverse_to(struct VdbNode* node, uint32_t key) {
     assert(node->type == VDBN_INTERN);
 
+    //TODO: should do binary search instead of linear
     for (uint32_t i = 0; i < node->as.intern.nodes->count; i++) {
         struct VdbNode* n = node->as.intern.nodes->nodes[i];
         if (n->type == VDBN_LEAF && n->as.leaf.records->count > 0) {
@@ -35,7 +36,13 @@ struct VdbNode* _vdb_tree_traverse_to(struct VdbNode* node, uint32_t key) {
             if (key <= last_rec_key)
                 return n;
         } else if (n->type == VDBN_INTERN) {
-            if (key <= n->as.intern.right->idx) {
+            //get largest key for a given internal node, and compare to key
+            struct VdbNode* l = n->as.intern.right;
+            while (l->type != VDBN_LEAF) {
+                l = l->as.intern.right;
+            }
+            uint32_t largest_rec_key = l->as.leaf.records->records[l->as.leaf.records->count - 1]->key;
+            if (key <= largest_rec_key) {
                 return _vdb_tree_traverse_to(n, key);
             }
         }
@@ -53,18 +60,18 @@ struct VdbNode* _vdb_tree_split_intern(struct VdbTree* tree, struct VdbNode* nod
 
     struct VdbNode* new_intern = NULL;
 
-    if (!node->parent) { //parent is root
+    if (!node->parent) { //node is root
         struct VdbNode* old_root = node;
         tree->root = vdb_node_init_intern(++tree->node_idx_counter, NULL);
         old_root->parent = tree->root;
         new_intern =  vdb_node_init_intern(++tree->node_idx_counter, tree->root);
         tree->root->as.intern.right = new_intern;
         vdb_nodelist_append_node(tree->root->as.intern.nodes, old_root);
-    } else if (!vdb_node_intern_full(node->parent)) { //parent of parent is not full
+    } else if (!vdb_node_intern_full(node->parent)) {
         new_intern = vdb_node_init_intern(++tree->node_idx_counter, node->parent);
         vdb_nodelist_append_node(node->parent->as.intern.nodes, node->parent->as.intern.right);
         node->parent->as.intern.right = new_intern;
-    } else { //parent of parent is also full
+    } else {
         struct VdbNode* new_parent = _vdb_tree_split_intern(tree, node->parent);
         new_intern = vdb_node_init_intern(++tree->node_idx_counter, new_parent);
         new_parent->as.intern.right = new_intern;
@@ -83,9 +90,6 @@ struct VdbNode* _vdb_tree_split_leaf(struct VdbTree* tree, struct VdbNode* node)
         new_intern->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter, new_intern);
         return new_intern->as.intern.right;
     }
-
-    //assume parent is not full for now
-    //assume leaf is always right most child of parent for now
     
     vdb_nodelist_append_node(parent->as.intern.nodes, parent->as.intern.right);
     parent->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter, parent);
@@ -102,6 +106,25 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     }
 
     vdb_recordlist_append_record(leaf->as.leaf.records, rec);
+}
+
+struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key) {
+    if (key > tree->pk_counter) {
+        return NULL;
+    }
+
+    struct VdbNode* root = tree->root;
+    struct VdbNode* leaf = _vdb_tree_traverse_to(root, key);
+
+    //TODO: switch from linear to binary search
+    struct VdbRecord* rec = NULL;
+    for (uint32_t i = 0; i < leaf->as.leaf.records->count; i++) {
+        rec = leaf->as.leaf.records->records[i];
+        if (rec->key == key)
+            break;
+    }
+
+    return rec;
 }
 
 struct VdbTreeList* treelist_init() {

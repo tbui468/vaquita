@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
 enum VdbField {
     VDBF_INT,
@@ -29,7 +30,7 @@ struct VdbDatum {
     } as;
 };
 
-struct VdbSchema* vdb_schema_alloc(int count, ...);
+struct VdbSchema* vdb_schema_alloc(int count, va_list args);
 void vdb_schema_free(struct VdbSchema* schema);
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
 

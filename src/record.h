@@ -1,6 +1,8 @@
 #ifndef VDB_RECORD_H
 #define VDB_RECORD_H
 
+#include <stdarg.h>
+
 #include "schema.h"
 
 struct VdbRecord {
@@ -15,8 +17,9 @@ struct VdbRecordList {
     uint32_t capacity;
 };
 
-struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, ...);
+struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_list args);
 void vdb_record_free(struct VdbRecord* rec);
+struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
 
 struct VdbRecordList* vdb_recordlist_alloc();
 void vdb_recordlist_append_record(struct VdbRecordList* rl, struct VdbRecord* rec);

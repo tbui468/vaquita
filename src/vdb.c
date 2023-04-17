@@ -25,11 +25,14 @@ void vdb_close(VDBHANDLE h) {
 }
 
 struct VdbSchema* vdb_alloc_schema(int count, ...) {
+    
     va_list args;
     va_start(args, count);
     struct VdbSchema* schema = vdb_schema_alloc(count, args);
     va_end(args);
+
     return schema;
+
 }
 
 void vdb_free_schema(struct VdbSchema* schema) {
@@ -62,10 +65,23 @@ void vdb_drop_table(VDBHANDLE h, const char* name) {
     treelist_remove(db->trees, name);
 }
 
+struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) {
+    struct Vdb* db = (struct Vdb*)h;
+
+    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+
+    struct VdbRecord* rec = vdb_tree_fetch_record(tree, key);
+
+    if (rec)
+        rec = vdb_record_copy(rec);
+
+    return rec;
+}
+
 void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
-    char spaces[depth * 2 + 1];
+    char spaces[depth * 4 + 1];
     memset(spaces, ' ', sizeof(spaces) - 1);
-    spaces[depth * 2] = '\0';
+    spaces[depth * 4] = '\0';
     printf("%s%d", spaces, node->idx);
 
     if (node->type == VDBN_INTERN) {

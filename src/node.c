@@ -56,6 +56,12 @@ bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec) {
     return node->as.leaf.records->count >= 5;
 }
 
+bool vdb_node_intern_full(struct VdbNode* node) {
+    assert(node->type == VDBN_INTERN);
+    //TODO: check if free page size is not large enough in real version
+    return node->as.intern.nodes->count >= 1; //1 nodes + 1 right pointer for a total of three nodes for now
+}
+
 struct VdbNodeList* vdb_nodelist_alloc() {
     struct VdbNodeList* rl = malloc_w(sizeof(struct VdbNodeList));
     rl->count = 0;

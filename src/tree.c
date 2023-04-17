@@ -48,13 +48,45 @@ struct VdbNode* _vdb_tree_traverse_to(struct VdbNode* node, uint32_t key) {
     return _vdb_tree_traverse_to(node->as.intern.right, key);
 }
 
+struct VdbNode* _vdb_tree_split_intern(struct VdbTree* tree, struct VdbNode* node) {
+    assert(node->type == VDBN_INTERN);
+
+    struct VdbNode* new_intern = NULL;
+
+    if (!node->parent) { //parent is root
+        struct VdbNode* old_root = node;
+        tree->root = vdb_node_init_intern(++tree->node_idx_counter, NULL);
+        old_root->parent = tree->root;
+        new_intern =  vdb_node_init_intern(++tree->node_idx_counter, tree->root);
+        tree->root->as.intern.right = new_intern;
+        vdb_nodelist_append_node(tree->root->as.intern.nodes, old_root);
+    } else if (!vdb_node_intern_full(node->parent)) { //parent of parent is not full
+        new_intern = vdb_node_init_intern(++tree->node_idx_counter, node->parent);
+        vdb_nodelist_append_node(node->parent->as.intern.nodes, node->parent->as.intern.right);
+        node->parent->as.intern.right = new_intern;
+    } else { //parent of parent is also full
+        struct VdbNode* new_parent = _vdb_tree_split_intern(tree, node->parent);
+        new_intern = vdb_node_init_intern(++tree->node_idx_counter, new_parent);
+        new_parent->as.intern.right = new_intern;
+    }
+
+    return new_intern;
+}
+
 struct VdbNode* _vdb_tree_split_leaf(struct VdbTree* tree, struct VdbNode* node) {
     assert(node->type == VDBN_LEAF);
+
+    struct VdbNode* parent = node->parent;
+
+    if (vdb_node_intern_full(parent)) {
+        struct VdbNode* new_intern = _vdb_tree_split_intern(tree, parent);
+        new_intern->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter, new_intern);
+        return new_intern->as.intern.right;
+    }
 
     //assume parent is not full for now
     //assume leaf is always right most child of parent for now
     
-    struct VdbNode* parent = node->parent;
     vdb_nodelist_append_node(parent->as.intern.nodes, parent->as.intern.right);
     parent->as.intern.right = vdb_node_init_leaf(++tree->node_idx_counter, parent);
 

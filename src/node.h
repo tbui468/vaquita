@@ -43,6 +43,7 @@ struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent);
 void vdb_node_free(struct VdbNode* node);
 
 bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec);
+bool vdb_node_intern_full(struct VdbNode* node);
 
 struct VdbNodeList* vdb_nodelist_alloc();
 void vdb_nodelist_append_node(struct VdbNodeList* nl, struct VdbNode* node);

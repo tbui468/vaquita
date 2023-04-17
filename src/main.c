@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 
     struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, VDBF_STR, VDBF_BOOL);
     vdb_create_table(h, "students", schema);
-    for (int i = 1; i <= 6; i++) {
+    for (int i = 1; i <= 100; i++) {
         vdb_insert_record(h, "students", i, "dogs", i % 2 == 0);
     }
 

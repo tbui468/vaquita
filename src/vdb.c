@@ -63,7 +63,10 @@ void vdb_drop_table(VDBHANDLE h, const char* name) {
 }
 
 void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
-    printf("%*d", depth * 2, node->idx);
+    char spaces[depth * 2 + 1];
+    memset(spaces, ' ', sizeof(spaces) - 1);
+    spaces[depth * 2] = '\0';
+    printf("%s%d", spaces, node->idx);
 
     if (node->type == VDBN_INTERN) {
         printf("\n");

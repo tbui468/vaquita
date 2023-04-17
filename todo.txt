@@ -12,9 +12,8 @@
         into legacy code
 
 **************************************************************************
-    write code to simulate full internal leaf
-    
-    split internal for three cases (if root, if parent has enough space, if parent is full)
+    Fetch records
+        Make sure that binary search works
 
     Finish functions for creating / dropping tables
 

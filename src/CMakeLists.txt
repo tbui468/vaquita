@@ -6,6 +6,7 @@ set(Sources
     tree.c
     node.c
     record.c
+    pager.c
     )
 
 set(Headers
@@ -15,6 +16,7 @@ set(Headers
     tree.h
     node.h
     record.h
+    pager.h
     )
 
 add_executable(

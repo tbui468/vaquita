@@ -18,9 +18,11 @@ int main(int argc, char** argv) {
     }
 
     vdb_update_record(h, "students", 100, 0, "lions", true);
+    vdb_delete_record(h, "students", 2);
+    vdb_delete_record(h, "students", 3);
 
     int keys[] = {1, 2, 3, 49, 100, 101};
-
+/*
     vdb_debug_print_tree(h, "students");
     for (int i = 0; i < 6; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "students", keys[i]);
@@ -29,9 +31,9 @@ int main(int argc, char** argv) {
         } else {
             printf("not found!\n");
         }
-    }
+    }*/
 
-    //vdb_drop_table(h, "students");
+    vdb_drop_table(h, "students");
     vdb_free_schema(schema);
     vdb_close(h);
 

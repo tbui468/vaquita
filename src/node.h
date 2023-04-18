@@ -7,6 +7,7 @@
 #include "record.h"
 
 enum VdbNodeType {
+    VDBN_META,
     VDBN_INTERN,
     VDBN_LEAF,
     VDBN_DATA

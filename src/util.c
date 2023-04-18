@@ -207,6 +207,13 @@ struct dirent* readdir_w(DIR* d) {
     return dir;
 }
 
+char* strdup_w(const char* s) {
+    char* res;
+    if (!(res = strdup(s)))
+        err_quit("strdup failed");
+    return res;
+}
+
 int join_path(char* result, ...) {
     result[0] = '\0';
     va_list ap;

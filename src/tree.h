@@ -6,6 +6,7 @@
 #include "schema.h"
 #include "node.h"
 #include "record.h"
+#include "pager.h"
 
 struct VdbTree {
     char* name;
@@ -22,10 +23,12 @@ struct VdbTreeList {
 };
 
 struct VdbTree* tree_init(const char* name, struct VdbSchema* schema);
+void vdb_tree_serialize_header(struct VdbPage* page, struct VdbTree* tree);
 void tree_free(struct VdbTree* tree);
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
 struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);
+bool vdb_tree_delete_record(struct VdbTree* tree, uint32_t key);
 
 struct VdbTreeList* treelist_init();
 void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree);

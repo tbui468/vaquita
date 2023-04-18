@@ -6,13 +6,26 @@
 
 #include "schema.h"
 #include "record.h"
+#include "pager.h"
 
 typedef void* VDBHANDLE;
 
+struct VdbFileList {
+    FILE** files;
+    uint32_t count;
+    uint32_t capacity;
+};
+
 struct Vdb {
     char* name;
-    struct VdbTreeList* trees;
+    struct VdbTreeList* trees; //TODO: this should only be used to a single transaction - should be empty after transaction is done/commited
+    struct VdbPager* pager;
+    struct VdbFileList* files;
 };
+
+struct VdbFileList* vdb_filelist_alloc();
+void vdb_filelist_append_file(struct VdbFileList* fl, FILE* f);
+void vdb_filelist_free(struct VdbFileList* fl);
 
 VDBHANDLE vdb_open(const char* name);
 void vdb_close(VDBHANDLE h);
@@ -27,12 +40,9 @@ void vdb_drop_table(VDBHANDLE h, const char* name);
 void vdb_insert_record(VDBHANDLE h, const char* name, ...);
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key);
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...);
+bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key);
+
 void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 
-/*
-int vdb_insert_record(VDBHANDLE h, const char* table, struct VdbRecord* d);
-struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* table, uint32_t key);*/
-//delete record
-//update record
 
 #endif //VDB_H

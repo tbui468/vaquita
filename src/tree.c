@@ -19,6 +19,15 @@ struct VdbTree* tree_init(const char* name, struct VdbSchema* schema) {
     return tree;
 }
 
+void vdb_tree_serialize_header(struct VdbPage* page, struct VdbTree* tree) {
+    int off = 0;
+    write_u32(page->buf, VDBN_META, &off);
+    write_u32(page->buf, tree->pk_counter, &off);
+    write_u32(page->buf, 5, &off);
+
+    page->dirty = true;
+}
+
 void tree_free(struct VdbTree* tree) {
     free(tree->name);
     vdb_schema_free(tree->schema);
@@ -132,6 +141,26 @@ bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
         if (r->key == rec->key) {
             leaf->as.leaf.records->records[i] = rec;
             vdb_record_free(r);
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+bool vdb_tree_delete_record(struct VdbTree* tree, uint32_t key) {
+    struct VdbNode* root = tree->root;
+    struct VdbNode* leaf = _vdb_tree_traverse_to(root, key);
+
+    if (!leaf) {
+        return false;
+    }
+
+    //TODO: need a way to reuse deleted records
+    for (uint32_t i = 0; i < leaf->as.leaf.records->count; i++) {
+        struct VdbRecord* r = leaf->as.leaf.records->records[i];
+        if (r->key == key) {
+            r->key = 0;
             return true;
         }
     }

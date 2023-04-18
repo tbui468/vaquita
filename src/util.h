@@ -38,6 +38,7 @@ int mkdir_w(const char* pathname, int mode);
 DIR* opendir_w(const char* name);
 int closedir_w(DIR* d);
 struct dirent* readdir_w(DIR* d);
+char* strdup_w(const char* s);
 
 //error handling
 void err_quit(const char* msg);

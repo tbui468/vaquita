@@ -12,7 +12,8 @@
         into legacy code
 
 **************************************************************************
-    vdb_drop_table should remove struct VdbFile* from tree->files
+    Dropping tables is problematic now... since closing database tries to write dirty pages to a now-closed FILE*
+        and giving error
 
     Replace node pointers inside of struct VdbNode with uint32_t idx - need to use this index
         to deserialize nodes if needed will

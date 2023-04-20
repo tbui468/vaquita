@@ -8,9 +8,8 @@ int main(int argc, char** argv) {
     argv = argv;
 
     VDBHANDLE h = vdb_open("school");
-
-//    struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, VDBF_STR, VDBF_BOOL);
-//    vdb_create_table(h, "students", schema);
+    struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, VDBF_STR, VDBF_BOOL);
+    vdb_create_table(h, "students", schema);
 
     /*
     const char* words[] = {"cat", "dogs", "turtles"};
@@ -34,8 +33,13 @@ int main(int argc, char** argv) {
         }
     }*/
 
-    vdb_drop_table(h, "students");
- //   vdb_free_schema(schema);
+    if (vdb_drop_table(h, "students")) {
+        printf("Dropped students table\n");
+    } else {
+        printf("Error: No students table\n");
+    }
+
+    vdb_free_schema(schema);
     vdb_close(h);
 
     return 0;

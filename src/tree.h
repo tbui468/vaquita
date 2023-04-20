@@ -14,6 +14,10 @@ struct VdbTree {
     uint32_t pk_counter;
     uint32_t node_idx_counter;
     struct VdbNode* root;
+    struct VdbPager* pager;
+    FILE* f;
+    bool dirty;
+    struct VdbPage* page;
 };
 
 struct VdbTreeList {
@@ -22,9 +26,10 @@ struct VdbTreeList {
     uint32_t capacity;
 };
 
-struct VdbTree* tree_init(const char* name, struct VdbSchema* schema);
-void vdb_tree_serialize_header(struct VdbPage* page, struct VdbTree* tree);
-void tree_free(struct VdbTree* tree);
+struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f);
+void vdb_tree_serialize_header(struct VdbTree* tree);
+struct VdbTree* vdb_tree_catch(FILE* f, struct VdbPager* pager);
+void vdb_tree_release(struct VdbTree* tree);
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
 struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);

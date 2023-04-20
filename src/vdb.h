@@ -7,24 +7,29 @@
 #include "schema.h"
 #include "record.h"
 #include "pager.h"
+#include "tree.h"
 
 typedef void* VDBHANDLE;
 
+struct VdbFile {
+    FILE* f;
+    char* name;
+};
+
 struct VdbFileList {
-    FILE** files;
+    struct VdbFile** files;
     uint32_t count;
     uint32_t capacity;
 };
 
 struct Vdb {
     char* name;
-    struct VdbTreeList* trees; //TODO: this should only be used to a single transaction - should be empty after transaction is done/commited
     struct VdbPager* pager;
     struct VdbFileList* files;
 };
 
 struct VdbFileList* vdb_filelist_alloc();
-void vdb_filelist_append_file(struct VdbFileList* fl, FILE* f);
+void vdb_filelist_append_file(struct VdbFileList* fl, struct VdbFile* f);
 void vdb_filelist_free(struct VdbFileList* fl);
 
 VDBHANDLE vdb_open(const char* name);

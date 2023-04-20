@@ -5,9 +5,9 @@
 #include <stdbool.h>
 
 #include "record.h"
+#include "pager.h"
 
 enum VdbNodeType {
-    VDBN_META,
     VDBN_INTERN,
     VDBN_LEAF,
     VDBN_DATA
@@ -17,6 +17,8 @@ struct VdbNode {
     enum VdbNodeType type;
     uint32_t idx;
     struct VdbNode* parent;
+    bool dirty;
+    struct VdbPage* page;
     union {
         struct {
             struct VdbNodeList* nodes;
@@ -38,10 +40,12 @@ struct VdbNodeList {
     uint32_t capacity;
 };
 
-struct VdbNode* vdb_node_init_intern(uint32_t idx, struct VdbNode* parent);
-struct VdbNode* vdb_node_init_leaf(uint32_t idx, struct VdbNode* parent);
-struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent);
+struct VdbNode* vdb_node_init_intern(uint32_t idx, struct VdbNode* parent, struct VdbPage* page);
+struct VdbNode* vdb_node_init_leaf(uint32_t idx, struct VdbNode* parent, struct VdbPage* page);
+struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent, struct VdbPage* page);
 void vdb_node_free(struct VdbNode* node);
+void vdb_node_serialize(uint8_t* buf, struct VdbNode* node);
+void vdb_node_deserialize(struct VdbNode* node, uint8_t* buf);
 
 bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec);
 bool vdb_node_intern_full(struct VdbNode* node);

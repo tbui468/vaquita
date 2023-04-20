@@ -12,14 +12,32 @@
         into legacy code
 
 **************************************************************************
-    Serialize in tree header:
-        block type
-        pk_counter
-        root idx
-        schema (last since it varies in length)
+    vdb_drop_table should remove struct VdbFile* from tree->files
 
-    deserialize tree header
+    Replace node pointers inside of struct VdbNode with uint32_t idx - need to use this index
+        to deserialize nodes if needed will
+
+        Requires a massive rewrite here since it's all using pointers now
+        then finish de/serializing nodes/buffer
+
+    vdb_create_table
+        requires a bit of work to clean up:
+            prevent creation if table with same name already exists
+            unpinning all pages at the end of this function is ... not going to work since a single page may be pinned multiple times
+
+    void vdb_node_free(struct VdbNode* node) <--------------need to serialize to page if page dirty flag is set
+
+    Make functions to load in nodes:
+        struct VdbNode* vdb_tree_load_node(struct VdbTree* tree, uint32_t idx);
+
+    void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) <--------LOOK HERE FOR NOTES
+        rewrite functions so that serialization only occurs with unpinning
+        initializing nodes and getting nodes are different functions
+
+    deserialize tree header when doing an insert/fetch/update/delete
         if a table with name already exists, should load it in from disk instead of initializing new tree
+
+    vdb_create_table should fail (return a boolean) if table already exists
 
     vdb_tree_serialize_header(p->buf, tree); <-----------FINISH THIS IN vdb.c
         should write tree metadata into file (default data)

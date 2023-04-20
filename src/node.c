@@ -6,31 +6,37 @@
 #include "util.h"
 #include "record.h"
 
-struct VdbNode* vdb_node_init_intern(uint32_t idx, struct VdbNode* parent) {
+struct VdbNode* vdb_node_init_intern(uint32_t idx, struct VdbNode* parent, struct VdbPage* page) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
     node->type = VDBN_INTERN;
     node->idx = idx;
     node->parent = parent;
+    node->dirty = true;
+    node->page = page;
     node->as.intern.right = NULL;
     node->as.intern.nodes = vdb_nodelist_alloc();
     return node;
 }
 
-struct VdbNode* vdb_node_init_leaf(uint32_t idx, struct VdbNode* parent) {
+struct VdbNode* vdb_node_init_leaf(uint32_t idx, struct VdbNode* parent, struct VdbPage* page) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
     node->type = VDBN_LEAF;
     node->idx = idx;
     node->parent = parent;
+    node->dirty = true;
+    node->page = page;
     node->as.leaf.data = NULL;
     node->as.leaf.records = vdb_recordlist_alloc();
     return node;
 }
 
-struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent) {
+struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent, struct VdbPage* page) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
     node->type = VDBN_DATA;
     node->idx = idx;
     node->parent = parent;
+    node->dirty = true;
+    node->page = page;
     node->as.data.next = NULL;
     return node;
 }
@@ -47,6 +53,15 @@ void vdb_node_free(struct VdbNode* node) {
             break;
     }
     free(node);
+}
+
+void vdb_node_serialize(uint8_t* buf, struct VdbNode* node) {
+    int off = 0;
+    write_u32(buf, node->type, &off);
+}
+
+void vdb_node_deserialize(struct VdbNode* node, uint8_t* buf) {
+
 }
 
 bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec) {

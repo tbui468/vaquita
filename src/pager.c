@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "pager.h"
 #include "util.h"
@@ -106,7 +107,6 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, FILE* f, uint32_t idx
     return page;
 }
 
-void vdb_pager_unpin_page(struct VdbPager* pager, struct VdbPage* page) {
+void vdb_pager_unpin_page(struct VdbPage* page) {
     page->pin_count--;
 }
-

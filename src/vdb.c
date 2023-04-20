@@ -8,18 +8,37 @@
 #include "util.h"
 #include "tree.h"
 
+
+struct VdbFile* _vdb_get_file(struct Vdb* db, const char* name) {
+    char path[FILENAME_MAX];
+    path[0] = '\0';
+    strcat(path, db->name);
+    strcat(path, ".vdb/");
+    strcat(path, name);
+    strcat(path, ".vtb");
+
+    for (uint32_t i = 0; i < db->files->count; i++) {
+        struct VdbFile* f = db->files->files[i];
+        if (!strncmp(f->name, name, strlen(name))) {
+            return f;
+        }
+    }
+
+    return NULL;
+}
+
 struct VdbFileList* vdb_filelist_alloc() {
     struct VdbFileList* fl = malloc_w(sizeof(struct VdbFileList));
     fl->count = 0;
     fl->capacity = 8; 
-    fl->files = malloc_w(sizeof(FILE*) * fl->capacity);
+    fl->files = malloc_w(sizeof(struct VdbFile*) * fl->capacity);
     return fl;
 }
 
-void vdb_filelist_append_file(struct VdbFileList* fl, FILE* f) {
+void vdb_filelist_append_file(struct VdbFileList* fl, struct VdbFile* f) {
     if (fl->count == fl->capacity) {
         fl->capacity *= 2;
-        fl->files = realloc_w(fl->files, sizeof(FILE*) * fl->capacity);
+        fl->files = realloc_w(fl->files, sizeof(struct VdbFile*) * fl->capacity);
     }
 
     fl->files[fl->count++] = f;
@@ -27,8 +46,10 @@ void vdb_filelist_append_file(struct VdbFileList* fl, FILE* f) {
 
 void vdb_filelist_free(struct VdbFileList* fl) {
     for (uint32_t i = 0; i < fl->count; i++) {
-        FILE* f = fl->files[i];
-        fclose_w(f);
+        struct VdbFile* f = fl->files[i];
+        fclose_w(f->f);
+        free(f->name);
+        free(f);
     }
 
     free(fl->files);
@@ -37,7 +58,6 @@ void vdb_filelist_free(struct VdbFileList* fl) {
 
 VDBHANDLE vdb_open(const char* name) {
     struct Vdb* db = malloc_w(sizeof(struct Vdb));
-    db->trees = treelist_init();
     db->pager = vdb_pager_alloc();
     db->files = vdb_filelist_alloc();
 
@@ -69,8 +89,18 @@ VDBHANDLE vdb_open(const char* name) {
         if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
             continue;
 
-        FILE* f = fopen_w(ent->d_name, "r+");
-        vdb_filelist_append_file(db->files, f);
+        char path[FILENAME_MAX];
+        path[0] = '\0';
+        strcat(path, dirname);
+        strcat(path, "/");
+        strcat(path, ent->d_name);
+        FILE* f = fopen_w(path, "r+");
+
+        struct VdbFile* file = malloc_w(sizeof(struct VdbFile));
+        file->f = f;
+        file->name = strdup_w(ent->d_name);
+        file->name[strlen(ent->d_name)] = '\0';
+        vdb_filelist_append_file(db->files, file);
     }
 
     closedir_w(d);
@@ -81,7 +111,6 @@ VDBHANDLE vdb_open(const char* name) {
 void vdb_close(VDBHANDLE h) {
     struct Vdb* db = (struct Vdb*)h;
     free(db->name);
-    treelist_free(db->trees);
     vdb_pager_free(db->pager);
     vdb_filelist_free(db->files);
     free(db);
@@ -104,8 +133,8 @@ void vdb_free_schema(struct VdbSchema* schema) {
 
 void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = tree_init(name, schema);
 
+    //TODO: return false if table with name already exists
     char table_name[FILENAME_MAX];
     table_name[0] = '\0';
     strcat(table_name, name);
@@ -113,26 +142,32 @@ void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
 
     char path_name[FILENAME_MAX];
     join_path(path_name, ".", db->name, table_name, NULL);
-    FILE* f = fopen_w(path_name, "w+");
-    vdb_filelist_append_file(db->files, f);
+    struct VdbFile* file = malloc_w(sizeof(struct VdbFile));
+    file->f = fopen_w(path_name, "w+");
+    file->name = strdup(name);
+    vdb_filelist_append_file(db->files, file);
 
-    uint32_t idx = vdb_pager_fresh_page(f);
-    struct VdbPage* p = vdb_pager_pin_page(db->pager, f, idx);
-    vdb_tree_serialize_header(p, tree);
-    vdb_pager_unpin_page(db->pager, p);
 
-    treelist_append(db->trees, tree);
+    struct VdbTree* tree = vdb_tree_init(name, schema, db->pager, file->f);
+    vdb_tree_release(tree);
 }
 
 void vdb_drop_table(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
-
-    treelist_remove(db->trees, name);
+    struct VdbFile* file = _vdb_get_file(db, name);
+    char path[FILENAME_MAX];
+    path[0] = '\0';
+    strcat(path, db->name);
+    strcat(path, "/");
+    strcat(path, file->name);
+    remove_w(path);
+    //vdb_filelist_remove_file(
 }
 
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+    struct VdbFile* file = _vdb_get_file(db, name);
+    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
 
     va_list args;
     va_start(args, name);
@@ -140,11 +175,13 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     va_end(args);
 
     vdb_tree_insert_record(tree, rec);
+    vdb_tree_release(tree);
 }
 
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+    struct VdbFile* file = _vdb_get_file(db, name);
+    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
 
     struct VdbRecord* rec = vdb_tree_fetch_record(tree, key);
 
@@ -156,7 +193,8 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) 
 
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+    struct VdbFile* file = _vdb_get_file(db, name);
+    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
 
     va_list args;
     va_start(args, key);
@@ -168,7 +206,8 @@ bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
 
 bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+    struct VdbFile* file = _vdb_get_file(db, name);
+    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
 
     return vdb_tree_delete_record(tree, key);
 }
@@ -202,8 +241,8 @@ void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
-
-    struct VdbTree* tree = treelist_get_tree(db->trees, name);
+    struct VdbFile* file = _vdb_get_file(db, name);
+    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
     _vdb_debug_print_node(tree->root, 0);
 }
 

@@ -38,7 +38,7 @@ void vdb_close(VDBHANDLE h);
 struct VdbSchema* vdb_alloc_schema(int count, ...);
 void vdb_free_schema(struct VdbSchema* schema);
 
-void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema);
+bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema);
 bool vdb_drop_table(VDBHANDLE h, const char* name);
 
 

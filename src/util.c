@@ -214,27 +214,6 @@ char* strdup_w(const char* s) {
     return res;
 }
 
-int join_path(char* result, ...) {
-    result[0] = '\0';
-    va_list ap;
-    char* s;
-    int len = 0;
-    va_start(ap, result);
-    while ((s = va_arg(ap, char*))) {
-        strcat(result + len, s);
-        len += strlen(s);
-        result[len] = '/';
-        len++;
-        result[len] = '\0';
-    }
-    va_end(ap);
-
-    len--;
-    result[len] = '\0';
-
-    return len;
-}
-
 void read_u32(uint32_t* dst, uint8_t* buf, int* off) {
     *dst = *((uint32_t*)(buf + *off));
     *off += sizeof(uint32_t);

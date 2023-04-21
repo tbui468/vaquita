@@ -12,7 +12,9 @@
         into legacy code
 
 **************************************************************************
-    vdb_create_table should fail if a table with name already exists
+    vdb_drop_table causes error since dropping tables makes some pages invalid when trying to flush
+
+    finish serializing and deserializing nodes to/from page buffers
 
     void vdb_node_free(struct VdbNode* node) <--------------need to serialize to page if page dirty flag is set
 

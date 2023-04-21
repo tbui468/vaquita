@@ -7,9 +7,20 @@ int main(int argc, char** argv) {
     argc = argc;
     argv = argv;
 
-    VDBHANDLE h = vdb_open("school");
+    VDBHANDLE h;
+    if ((h = vdb_open("school"))) {
+        printf("Opened 'school' database\n");    
+    } else {
+        printf("Failed to open 'school' database\n");
+    }
+
     struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, VDBF_STR, VDBF_BOOL);
-    vdb_create_table(h, "students", schema);
+
+    if (vdb_create_table(h, "students", schema)) {
+        printf("Created 'students' table\n");
+    } else {
+        printf("Failed to create 'students' table\n");
+    }
 
     /*
     const char* words[] = {"cat", "dogs", "turtles"};
@@ -41,6 +52,7 @@ int main(int argc, char** argv) {
     }*/
 
     vdb_free_schema(schema);
+
     vdb_close(h);
 
     return 0;

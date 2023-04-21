@@ -71,7 +71,6 @@ VDBHANDLE vdb_open(const char* name) {
     char dirname[FILENAME_MAX];
     dirname[0] = '\0';
     strcat(dirname, name);
-    strcat(dirname, ".vdb");
 
     //open directory with all table files
     DIR* d;
@@ -136,14 +135,49 @@ void vdb_free_schema(struct VdbSchema* schema) {
     vdb_schema_free(schema);
 }
 
-void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
+bool vdb_table_exists(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
 
-    //TODO: return false if table with name already exists
+    char dirpath[FILENAME_MAX];
+    dirpath[0] = '\0';
+    strcat(dirpath, db->name);
+
+    DIR* d;
+    if (!(d = opendir(dirpath)))
+        return false;
+
+    char table_filename[FILENAME_MAX];
+    table_filename[0] = '\0';
+    strcat(table_filename, name);
+    strcat(table_filename, ".vtb");
+
+    bool found = false;
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        int entry_len = strlen(ent->d_name);
+        if (entry_len == strlen(table_filename)) {
+            if (!strncmp(ent->d_name, table_filename, entry_len)) {
+                found = true;
+                break;
+            }
+        }
+    }
+
+    closedir_w(d);
+
+    return found;
+}
+
+bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
+    if (vdb_table_exists(h, name))
+        return false;
+
+    struct Vdb* db = (struct Vdb*)h;
+
     char path[FILENAME_MAX];
     path[0] = '\0';
     strcat(path, db->name);
-    strcat(path, ".vdb/");
+    strcat(path, "/");
     strcat(path, name);
     strcat(path, ".vtb");
 
@@ -154,6 +188,8 @@ void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
 
     struct VdbTree* tree = vdb_tree_init(name, schema, db->pager, file->f);
     vdb_tree_release(tree);
+
+    return true;
 }
 
 bool vdb_drop_table(VDBHANDLE h, const char* name) {

@@ -44,7 +44,6 @@ char* strdup_w(const char* s);
 void err_quit(const char* msg);
 
 //utility
-int join_path(char* result, ...);
 void read_u32(uint32_t* dst, uint8_t* buf, int* off);
 void write_u32(uint8_t* dst, uint32_t v, int* off);
 

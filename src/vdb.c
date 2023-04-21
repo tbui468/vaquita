@@ -182,6 +182,7 @@ bool vdb_drop_table(VDBHANDLE h, const char* name) {
 }
 
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
+    /*
     struct Vdb* db = (struct Vdb*)h;
     struct VdbFile* file = vdb_filelist_get_file(db->files, name);
     struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
@@ -192,10 +193,11 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     va_end(args);
 
     vdb_tree_insert_record(tree, rec);
-    vdb_tree_release(tree);
+    vdb_tree_release(tree);*/
 }
 
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) {
+    /*
     struct Vdb* db = (struct Vdb*)h;
     struct VdbFile* file = vdb_filelist_get_file(db->files, name);
     struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
@@ -205,10 +207,12 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) 
     if (rec)
         rec = vdb_record_copy(rec);
 
-    return rec;
+    return rec;*/
+    return NULL;
 }
 
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
+    /*
     struct Vdb* db = (struct Vdb*)h;
     struct VdbFile* file = vdb_filelist_get_file(db->files, name);
     struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
@@ -218,18 +222,22 @@ bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     struct VdbRecord* rec = vdb_record_alloc(key, tree->schema, args);
     va_end(args);
 
-    return vdb_tree_update_record(tree, rec);
+    return vdb_tree_update_record(tree, rec);*/
+    return true;
 }
 
 bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
+    /*
     struct Vdb* db = (struct Vdb*)h;
     struct VdbFile* file = vdb_filelist_get_file(db->files, name);
     struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
 
-    return vdb_tree_delete_record(tree, key);
+    return vdb_tree_delete_record(tree, key);*/
+    return true;
 }
 
 void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
+    /*
     char spaces[depth * 4 + 1];
     memset(spaces, ' ', sizeof(spaces) - 1);
     spaces[depth * 4] = '\0';
@@ -253,14 +261,16 @@ void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
             }
         }
         printf("\n");
-    }
+    }*/
 }
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
+    /*
     struct Vdb* db = (struct Vdb*)h;
     struct VdbFile* file = vdb_filelist_get_file(db->files, name);
     struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
     _vdb_debug_print_node(tree->root, 0);
+    */
 }
 
 

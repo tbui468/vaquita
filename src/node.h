@@ -5,31 +5,45 @@
 #include <stdbool.h>
 
 #include "record.h"
-#include "pager.h"
 
 enum VdbNodeType {
+    VDBN_META,
     VDBN_INTERN,
     VDBN_LEAF,
     VDBN_DATA
 };
 
+struct VdbPtr {
+    uint32_t idx;
+    uint32_t key;
+};
+
+struct VdbPtrList {
+    struct VdbPtr* pointers;
+    uint32_t count;
+    uint32_t capacity;
+};
+
 struct VdbNode {
     enum VdbNodeType type;
-    uint32_t idx;
-    struct VdbNode* parent;
+    uint32_t parent_idx;
     bool dirty;
-    struct VdbPage* page;
     union {
         struct {
-            struct VdbNodeList* nodes;
-            struct VdbNode* right;
+            struct VdbSchema* schema;
+            uint32_t pk_counter;
+            uint32_t root_idx;
+        } meta;
+        struct {
+            struct VdbPtrList* pointers;
+            uint32_t right_idx;
         } intern;
         struct {
             struct VdbRecordList* records;
-            struct VdbNode* data;
+            uint32_t data_idx;
         } leaf;
         struct {
-            struct VdbNode* next;
+            uint32_t next_idx;
         } data;
     } as; 
 };
@@ -40,9 +54,7 @@ struct VdbNodeList {
     uint32_t capacity;
 };
 
-struct VdbNode* vdb_node_init_intern(uint32_t idx, struct VdbNode* parent, struct VdbPage* page);
-struct VdbNode* vdb_node_init_leaf(uint32_t idx, struct VdbNode* parent, struct VdbPage* page);
-struct VdbNode* vdb_node_init_data(uint32_t idx, struct VdbNode* parent, struct VdbPage* page);
+struct VdbNode* vdb_node_init(enum VdbNodeType type, uint32_t parent_idx);
 void vdb_node_free(struct VdbNode* node);
 void vdb_node_serialize(uint8_t* buf, struct VdbNode* node);
 void vdb_node_deserialize(struct VdbNode* node, uint8_t* buf);
@@ -50,10 +62,8 @@ void vdb_node_deserialize(struct VdbNode* node, uint8_t* buf);
 bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec);
 bool vdb_node_intern_full(struct VdbNode* node);
 
-struct VdbNodeList* vdb_nodelist_alloc();
-void vdb_nodelist_append_node(struct VdbNodeList* nl, struct VdbNode* node);
-struct VdbNode* vdb_nodelist_get_node(struct VdbNodeList* nl, uint32_t idx);
-void vdb_nodelist_remove_node(struct VdbNodeList* nl, uint32_t idx);
-void vdb_nodelist_free(struct VdbNodeList* nl);
+struct VdbPtrList* vdb_ptrlist_alloc();
+void vdb_ptrlist_append_ptr(struct VdbPtrList* pl, struct VdbPtr ptr);
+void vdb_ptrlist_free(struct VdbPtrList* pl);
 
 #endif //VDB_NODE_H

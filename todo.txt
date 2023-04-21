@@ -12,19 +12,11 @@
         into legacy code
 
 **************************************************************************
-    Dropping tables is problematic now... since closing database tries to write dirty pages to a now-closed FILE*
-        and giving error
-
-    Replace node pointers inside of struct VdbNode with uint32_t idx - need to use this index
-        to deserialize nodes if needed will
-
-        Requires a massive rewrite here since it's all using pointers now
-        then finish de/serializing nodes/buffer
+    
 
     vdb_create_table
-        requires a bit of work to clean up:
-            prevent creation if table with same name already exists
-            unpinning all pages at the end of this function is ... not going to work since a single page may be pinned multiple times
+        seg faulting now <-----------START HERE
+        unpinning all pages at the end of this function is ... not going to work since a single page may be pinned multiple times
 
     void vdb_node_free(struct VdbNode* node) <--------------need to serialize to page if page dirty flag is set
 

@@ -8,16 +8,23 @@
 #include "record.h"
 #include "pager.h"
 
+struct VdbChunk {
+    struct VdbNode* node;
+    struct VdbPage* page;
+};
+
+struct VdbChunkList {
+    struct VdbChunk* chunks;
+    uint32_t count;
+    uint32_t capacity;
+};
+
 struct VdbTree {
     char* name;
-    struct VdbSchema* schema;
-    uint32_t pk_counter;
-    uint32_t node_idx_counter;
-    struct VdbNode* root;
-    struct VdbPager* pager;
     FILE* f;
-    bool dirty;
-    struct VdbPage* page;
+    struct VdbPager* pager;
+    uint32_t meta_idx;
+    struct VdbChunkList* chunks;
 };
 
 struct VdbTreeList {
@@ -26,10 +33,14 @@ struct VdbTreeList {
     uint32_t capacity;
 };
 
+struct VdbChunkList* vdb_chunklist_init();
+void vdb_chunklist_append_chunk(struct VdbChunkList* cl, struct VdbChunk chunk);
+void vdb_chunklist_free(struct VdbChunkList* cl);
+
 struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f);
-void vdb_tree_serialize_header(struct VdbTree* tree);
 struct VdbTree* vdb_tree_catch(FILE* f, struct VdbPager* pager);
 void vdb_tree_release(struct VdbTree* tree);
+
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
 struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);

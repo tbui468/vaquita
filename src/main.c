@@ -33,11 +33,12 @@ int main(int argc, char** argv) {
         }
     }*/
 
+    /*
     if (vdb_drop_table(h, "students")) {
         printf("Dropped students table\n");
     } else {
         printf("Error: No students table\n");
-    }
+    }*/
 
     vdb_free_schema(schema);
     vdb_close(h);

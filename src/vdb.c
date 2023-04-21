@@ -152,7 +152,6 @@ void vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
     file->name = strdup_w(name);
     vdb_filelist_append_file(db->files, file);
 
-
     struct VdbTree* tree = vdb_tree_init(name, schema, db->pager, file->f);
     vdb_tree_release(tree);
 }

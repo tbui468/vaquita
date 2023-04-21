@@ -37,6 +37,10 @@ struct VdbChunkList* vdb_chunklist_init();
 void vdb_chunklist_append_chunk(struct VdbChunkList* cl, struct VdbChunk chunk);
 void vdb_chunklist_free(struct VdbChunkList* cl);
 
+
+struct VdbChunk vdb_tree_catch_chunk(struct VdbTree* tree, uint32_t idx);
+void vdb_tree_release_chunk(struct VdbTree* tree, struct VdbChunk chunk);
+
 struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f);
 struct VdbTree* vdb_tree_catch(FILE* f, struct VdbPager* pager);
 void vdb_tree_release(struct VdbTree* tree);

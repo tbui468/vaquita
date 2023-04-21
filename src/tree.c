@@ -5,7 +5,6 @@
 #include "util.h"
 #include "tree.h"
 
-
 struct VdbChunkList* vdb_chunklist_init() {
     struct VdbChunkList* cl = malloc_w(sizeof(struct VdbChunkList));
     cl->count = 0;
@@ -29,7 +28,7 @@ void vdb_chunklist_free(struct VdbChunkList* cl) {
 }
 
 struct VdbChunk vdb_tree_init_chunk(struct VdbTree* tree, uint32_t parent_idx, enum VdbNodeType type) {
-    struct VdbNode* node = vdb_node_init(parent_idx, type);
+    struct VdbNode* node = vdb_node_init(type, parent_idx);
 
     uint32_t idx = vdb_pager_fresh_page(tree->f);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->f, idx);
@@ -59,7 +58,7 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     vdb_tree_release_chunk(tree, meta);
     vdb_tree_release_chunk(tree, leaf);
     vdb_tree_release_chunk(tree, root);
-
+    
     return tree;
 }
 

@@ -31,7 +31,7 @@ struct VdbChunk vdb_tree_init_chunk(struct VdbTree* tree, uint32_t parent_idx, e
     struct VdbNode* node = vdb_node_init(type, parent_idx);
 
     uint32_t idx = vdb_pager_fresh_page(tree->f);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->f, idx);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
     struct VdbChunk c = {node, page};
@@ -47,7 +47,7 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
 
     struct VdbChunk meta = vdb_tree_init_chunk(tree, 0, VDBN_META);
     meta.node->as.meta.schema = vdb_schema_copy(schema);
-    tree->meta_idx = meta.page->idx;
+    tree->meta_idx = 0;
 
     struct VdbChunk root = vdb_tree_init_chunk(tree, 0, VDBN_INTERN);
     meta.node->as.meta.root_idx = root.page->idx;
@@ -62,13 +62,19 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     return tree;
 }
 
-struct VdbTree* vdb_tree_catch(FILE* f, struct VdbPager* pager) {
-    return NULL;
+struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager) {
+    struct VdbTree* tree = malloc_w(sizeof(struct VdbTree));
+    tree->name = strdup(name);
+    tree->f = f;
+    tree->pager = pager;
+    tree->meta_idx = 0;
+    tree->chunks = vdb_chunklist_init();
+    return tree;
 }
 
 struct VdbChunk vdb_tree_catch_chunk(struct VdbTree* tree, uint32_t idx) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->f, idx); 
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx); 
     vdb_node_deserialize(node, page->buf);
 
     node->dirty = false;
@@ -238,7 +244,7 @@ bool vdb_tree_delete_record(struct VdbTree* tree, uint32_t key) {
     return false;
 }
 
-struct VdbTreeList* treelist_init() {
+struct VdbTreeList* vdb_treelist_init() {
     struct VdbTreeList* tl = malloc_w(sizeof(struct VdbTreeList));
     tl->count = 0;
     tl->capacity = 8;
@@ -247,7 +253,7 @@ struct VdbTreeList* treelist_init() {
     return tl;
 }
 
-void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree) {
+void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree) {
     if (tl->count == tl->capacity) {
         tl->capacity *= 2;
         tl->trees = realloc_w(tl->trees, sizeof(struct VdbTree*) * tl->capacity);
@@ -256,7 +262,7 @@ void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree) {
     tl->trees[tl->count++] = tree;
 }
 
-struct VdbTree* treelist_get_tree(struct VdbTreeList* tl, const char* name) {
+struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name) {
     struct VdbTree* t;
     uint32_t i;
     for (i = 0; i < tl->count; i++) {
@@ -268,7 +274,7 @@ struct VdbTree* treelist_get_tree(struct VdbTreeList* tl, const char* name) {
     return NULL;
 }
 
-void treelist_remove(struct VdbTreeList* tl, const char* name) {
+struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* name) {
     struct VdbTree* t = NULL;
     uint32_t i;
     for (i = 0; i < tl->count; i++) {
@@ -279,11 +285,12 @@ void treelist_remove(struct VdbTreeList* tl, const char* name) {
 
     if (t) {
         tl->trees[i] = tl->trees[--tl->count];
-        vdb_tree_release(t);
     }
+
+    return t;
 }
 
-void treelist_free(struct VdbTreeList* tl) {
+void vdb_treelist_free(struct VdbTreeList* tl) {
     for (uint32_t i = 0; i < tl->count; i++) {
         struct VdbTree* t = tl->trees[i];
         vdb_tree_release(t);

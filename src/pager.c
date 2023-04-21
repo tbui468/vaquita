@@ -17,11 +17,12 @@ uint32_t vdb_pager_fresh_page(FILE* f) {
 }
 
 void _vdb_pager_free_page(struct VdbPage* page) {
+    free(page->name);
     free(page->buf);
     free(page);
 }
 
-struct VdbPage* _vdb_pager_load_page(FILE* f, uint32_t idx) {
+struct VdbPage* _vdb_pager_load_page(char* name, FILE* f, uint32_t idx) {
     struct VdbPage* page = malloc_w(sizeof(struct VdbPage));
 
     page->dirty = false;
@@ -31,6 +32,7 @@ struct VdbPage* _vdb_pager_load_page(FILE* f, uint32_t idx) {
     fseek_w(f, page->idx * VDB_PAGE_SIZE, SEEK_SET);
     fread_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
     page->f = f;
+    page->name = strdup_w(name);
 
     return page;
 }
@@ -84,7 +86,7 @@ void vdb_pager_free(struct VdbPager* pager) {
     free(pager);
 }
 
-struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
+struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
     //search for page in buffer cache
     struct VdbPage* page = NULL;
     for (uint32_t i = 0; i < pager->pages->count; i++) {
@@ -98,7 +100,7 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, FILE* f, uint32_t idx
     //not cached, so read from disk
     if (!page) {
         //TODO: evict here if necessary before loading page.  Only evict a page if pin_count == 0
-        page = _vdb_pager_load_page(f, idx);
+        page = _vdb_pager_load_page(name, f, idx);
         _vdb_pagelist_append_page(pager->pages, page);
     }
 
@@ -109,4 +111,16 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, FILE* f, uint32_t idx
 
 void vdb_pager_unpin_page(struct VdbPage* page) {
     page->pin_count--;
+}
+
+void vdb_pager_evict_pages(struct VdbPager* pager, char* name) {
+    for (uint32_t i = 0; i < pager->pages->count; i++) {
+        struct VdbPage* p = pager->pages->pages[i];
+        if (!strncmp(name, p->name, strlen(name))) {
+            _vdb_pager_free_page(p);
+            pager->pages->pages[i] = pager->pages->pages[pager->pages->count - 1];
+            pager->pages->count--;
+            i--;
+        }
+    }
 }

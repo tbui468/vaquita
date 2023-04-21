@@ -12,7 +12,7 @@
         into legacy code
 
 **************************************************************************
-    vdb_drop_table causes error since dropping tables makes some pages invalid when trying to flush
+    dropping table causes close database to crash...
 
     finish serializing and deserializing nodes to/from page buffers
 

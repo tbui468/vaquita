@@ -9,63 +9,10 @@
 #include "tree.h"
 
 
-struct VdbFileList* vdb_filelist_alloc() {
-    struct VdbFileList* fl = malloc_w(sizeof(struct VdbFileList));
-    fl->count = 0;
-    fl->capacity = 8; 
-    fl->files = malloc_w(sizeof(struct VdbFile*) * fl->capacity);
-    return fl;
-}
-
-void vdb_filelist_append_file(struct VdbFileList* fl, struct VdbFile* f) {
-    if (fl->count == fl->capacity) {
-        fl->capacity *= 2;
-        fl->files = realloc_w(fl->files, sizeof(struct VdbFile*) * fl->capacity);
-    }
-
-    fl->files[fl->count++] = f;
-}
-
-struct VdbFile* vdb_filelist_get_file(struct VdbFileList* fl, const char* name) {
-    for (uint32_t i = 0; i < fl->count; i++) {
-        struct VdbFile* f = fl->files[i];
-        if (!strncmp(f->name, name, strlen(f->name))) {
-            return f;
-        }
-    }
-
-    return NULL;
-}
-
-struct VdbFile* vdb_filelist_remove_file(struct VdbFileList* fl, const char* name) {
-    for (uint32_t i = 0; i < fl->count; i++) {
-        struct VdbFile* f = fl->files[i];
-        if (!strncmp(f->name, name, strlen(f->name))) {
-            fl->files[i] = fl->files[fl->count - 1];
-            fl->count--;
-            return f;
-        }
-    }
-
-    return NULL;
-}
-
-void vdb_filelist_free(struct VdbFileList* fl) {
-    for (uint32_t i = 0; i < fl->count; i++) {
-        struct VdbFile* f = fl->files[i];
-        fclose_w(f->f);
-        free(f->name);
-        free(f);
-    }
-
-    free(fl->files);
-    free(fl);
-}
-
 VDBHANDLE vdb_open(const char* name) {
     struct Vdb* db = malloc_w(sizeof(struct Vdb));
     db->pager = vdb_pager_alloc();
-    db->files = vdb_filelist_alloc();
+    db->trees = vdb_treelist_init();
     db->name = strdup_w(name);
 
     char dirname[FILENAME_MAX];
@@ -100,11 +47,11 @@ VDBHANDLE vdb_open(const char* name) {
         FILE* f = fopen_w(path, "r+");
         setbuf(f, NULL);
 
-        struct VdbFile* file = malloc_w(sizeof(struct VdbFile));
-        file->f = f;
-        file->name = strdup_w(ent->d_name);
-        file->name[strlen(ent->d_name)] = '\0';
-        vdb_filelist_append_file(db->files, file);
+        char* s = malloc_w(sizeof(char) * (entry_len - 3));
+        memcpy(s, ent->d_name, entry_len - 4);
+        s[entry_len - 3] = '\0';
+        struct VdbTree* tree = vdb_tree_catch(s, f, db->pager);
+        vdb_treelist_append_tree(db->trees, tree);
     }
 
     closedir_w(d);
@@ -112,12 +59,14 @@ VDBHANDLE vdb_open(const char* name) {
     return (VDBHANDLE)db;
 }
 
-void vdb_close(VDBHANDLE h) {
+bool vdb_close(VDBHANDLE h) {
     struct Vdb* db = (struct Vdb*)h;
-    free(db->name);
+    vdb_treelist_free(db->trees);
     vdb_pager_free(db->pager);
-    vdb_filelist_free(db->files);
+    free(db->name);
     free(db);
+
+    return true;
 }
 
 struct VdbSchema* vdb_alloc_schema(int count, ...) {
@@ -181,34 +130,30 @@ bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
     strcat(path, name);
     strcat(path, ".vtb");
 
-    struct VdbFile* file = malloc_w(sizeof(struct VdbFile));
-    file->f = fopen_w(path, "w+");
-    file->name = strdup_w(name);
-    vdb_filelist_append_file(db->files, file);
-
-    struct VdbTree* tree = vdb_tree_init(name, schema, db->pager, file->f);
-    vdb_tree_release(tree);
+    FILE* f = fopen_w(path, "w+");
+    struct VdbTree* tree = vdb_tree_init(name, schema, db->pager, f);
+    vdb_treelist_append_tree(db->trees, tree);
 
     return true;
 }
 
 bool vdb_drop_table(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbFile* file = vdb_filelist_remove_file(db->files, name);
+    struct VdbTree* tree = vdb_treelist_remove_tree(db->trees, name);
 
-    if (file) {
+    if (tree) {
         char path[FILENAME_MAX];
         path[0] = '\0';
         strcat(path, db->name);
-        strcat(path, ".vdb/");
-        strcat(path, file->name);
+        strcat(path, "/");
+        strcat(path, tree->name);
         strcat(path, ".vtb");
 
-        remove_w(path);
+        fclose_w(tree->f);
+        vdb_tree_release(tree);
+        vdb_pager_evict_pages(db->pager, name);
 
-        fclose_w(file->f);
-        free(file->name);
-        free(file);
+        remove_w(path);
 
         return true;
     }

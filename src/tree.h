@@ -37,12 +37,11 @@ struct VdbChunkList* vdb_chunklist_init();
 void vdb_chunklist_append_chunk(struct VdbChunkList* cl, struct VdbChunk chunk);
 void vdb_chunklist_free(struct VdbChunkList* cl);
 
-
 struct VdbChunk vdb_tree_catch_chunk(struct VdbTree* tree, uint32_t idx);
 void vdb_tree_release_chunk(struct VdbTree* tree, struct VdbChunk chunk);
 
 struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f);
-struct VdbTree* vdb_tree_catch(FILE* f, struct VdbPager* pager);
+struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager);
 void vdb_tree_release(struct VdbTree* tree);
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
@@ -50,11 +49,11 @@ struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);
 bool vdb_tree_delete_record(struct VdbTree* tree, uint32_t key);
 
-struct VdbTreeList* treelist_init();
-void treelist_append(struct VdbTreeList* tl, struct VdbTree* tree);
-struct VdbTree* treelist_get_tree(struct VdbTreeList* tl, const char* name);
-void treelist_remove(struct VdbTreeList* tl, const char* name);
-void treelist_free(struct VdbTreeList* tl);
+struct VdbTreeList* vdb_treelist_init();
+void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree);
+struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name);
+struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* name);
+void vdb_treelist_free(struct VdbTreeList* tl);
 
 
 #endif //VDB_TREE_H

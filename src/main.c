@@ -44,16 +44,20 @@ int main(int argc, char** argv) {
         }
     }*/
 
-    /*
+
     if (vdb_drop_table(h, "students")) {
-        printf("Dropped students table\n");
+        printf("Dropped 'students' table\n");
     } else {
-        printf("Error: No students table\n");
-    }*/
+        printf("Failed to drop 'students' table\n");
+    }
 
     vdb_free_schema(schema);
 
-    vdb_close(h);
+    if (vdb_close(h)) {
+        printf("Closed 'school' database\n");
+    } else {
+        printf("Failed to close 'school' database\n");
+    }
 
     return 0;
 }

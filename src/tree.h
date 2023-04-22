@@ -45,9 +45,10 @@ struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager
 void vdb_tree_release(struct VdbTree* tree);
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
+/*
 struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);
-bool vdb_tree_delete_record(struct VdbTree* tree, uint32_t key);
+bool vdb_tree_delete_record(struct VdbTree* tree, uint32_t key);*/
 
 struct VdbTreeList* vdb_treelist_init();
 void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree);

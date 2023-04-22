@@ -33,5 +33,7 @@ struct VdbDatum {
 struct VdbSchema* vdb_schema_alloc(int count, va_list args);
 void vdb_schema_free(struct VdbSchema* schema);
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
+void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off);
+struct VdbSchema* vdb_schema_deserialize(uint8_t* buf, int* off);
 
 #endif //VDB_SCHEMA_H

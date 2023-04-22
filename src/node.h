@@ -27,25 +27,25 @@ struct VdbPtrList {
 struct VdbNode {
     enum VdbNodeType type;
     uint32_t parent_idx;
-    bool dirty;
     union {
         struct {
-            struct VdbSchema* schema;
             uint32_t pk_counter;
             uint32_t root_idx;
+            struct VdbSchema* schema;
         } meta;
         struct {
-            struct VdbPtrList* pointers;
             uint32_t right_idx;
+            struct VdbPtrList* pointers;
         } intern;
         struct {
-            struct VdbRecordList* records;
             uint32_t data_idx;
+            struct VdbRecordList* records;
         } leaf;
         struct {
             uint32_t next_idx;
         } data;
     } as; 
+    bool dirty;
 };
 
 struct VdbNodeList {
@@ -57,7 +57,7 @@ struct VdbNodeList {
 struct VdbNode* vdb_node_init(enum VdbNodeType type, uint32_t parent_idx);
 void vdb_node_free(struct VdbNode* node);
 void vdb_node_serialize(uint8_t* buf, struct VdbNode* node);
-void vdb_node_deserialize(struct VdbNode* node, uint8_t* buf);
+struct VdbNode* vdb_node_deserialize(uint8_t* buf);
 
 bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec);
 bool vdb_node_intern_full(struct VdbNode* node);

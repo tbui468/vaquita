@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "pager.h"
 #include "util.h"
@@ -24,6 +25,7 @@ void _vdb_pager_free_page(struct VdbPage* page) {
 
 struct VdbPage* _vdb_pager_load_page(char* name, FILE* f, uint32_t idx) {
     struct VdbPage* page = malloc_w(sizeof(struct VdbPage));
+    page->buf = calloc(VDB_PAGE_SIZE, sizeof(uint8_t));
 
     page->dirty = false;
     page->pin_count = 0;
@@ -113,7 +115,7 @@ void vdb_pager_unpin_page(struct VdbPage* page) {
     page->pin_count--;
 }
 
-void vdb_pager_evict_pages(struct VdbPager* pager, char* name) {
+void vdb_pager_evict_pages(struct VdbPager* pager, const char* name) {
     for (uint32_t i = 0; i < pager->pages->count; i++) {
         struct VdbPage* p = pager->pages->pages[i];
         if (!strncmp(name, p->name, strlen(name))) {

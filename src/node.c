@@ -56,10 +56,53 @@ void vdb_node_free(struct VdbNode* node) {
 void vdb_node_serialize(uint8_t* buf, struct VdbNode* node) {
     int off = 0;
     write_u32(buf, node->type, &off);
+    write_u32(buf, node->parent_idx, &off);
+
+    switch (node->type) {
+        case VDBN_META:
+            write_u32(buf, node->as.meta.pk_counter, &off);
+            write_u32(buf, node->as.meta.root_idx, &off);
+            vdb_schema_serialize(buf, node->as.meta.schema, &off);
+            break;
+        case VDBN_INTERN:
+            write_u32(buf, node->as.intern.right_idx, &off);
+            break;
+        case VDBN_LEAF:
+            write_u32(buf, node->as.leaf.data_idx, &off);
+            break;
+        case VDBN_DATA:
+            write_u32(buf, node->as.data.next_idx, &off);
+            break;
+    }
 }
 
-void vdb_node_deserialize(struct VdbNode* node, uint8_t* buf) {
+struct VdbNode* vdb_node_deserialize(uint8_t* buf) {
+    struct VdbNode* node = malloc_w(sizeof(struct VdbNode));
 
+    int off = 0;
+    uint32_t type;
+    read_u32(&type, buf, &off);
+    node->type = type;
+    read_u32(&node->parent_idx, buf, &off);
+
+    switch (node->type) {
+        case VDBN_META:
+            read_u32(&node->as.meta.pk_counter, buf, &off);
+            read_u32(&node->as.meta.root_idx, buf, &off);
+            node->as.meta.schema = vdb_schema_deserialize(buf, &off);
+            break;
+        case VDBN_INTERN:
+            read_u32(&node->as.intern.right_idx, buf, &off);
+            break;
+        case VDBN_LEAF:
+            read_u32(&node->as.leaf.data_idx, buf, &off);
+            break;
+        case VDBN_DATA:
+            read_u32(&node->as.data.next_idx, buf, &off);
+            break;
+    }
+
+    return node;
 }
 
 bool vdb_node_leaf_full(struct VdbNode* node, struct VdbRecord* rec) {

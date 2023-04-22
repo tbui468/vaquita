@@ -22,12 +22,13 @@ int main(int argc, char** argv) {
         printf("Failed to create 'students' table\n");
     }
 
-    /*
+    
     const char* words[] = {"cat", "dogs", "turtles"};
-    for (int i = 1; i <= 100; i++) {
+    for (int i = 1; i <= 1; i++) {
         vdb_insert_record(h, "students", i, words[i % 3], i % 2 == 0);
     }
 
+    /*
     vdb_update_record(h, "students", 100, 0, "lions", true);
     vdb_delete_record(h, "students", 2);
     vdb_delete_record(h, "students", 3);

@@ -13,6 +13,8 @@
 
 **************************************************************************
     vdb_insert_record <----------FINISH THIS GUY
+        Made 'test' function - why is that function modifying data in chunk2???
+        Freeing the schema breaks everything... <----------LOOOK HERE
 
     How to test the deserialization works?  Need to actually use the tree now....
 

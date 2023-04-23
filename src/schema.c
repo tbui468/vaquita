@@ -42,6 +42,7 @@ void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off) {
 struct VdbSchema* vdb_schema_deserialize(uint8_t* buf, int* off) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     read_u32(&schema->count, buf, off);
+    schema->fields = malloc_w(sizeof(enum VdbField) * schema->count);
     for (uint32_t i = 0; i < schema->count; i++) {
         uint32_t type;
         read_u32(&type, buf, off);

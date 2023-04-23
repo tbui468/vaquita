@@ -73,13 +73,14 @@ struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager
 }
 
 struct VdbChunk vdb_tree_catch_chunk(struct VdbTree* tree, uint32_t idx) {
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx); 
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     struct VdbNode* node = vdb_node_deserialize(page->buf);
     node->dirty = false;
 
     struct VdbChunk c = {node, page};
     return c;
 }
+
 
 void vdb_tree_release_chunk(struct VdbTree* tree, struct VdbChunk chunk) {
     if (chunk.node->dirty) {

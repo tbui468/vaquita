@@ -103,9 +103,8 @@ bool vdb_table_exists(VDBHANDLE h, const char* name) {
     bool found = false;
     struct dirent* ent;
     while ((ent = readdir(d)) != NULL) {
-        int entry_len = strlen(ent->d_name);
-        if (entry_len == strlen(table_filename)) {
-            if (!strncmp(ent->d_name, table_filename, entry_len)) {
+        if (strlen(ent->d_name) == strlen(table_filename)) {
+            if (!strncmp(ent->d_name, table_filename, strlen(table_filename))) {
                 found = true;
                 break;
             }
@@ -170,9 +169,18 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     } else {
         printf("no tree found\n");
     }
-    printf("%s\n", name);
+
+    printf("a\n");
     struct VdbChunk meta = vdb_tree_catch_chunk(tree, tree->meta_idx);
-    vdb_tree_release_chunk(tree, meta);
+    printf("b\n");
+    struct VdbChunk root = vdb_tree_catch_chunk(tree, meta.node->as.meta.root_idx);
+    printf("c\n");
+    struct VdbChunk leaf = vdb_tree_catch_chunk(tree, root.node->as.intern.right_idx);
+    vdb_tree_release_chunk(tree, meta); //TODO: why does this invalidate all of root chunk?
+    printf("d\n");
+    vdb_tree_release_chunk(tree, root);
+    printf("e\n");
+    vdb_tree_release_chunk(tree, leaf);
 
     /*
     struct Vdb* db = (struct Vdb*)h;

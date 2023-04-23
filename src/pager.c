@@ -93,7 +93,7 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, 
     struct VdbPage* page = NULL;
     for (uint32_t i = 0; i < pager->pages->count; i++) {
         struct VdbPage* p = pager->pages->pages[i];
-        if (p->idx == idx) {
+        if (p->idx == idx && !strncmp(p->name, name, strlen(name))) {
             page = p;
             break;
         }

@@ -93,9 +93,11 @@ struct VdbNode* vdb_node_deserialize(uint8_t* buf) {
             break;
         case VDBN_INTERN:
             read_u32(&node->as.intern.right_idx, buf, &off);
+            node->as.intern.pointers = vdb_ptrlist_alloc();
             break;
         case VDBN_LEAF:
             read_u32(&node->as.leaf.data_idx, buf, &off);
+            node->as.leaf.records = vdb_recordlist_alloc();
             break;
         case VDBN_DATA:
             read_u32(&node->as.data.next_idx, buf, &off);

@@ -14,14 +14,11 @@
     Use Yahoo or some other database standard metric to focus on core features
 
 **************************************************************************
-    Remove unused struct Node and struct Chunk (since we are using pages directly now, and the node module will
-        just have functions to write/read pages)
-
     Serialize strings to data blocks
 
-    Fetch record
-
     Deal with situation when leaves/interns are full
+
+    Fetch record
 
     Turn on warnings to catch problems
 

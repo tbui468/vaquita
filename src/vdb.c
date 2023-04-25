@@ -166,17 +166,12 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
 
-    printf("allocating record\n");
     va_list args;
     va_start(args, name);
     struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
     va_end(args);
-    printf("record allocated\n");
 
-
-    printf("inserting record\n");
     vdb_tree_insert_record(tree, rec);
-    printf("record inserted\n");
 }
 
 /*

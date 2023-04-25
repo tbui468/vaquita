@@ -19,7 +19,7 @@ struct VdbRecordList {
 
 
 //record
-//[next|size|data....]
+//[next|size|data (first is key)....]
 
 struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_list args);
 void vdb_record_free(struct VdbRecord* rec);

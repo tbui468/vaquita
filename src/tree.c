@@ -5,6 +5,7 @@
 #include "util.h"
 #include "tree.h"
 
+
 struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree) {
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
     struct VdbSchema* schema = vdbnode_meta_read_schema(page->buf);

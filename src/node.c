@@ -106,7 +106,7 @@ uint32_t vdbnode_leaf_read_datacells_size(uint8_t* buf) {
 }
 
 uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx) {
-    int off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * 2 * idx;
+    int off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * idx;
 
     uint32_t data_off;
     read_u32(&data_off, buf, &off);
@@ -155,6 +155,9 @@ void vdbnode_leaf_write_record(uint8_t* buf, struct VdbRecord* rec) {
 
     uint32_t new_data_size = prev_data_size + rec_size + sizeof(uint32_t) * 2;
     vdbnode_leaf_write_datacells_size(buf, new_data_size);
+
+    rec_count++;
+    vdbnode_leaf_write_record_count(buf, rec_count);
 }
 
 /*

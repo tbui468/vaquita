@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
 
     
     const char* words[] = {"cat", "dogs", "turtles"};
-    for (int i = 1; i <= 2; i++) {
+    for (int i = 1; i <= 5; i++) {
         vdb_insert_record(h, "students", i, words[i % 3], i % 2 == 0);
     }
 

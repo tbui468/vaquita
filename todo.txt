@@ -12,9 +12,30 @@
         into legacy code
 
 **************************************************************************
-    vdb_insert_record <----------FINISH THIS GUY
-        Made 'test' function - why is that function modifying data in chunk2???
-        Freeing the schema breaks everything... <----------LOOOK HERE
+    vdb_insert_record
+        Not currently serializing records and pointers, so debug code does not print out inserted record <------START HERE
+            How should data blocks be used here?  One option is to use a wrapper in the tree module for de/serialization:
+                For meta and intern blocks, just call the node de/serialization functions directly
+                For leaf nodes, keep some internal state and coordinate de/serialization to correct data blocks
+
+            vdb_tree_serialize_chunk(struct VdbTree* tree, struct VdbChunk c) {
+                if (c.node->type == VDBN_LEAF) {
+                    uint8_t buf = malloc();
+                    while (true) {
+                        uint32_t size = vdb_node_serialize(buf, c.node);
+                        if (buf is filled with any data)
+                            grab next data block and write buf to it
+                    }
+                    free(buf);
+                } else {
+                    vdb_node_serialize(c.page->buf, c.node);
+                }
+            }
+
+
+        vdb_tree_insert_record(tree, rec); <------finish other possibilties when intern/leaf is fuller
+
+    Could skip deserializing buffers into a node struct, and just making functions to read/write directly to page buffers
 
     How to test the deserialization works?  Need to actually use the tree now....
 

@@ -31,8 +31,8 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...);
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key);
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...);
 bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key);
-
-void vdb_debug_print_tree(VDBHANDLE h, const char* name);*/
+*/
+void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 
 
 #endif //VDB_H

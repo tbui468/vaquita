@@ -77,6 +77,53 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     return r;
 }
 
+uint32_t vdbrecord_size(struct VdbRecord* rec) {
+    uint32_t size = 0;
+    size += sizeof(uint32_t); //key
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbDatum* d = &rec->data[i];
+        switch (d->type) {
+            case VDBF_INT:
+                size += sizeof(uint64_t);
+                break;
+            case VDBF_STR:
+                size += sizeof(uint32_t) * 2;
+                break;
+            case VDBF_BOOL:
+                size += sizeof(bool);
+                break;
+        }
+    }
+
+    return size;
+}
+
+void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
+    int off = 0;
+    write_u32(buf, rec->key, &off);
+
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbDatum* d = &rec->data[i];
+        switch (d->type) {
+            case VDBF_INT:
+                *((uint64_t*)(buf + off)) = d->as.Int;
+                off += sizeof(uint64_t);
+                break;
+            case VDBF_STR: {
+                uint32_t block_idx = 0;
+                uint32_t data_offset = 0;
+                write_u32(buf, block_idx, &off);
+                write_u32(buf, data_offset, &off);
+                break;
+            }
+            case VDBF_BOOL:
+                *((bool*)(buf + off)) = d->as.Bool;
+                off += sizeof(bool);
+                break;
+        }
+    }
+}
+
 struct VdbRecordList* vdb_recordlist_alloc() {
     struct VdbRecordList* rl = malloc_w(sizeof(struct VdbRecordList));
     rl->count = 0;

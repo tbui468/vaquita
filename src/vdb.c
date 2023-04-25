@@ -164,23 +164,25 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    if (tree) {
-        printf("found tree\n");
-    } else {
-        printf("no tree found\n");
-    }
-
-    printf("a\n");
     struct VdbChunk meta = vdb_tree_catch_chunk(tree, tree->meta_idx);
-    printf("b\n");
+
+    printf("allocating record\n");
+    va_list args;
+    va_start(args, name);
+    struct VdbRecord* rec = vdb_record_alloc(++meta.node->as.meta.pk_counter, meta.node->as.meta.schema, args);
+    va_end(args);
+    printf("record allocated\n");
+
+
+    vdb_tree_release_chunk(tree, meta);
+    printf("inserting record\n");
+    vdb_tree_insert_record(tree, rec); //TODO:
+
+    /*
     struct VdbChunk root = vdb_tree_catch_chunk(tree, meta.node->as.meta.root_idx);
-    printf("c\n");
     struct VdbChunk leaf = vdb_tree_catch_chunk(tree, root.node->as.intern.right_idx);
-    vdb_tree_release_chunk(tree, meta); //TODO: why does this invalidate all of root chunk?
-    printf("d\n");
     vdb_tree_release_chunk(tree, root);
-    printf("e\n");
-    vdb_tree_release_chunk(tree, leaf);
+    vdb_tree_release_chunk(tree, leaf);*/
 
     /*
     struct Vdb* db = (struct Vdb*)h;
@@ -232,40 +234,48 @@ bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
 
     return vdb_tree_delete_record(tree, key);
     return true;
-}
+}*/
 
-void _vdb_debug_print_node(struct VdbNode* node, uint32_t depth) {
+
+void vdb_debug_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
     char spaces[depth * 4 + 1];
     memset(spaces, ' ', sizeof(spaces) - 1);
     spaces[depth * 4] = '\0';
-    printf("%s%d", spaces, node->idx);
+    printf("%s%d", spaces, idx);
 
-    if (node->type == VDBN_INTERN) {
+    struct VdbChunk c = vdb_tree_catch_chunk(tree, idx);
+
+    if (c.node->type == VDBN_INTERN) {
         printf("\n");
-        for (uint32_t i = 0; i < node->as.intern.nodes->count; i++) {
-            struct VdbNode* n = node->as.intern.nodes->nodes[i];
-            _vdb_debug_print_node(n, depth + 1);
+        for (uint32_t i = 0; i < c.node->as.intern.pointers->count; i++) {
+            vdb_debug_print_node(tree, c.node->as.intern.pointers->pointers[i].idx, depth + 1);
         }
 
-        _vdb_debug_print_node(node->as.intern.right, depth + 1);
+        vdb_debug_print_node(tree, c.node->as.intern.right_idx, depth + 1);
     } else {
         printf(": ");
-        for (uint32_t i = 0; i < node->as.leaf.records->count; i++) {
-            struct VdbRecord* r = node->as.leaf.records->records[i];
+        for (uint32_t i = 0; i < c.node->as.leaf.records->count; i++) {
+            struct VdbRecord* r = c.node->as.leaf.records->records[i];
             printf("%d", r->key);
-            if (i < node->as.leaf.records->count - 1) {
+            if (i < c.node->as.leaf.records->count - 1) {
                 printf(", ");
             }
         }
         printf("\n");
     }
+
+
+    vdb_tree_release_chunk(tree, c);
 }
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbFile* file = vdb_filelist_get_file(db->files, name);
-    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
-    _vdb_debug_print_node(tree->root, 0);
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    struct VdbChunk meta = vdb_tree_catch_chunk(tree, tree->meta_idx);
+    uint32_t root_idx = meta.node->as.meta.root_idx;
+    vdb_tree_release_chunk(tree, meta);
+
+    vdb_debug_print_node(tree, root_idx, 0);
 }
 
-*/

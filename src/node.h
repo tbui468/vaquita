@@ -54,6 +54,14 @@ struct VdbNodeList {
     uint32_t capacity;
 };
 
+uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx);
+void vdbnode_leaf_write_record(uint8_t* buf, struct VdbRecord* rec);
+struct VdbPtr vdbnode_intern_read_right_ptr(uint8_t* buf);
+uint32_t vdbnode_intern_read_ptr_count(uint8_t* buf);
+uint32_t vdbnode_leaf_read_record_count(uint8_t* buf);
+struct VdbPtr vdbnode_intern_read_ptr(uint8_t* buf, uint32_t idx);
+uint32_t vdb_node_meta_read_root(uint8_t* buf);
+enum VdbNodeType vdbnode_type(uint8_t* buf);
 struct VdbNode* vdb_node_init(enum VdbNodeType type, uint32_t parent_idx);
 void vdb_node_free(struct VdbNode* node);
 void vdb_node_serialize(uint8_t* buf, struct VdbNode* node);

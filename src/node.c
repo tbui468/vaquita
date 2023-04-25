@@ -5,6 +5,88 @@
 #include "node.h"
 #include "util.h"
 #include "record.h"
+#include "pager.h"
+
+//meta node
+//[type|parent_idx|pk_counter|root_idx|schema count|schema...]
+//internal node
+//[type|parent_idx|right_ptr idx|right_ptr key|ptr_count]
+//leaf node
+//[type|parent_idx|data_idx|rec_count|data_size| ... |records....
+//record
+//[next|size|data....]
+
+
+
+uint32_t vdbnode_leaf_read_data_size(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 4));
+}
+
+void vdbnode_leaf_write_data_size(uint8_t* buf, uint32_t size) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
+}
+
+uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx) {
+    int off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * 2 * idx;
+
+    uint32_t data_off;
+    read_u32(&data_off, buf, &off);
+
+    return *((uint32_t*)(buf + data_off + sizeof(uint32_t) * 2));
+}
+
+void vdbnode_leaf_write_record(uint8_t* buf, struct VdbRecord* rec) {
+    uint32_t rec_count = vdbnode_leaf_read_record_count(buf);
+
+    uint32_t rec_size = vdbrecord_size(rec);
+    uint32_t prev_data_size = vdbnode_leaf_read_data_size(buf);
+    int data_off = VDB_PAGE_SIZE - prev_data_size - rec_size - sizeof(uint32_t) * 2;
+
+    int off = VDB_PAGE_HDR_SIZE + rec_count * sizeof(uint32_t);
+    write_u32(buf, data_off, &off);
+
+    write_u32(buf, 0, &data_off);
+    write_u32(buf, rec_size, &data_off);
+
+    vdbrecord_write(buf + data_off, rec);
+
+    uint32_t new_data_size = prev_data_size + rec_size + sizeof(uint32_t) * 2;
+    vdbnode_leaf_write_data_size(buf, new_data_size);
+}
+
+struct VdbPtr vdbnode_intern_read_right_ptr(uint8_t* buf) {
+    struct VdbPtr ptr;
+    ptr.idx = *((uint32_t*)(buf + sizeof(uint32_t) * 2));
+    ptr.key = *((uint32_t*)(buf + sizeof(uint32_t) * 3));
+    return ptr;
+}
+
+uint32_t vdbnode_intern_read_ptr_count(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 4));
+}
+
+uint32_t vdbnode_leaf_read_record_count(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
+}
+
+struct VdbPtr vdbnode_intern_read_ptr(uint8_t* buf, uint32_t idx) {
+    struct VdbPtr ptr;
+
+    int off = VDB_PAGE_HDR_SIZE + idx * 2 * sizeof(uint32_t);
+
+    read_u32(&ptr.idx, buf, &off);
+    read_u32(&ptr.key, buf, &off);
+
+    return ptr;
+}
+
+enum VdbNodeType vdbnode_type(uint8_t* buf) {
+    return *((uint32_t*)(buf)); 
+}
+
+uint32_t vdb_node_meta_read_root(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
+}
 
 struct VdbNode* vdb_node_init(enum VdbNodeType type, uint32_t parent_idx) {
     struct VdbNode* node = malloc_w(sizeof(struct VdbNode));

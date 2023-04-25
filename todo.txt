@@ -11,35 +11,17 @@
         eviction policy for pager - integration of neural networks
         into legacy code
 
+    Use Yahoo or some other database standard metric to focus on core features
+
 **************************************************************************
-    vdb_insert_record
-        Not currently serializing records and pointers, so debug code does not print out inserted record <------START HERE
-            How should data blocks be used here?  One option is to use a wrapper in the tree module for de/serialization:
-                For meta and intern blocks, just call the node de/serialization functions directly
-                For leaf nodes, keep some internal state and coordinate de/serialization to correct data blocks
+    Remove unused struct Node and struct Chunk (since we are using pages directly now, and the node module will
+        just have functions to write/read pages)
 
-            vdb_tree_serialize_chunk(struct VdbTree* tree, struct VdbChunk c) {
-                if (c.node->type == VDBN_LEAF) {
-                    uint8_t buf = malloc();
-                    while (true) {
-                        uint32_t size = vdb_node_serialize(buf, c.node);
-                        if (buf is filled with any data)
-                            grab next data block and write buf to it
-                    }
-                    free(buf);
-                } else {
-                    vdb_node_serialize(c.page->buf, c.node);
-                }
-            }
+    Serialize strings to data blocks
 
+    Fetch record
 
-        vdb_tree_insert_record(tree, rec); <------finish other possibilties when intern/leaf is fuller
-
-    Could skip deserializing buffers into a node struct, and just making functions to read/write directly to page buffers
-
-    How to test the deserialization works?  Need to actually use the tree now....
-
-    void vdb_node_free(struct VdbNode* node) <--------------need to serialize to page if page dirty flag is set
+    Deal with situation when leaves/interns are full
 
     Turn on warnings to catch problems
 

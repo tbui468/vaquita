@@ -5,6 +5,23 @@
 #include "util.h"
 #include "tree.h"
 
+struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree) {
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbSchema* schema = vdbnode_meta_read_schema(page->buf);
+    vdb_pager_unpin_page(page);
+    return schema;
+}
+
+uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree) {
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
+    page->dirty = true;
+    uint32_t pk_counter = vdbnode_meta_read_primary_key_counter(page->buf);
+    pk_counter++;
+    vdbnode_meta_write_primary_key_counter(page->buf, pk_counter);
+    vdb_pager_unpin_page(page);
+    return pk_counter;
+}
+
 struct VdbChunkList* vdb_chunklist_init() {
     struct VdbChunkList* cl = malloc_w(sizeof(struct VdbChunkList));
     cl->count = 0;
@@ -38,13 +55,85 @@ struct VdbChunk vdb_tree_init_chunk(struct VdbTree* tree, uint32_t parent_idx, e
     return c;
 }
 
+uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema) {
+    uint32_t idx = vdb_pager_fresh_page(tree->f);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    page->dirty = true;
+
+    vdbnode_meta_write_type(page->buf);
+    vdbnode_meta_write_parent(page->buf, 0);
+    vdbnode_meta_write_primary_key_counter(page->buf, 0);
+    vdbnode_meta_write_root(page->buf, 0);
+    vdbnode_meta_write_schema(page->buf, schema);
+
+    vdb_pager_unpin_page(page);
+
+    return idx;
+}
+
+uint32_t vdbtree_intern_init(struct VdbTree* tree, uint32_t parent_idx) {
+    uint32_t idx = vdb_pager_fresh_page(tree->f);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    page->dirty = true;
+
+    vdbnode_intern_write_type(page->buf);
+    vdbnode_intern_write_parent(page->buf, 0);
+    struct VdbPtr right_ptr = {0, 0};
+    vdbnode_intern_write_right_ptr(page->buf, right_ptr);
+    vdbnode_intern_write_ptr_count(page->buf, 0);
+    vdbnode_intern_write_datacells_size(page->buf, 0);
+
+    vdb_pager_unpin_page(page);
+
+    return idx;
+}
+
+uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
+    uint32_t idx = vdb_pager_fresh_page(tree->f);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    page->dirty = true;
+
+    vdbnode_leaf_write_type(page->buf);
+    vdbnode_leaf_write_parent(page->buf, 0);
+    vdbnode_leaf_write_data_block_idx(page->buf, 0);
+    vdbnode_leaf_write_record_count(page->buf, 0);
+    vdbnode_leaf_write_datacells_size(page->buf, 0);
+
+    vdb_pager_unpin_page(page);
+
+    return idx;
+}
+
+void vdbtree_meta_write_root(struct VdbTree* tree, uint32_t meta_idx, uint32_t root_idx) {
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, meta_idx);
+    page->dirty = true;
+    vdbnode_meta_write_root(page->buf, root_idx);
+    vdb_pager_unpin_page(page);
+}
+
+void vdbtree_intern_write_right_ptr(struct VdbTree* tree, uint32_t idx, struct VdbPtr ptr) {
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    page->dirty = true;
+    vdbnode_intern_write_right_ptr(page->buf, ptr);
+    vdb_pager_unpin_page(page);
+}
+
 struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f) {
     struct VdbTree* tree = malloc_w(sizeof(struct VdbTree));
-    tree->name = strdup(name);
+    tree->name = strdup_w(name);
     tree->pager = pager;
     tree->f = f;
     tree->chunks = vdb_chunklist_init();
 
+    uint32_t meta_idx = vdbtree_meta_init(tree, schema);
+    tree->meta_idx = meta_idx;
+    uint32_t root_idx = vdbtree_intern_init(tree, meta_idx);
+    vdbtree_meta_write_root(tree, meta_idx, root_idx);
+    uint32_t leaf_idx = vdbtree_leaf_init(tree, root_idx);
+    struct VdbPtr right_ptr = {leaf_idx, 0};
+    vdbtree_intern_write_right_ptr(tree, root_idx, right_ptr);
+
+    /*
     struct VdbChunk meta = vdb_tree_init_chunk(tree, 0, VDBN_META);
     meta.node->as.meta.schema = vdb_schema_copy(schema);
     tree->meta_idx = 0;
@@ -57,8 +146,8 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
 
     vdb_tree_release_chunk(tree, meta);
     vdb_tree_release_chunk(tree, leaf);
-    vdb_tree_release_chunk(tree, root);
-    
+    vdb_tree_release_chunk(tree, root);*/
+   
     return tree;
 }
 
@@ -239,6 +328,7 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
 
     //Check to see if any ptrs have correct key
+    /*
     for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
         struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, i);
         if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF && vdbtree_leaf_read_record_count(tree, p.idx) > 0) {
@@ -257,7 +347,7 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
                 return vdb_tree_traverse_to(tree, p.idx, key);
             }
         }
-    }
+    }*/
 
     //if not found, check right pointer
     struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);

@@ -15,12 +15,12 @@ int main(int argc, char** argv) {
     }
 
 
-
+/*
     if (vdb_drop_table(h, "students")) {
         printf("Dropped 'students' table\n");
     } else {
         printf("Failed to drop 'students' table\n");
-    }
+    }*/
 
     struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, VDBF_STR, VDBF_BOOL);
 

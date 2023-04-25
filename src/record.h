@@ -17,6 +17,10 @@ struct VdbRecordList {
     uint32_t capacity;
 };
 
+
+//record
+//[next|size|data....]
+
 struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_list args);
 void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);

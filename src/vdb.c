@@ -163,20 +163,20 @@ bool vdb_drop_table(VDBHANDLE h, const char* name) {
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    struct VdbChunk meta = vdb_tree_catch_chunk(tree, tree->meta_idx);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
 
     printf("allocating record\n");
     va_list args;
     va_start(args, name);
-    struct VdbRecord* rec = vdb_record_alloc(++meta.node->as.meta.pk_counter, meta.node->as.meta.schema, args);
+    struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
     va_end(args);
     printf("record allocated\n");
 
 
-    vdb_tree_release_chunk(tree, meta);
     printf("inserting record\n");
     vdb_tree_insert_record(tree, rec); //TODO:
+    printf("record inserted\n");
 
     /*
     struct VdbChunk root = vdb_tree_catch_chunk(tree, meta.node->as.meta.root_idx);

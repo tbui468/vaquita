@@ -23,39 +23,6 @@ uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree) {
     return pk_counter;
 }
 
-struct VdbChunkList* vdb_chunklist_init() {
-    struct VdbChunkList* cl = malloc_w(sizeof(struct VdbChunkList));
-    cl->count = 0;
-    cl->capacity = 8;
-    cl->chunks = malloc_w(sizeof(struct VdbChunk) * cl->capacity);
-    return cl;
-}
-
-void vdb_chunklist_append_chunk(struct VdbChunkList* cl, struct VdbChunk chunk) {
-    if (cl->count == cl->capacity) {
-        cl->capacity *= 2;
-        cl->chunks = realloc_w(cl->chunks, sizeof(struct VdbChunk) * cl->capacity);
-    }
-
-    cl->chunks[cl->count++] = chunk;
-}
-
-void vdb_chunklist_free(struct VdbChunkList* cl) {
-    free(cl->chunks);
-    free(cl);
-}
-
-struct VdbChunk vdb_tree_init_chunk(struct VdbTree* tree, uint32_t parent_idx, enum VdbNodeType type) {
-    struct VdbNode* node = vdb_node_init(type, parent_idx);
-
-    uint32_t idx = vdb_pager_fresh_page(tree->f);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    page->dirty = true;
-
-    struct VdbChunk c = {node, page};
-    return c;
-}
-
 uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema) {
     uint32_t idx = vdb_pager_fresh_page(tree->f);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
@@ -124,7 +91,6 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     tree->name = strdup_w(name);
     tree->pager = pager;
     tree->f = f;
-    tree->chunks = vdb_chunklist_init();
 
     uint32_t meta_idx = vdbtree_meta_init(tree, schema);
     tree->meta_idx = meta_idx;
@@ -134,21 +100,6 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     struct VdbPtr right_ptr = {leaf_idx, 0};
     vdbtree_intern_write_right_ptr(tree, root_idx, right_ptr);
 
-    /*
-    struct VdbChunk meta = vdb_tree_init_chunk(tree, 0, VDBN_META);
-    meta.node->as.meta.schema = vdb_schema_copy(schema);
-    tree->meta_idx = 0;
-
-    struct VdbChunk root = vdb_tree_init_chunk(tree, 0, VDBN_INTERN);
-    meta.node->as.meta.root_idx = root.page->idx;
-
-    struct VdbChunk leaf = vdb_tree_init_chunk(tree, root.page->idx, VDBN_LEAF);
-    root.node->as.intern.right_idx = leaf.page->idx;
-
-    vdb_tree_release_chunk(tree, meta);
-    vdb_tree_release_chunk(tree, leaf);
-    vdb_tree_release_chunk(tree, root);*/
-   
     return tree;
 }
 
@@ -158,33 +109,11 @@ struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager
     tree->f = f;
     tree->pager = pager;
     tree->meta_idx = 0;
-    tree->chunks = vdb_chunklist_init();
     return tree;
-}
-
-struct VdbChunk vdb_tree_catch_chunk(struct VdbTree* tree, uint32_t idx) {
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    struct VdbNode* node = vdb_node_deserialize(page->buf);
-    node->dirty = false;
-
-    struct VdbChunk c = {node, page};
-    return c;
-}
-
-
-void vdb_tree_release_chunk(struct VdbTree* tree, struct VdbChunk chunk) {
-    if (chunk.node->dirty) {
-        chunk.page->dirty = true;
-        vdb_node_serialize(chunk.page->buf, chunk.node);
-    }
-
-    vdb_pager_unpin_page(chunk.page);
-    vdb_node_free(chunk.node);
 }
 
 void vdb_tree_release(struct VdbTree* tree) {
     free(tree->name);
-    vdb_chunklist_free(tree->chunks);
     free(tree);
 }
 

@@ -8,23 +8,11 @@
 #include "record.h"
 #include "pager.h"
 
-struct VdbChunk {
-    struct VdbNode* node;
-    struct VdbPage* page;
-};
-
-struct VdbChunkList {
-    struct VdbChunk* chunks;
-    uint32_t count;
-    uint32_t capacity;
-};
-
 struct VdbTree {
     char* name;
     FILE* f;
     struct VdbPager* pager;
     uint32_t meta_idx;
-    struct VdbChunkList* chunks;
 };
 
 struct VdbTreeList {
@@ -33,14 +21,8 @@ struct VdbTreeList {
     uint32_t capacity;
 };
 
-struct VdbChunkList* vdb_chunklist_init();
-void vdb_chunklist_append_chunk(struct VdbChunkList* cl, struct VdbChunk chunk);
-void vdb_chunklist_free(struct VdbChunkList* cl);
-
 struct VdbPage* vdb_tree_pin_page(struct VdbTree* tree, uint32_t idx);
 void vdb_tree_unpin_page(struct VdbTree* tree, struct VdbPage* page);
-struct VdbChunk vdb_tree_catch_chunk(struct VdbTree* tree, uint32_t idx); //TODO: replace with one that returns page
-void vdb_tree_release_chunk(struct VdbTree* tree, struct VdbChunk chunk); //TODO: replace with one that returns page
 
 struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f);
 struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager);

@@ -14,11 +14,6 @@
     Use Yahoo or some other database standard metric to focus on core features
 
 **************************************************************************
-    Remove chunks from vdb.c
-    Remove chunks from tree.c
-    Remove chunk functions
-    Remove chunk structs
-
     Remove unused struct Node and struct Chunk (since we are using pages directly now, and the node module will
         just have functions to write/read pages)
 

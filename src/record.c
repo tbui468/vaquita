@@ -30,6 +30,8 @@ struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_li
                 rec->data[i].as.Bool = va_arg(args, int);
                 break;
         }
+        rec->data[i].block_idx = 0;
+        rec->data[i].offset_idx = 0;
     }
 
     return rec;
@@ -72,6 +74,8 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
                 r->data[i].as.Bool = d->as.Bool;
                 break;
         }
+        r->data[i].block_idx = d->block_idx;
+        r->data[i].offset_idx = d->offset_idx;
     }
 
     return r;
@@ -110,10 +114,8 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
                 off += sizeof(uint64_t);
                 break;
             case VDBF_STR: {
-                uint32_t block_idx = 0;
-                uint32_t data_offset = 0;
-                write_u32(buf, block_idx, &off);
-                write_u32(buf, data_offset, &off);
+                write_u32(buf, d->block_idx, &off);
+                write_u32(buf, d->offset_idx, &off);
                 break;
             }
             case VDBF_BOOL:
@@ -122,6 +124,17 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
                 break;
         }
     }
+}
+
+bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbDatum* d = &rec->data[i];
+        if (d->type == VDBF_STR) {
+            return true;
+        }
+    } 
+
+    return false;
 }
 
 struct VdbRecordList* vdb_recordlist_alloc() {

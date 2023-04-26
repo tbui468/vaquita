@@ -14,86 +14,27 @@
     Use Yahoo or some other database standard metric to focus on core features
 
 **************************************************************************
-    Serialize strings to data blocks
+    Allow variable length data to overflow
+        Need to modify vdbnode_data_write_datum to take this into account <--------START HERE
+
+    Instead of using datacells size field, just call it 'free' - this allows us to
+        avoid having to compute it everytime we need to check block - just recompute it when adding a record
 
     Deal with situation when leaves/interns are full
 
     Fetch record
 
-    Turn on warnings to catch problems
+    update records
 
-    Comment out a lot of code, and make inserting a single node into the tree work with paging
+    delete records
 
-    Each vdb operation (create table, insert record, update record, delete record)
-        should find the correct FILE* in filelist, pin the header page (which means VdbPage needs to cache FILE*)
-        deserialize tree and append to trees list.  Do its thing, and then deserialize tree header, then unpine page.
+    Concurrency - need to get read/write locks on blocks
 
+    Transactions - need a way of rolling back changes if transaction fails
 
-        init_tree:
-            allocate memory and initialize values
-            open file and add to filelist
-            pin page with index 0
-            deserialize tree header
-            upin page
+    Logging - database should never be in inconsistent state if system fails
 
-    Creating a tree should intitialize it, write it to disk, and then free it
-        Only the pager should worry about persisting anything, other transactions
-        will end with all nodes/trees freed. The database should only keep a list of
-        table names and their corresponding FILE* in memory
-
-        PIN -> DESERIALIZE -> DO STUFF IN MEMORY -> SERIALIZE (if necessary) -> UNPIN
-
-    Init a tree should should ask the pager to pin a new block (with index 0) - if ftell tells us index is larger than file, allocate new chunk
-        by writing 0s to file
-    When the db is closed (or unpinned), the pager should flush the blocks in pager list
-
-
-    Create new function vdb_tree_open to open an already-made table (in contrast to vdb_tree_init)
-
-    Creating a new table will create a new file and write tree header data
-
-    //finish pager.h and pager.c 
-        Need to think about the API with tree and node classes
-        Need to also intialize the file when creating a new table
-
-        How is it used?  Write the API usage in tree/node first
-            
-
-    vdb_tree_init should initialize a page at index 0
-    initializing any node after that should add a new page at the next corresponding index
-
-
-    Saving to HDD
-        [tree meta data][root node][nodes]....
-
-        struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, uint32_t idx);
-        void vdb_pager_unpin_page(struct VdbPager* pager, struct VdbPage* page);
-
-        struct VdbNode* vdb_node_deserialize_page(struct VdbPage* page); 
-        void vdb_node_serialize_node(struct VdbPage* page, struct VdbNode* node); 
-
-        struct VdbNode* vdb_tree_get_node(struct VdbTree* tree, uint32_t idx) {
-            //check to make sure node with given index is not already cached, if so return it
-            struct VdbPage* page = vdb_pager_pin_page(tree->pager, idx); 
-            struct VdbNode* node = vdb_node_deserialize(page); //node will have a pointer to this page
-            //save node to list of cached nodes
-            return node; 
-        }
-
-        vdb_tree_release_nodes(struct VdbTree* tree) {
-            //release all nodes and unpin corresponding pages
-            for each node:
-                if dirty, flush to disk
-                unpin node->page
-                free node
-        }
-        //how should nodes be released?  Should we keep a list of 'gotten' nodes in tree, and then free it when the transaction is done?
-        //this would be easier than trying to remember manually release each node
-        //node pointers can also be cached, so no need to call pager if struct VdbNode* is already stored in tree
-
-    Paging
-
-    Basic execution engine
+    Execution engine
         selection WHERE
         projection SELECT 
 
@@ -101,8 +42,3 @@
 
         Foreign keys
 
-    Logging 
-
-    Transactions
-
-    Concurrency

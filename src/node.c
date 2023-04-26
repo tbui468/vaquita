@@ -101,6 +101,10 @@ void vdbnode_intern_write_datacells_size(uint8_t* buf, uint32_t size) {
  * [type|parent_idx|data block idx|record count|datacells size| ... |index cells ... datacells]
  */
 
+uint32_t vdbnode_leaf_read_data_block(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 2));
+}
+
 uint32_t vdbnode_leaf_read_datacells_size(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 4));
 }
@@ -126,7 +130,7 @@ void vdbnode_leaf_write_parent(uint8_t* buf, uint32_t parent_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 1)) = parent_idx;
 }
 
-void vdbnode_leaf_write_data_block_idx(uint8_t* buf, uint32_t data_idx) {
+void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = data_idx;
 }
 
@@ -138,7 +142,7 @@ void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
 }
 
-void vdbnode_leaf_write_record(uint8_t* buf, struct VdbRecord* rec) {
+void vdbnode_leaf_write_fixedlen_data(uint8_t* buf, struct VdbRecord* rec) {
     uint32_t rec_count = vdbnode_leaf_read_record_count(buf);
 
     uint32_t rec_size = vdbrecord_size(rec);
@@ -158,6 +162,85 @@ void vdbnode_leaf_write_record(uint8_t* buf, struct VdbRecord* rec) {
 
     rec_count++;
     vdbnode_leaf_write_record_count(buf, rec_count);
+}
+
+/* 
+ * Data node de/serialization
+ * [type|parent_idx|next data block idx|free size| ... |...data cells...]
+ *
+ * Datacell
+ * [next|overflow block idx|overflow offset|size|...string data...]
+ */
+
+uint32_t vdbnode_data_read_next(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 2));
+}
+
+uint32_t vdbnode_data_read_free_size(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
+}
+
+//caller needs to call this function again with different block/offset 
+//  to get more data if overflow block idx is not 0
+struct VdbDatum vdbnode_data_read_datum(uint8_t* buf, uint32_t off) {
+    uint32_t size = *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
+    
+    struct VdbDatum d;
+
+    d.type = VDBF_STR;
+    d.as.Str = malloc_w(sizeof(struct VdbString));
+    d.block_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)); //overflow block idx
+    d.offset_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)); //overflow offset idx
+    d.as.Str->len = *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
+    d.as.Str->start = malloc_w(sizeof(char) * d.as.Str->len);
+    memcpy(d.as.Str->start, buf + off + sizeof(uint32_t) * 4, d.as.Str->len);
+
+    return d;
+}
+
+void vdbnode_data_write_type(uint8_t* buf) {
+    *((uint32_t*)(buf)) = (uint32_t)VDBN_DATA;
+}
+
+void vdbnode_data_write_parent(uint8_t* buf, uint32_t parent_idx) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 1)) = parent_idx;
+}
+
+void vdbnode_data_write_next(uint8_t* buf, uint32_t next_idx) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = next_idx;
+}
+
+void vdbnode_data_write_free_size(uint8_t* buf, uint32_t free_size) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 3)) = free_size;
+}
+
+//returns offset of written varlen data in buf
+uint32_t vdbnode_data_write_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written) {
+    uint32_t off = VDB_PAGE_SIZE - vdbnode_data_read_free_size(buf);
+
+    switch (datum->type) {
+        case VDBF_STR:
+            *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;
+            *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)) = 0;
+            *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)) = 0;
+            *((uint32_t*)(buf + off + sizeof(uint32_t) * 3)) = datum->as.Str->len;
+            //TODO: should compute if entire string can fit or not, and write only up to amount that can fit
+            memcpy(buf + off + sizeof(uint32_t) * 4, datum->as.Str->start, datum->as.Str->len);
+            *len_written += datum->as.Str->len;
+            break;
+        default:
+            break;
+    }
+
+    uint32_t datum_header_size = sizeof(uint32_t) * 4;
+    vdbnode_data_write_free_size(buf, vdbnode_data_read_free_size(buf) - datum_header_size - datum->as.Str->len);
+
+    return off;
+}
+
+void vdbnode_data_write_datum_overflow(uint8_t* buf, uint32_t datum_off, uint32_t block_idx, uint32_t offset_idx) {
+    *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 1)) = block_idx;
+    *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 2)) = offset_idx;
 }
 
 /*

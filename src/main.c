@@ -23,9 +23,13 @@ int main(int argc, char** argv) {
         printf("Failed to create 'students' table\n");
     }
 
+    char word[100];
+    memset(word, 'x', sizeof(char) * 100);
+    word[99] = '\0';
+    printf("size of word: %d\n", strlen(word));
     
-    const char* words[] = {"cat", "dogs", "turtles"};
-    for (int i = 1; i <= 5; i++) {
+    const char* words[] = {word, "dogs", "turtles"};
+    for (int i = 1; i <= 6; i++) {
         vdb_insert_record(h, "students", i, words[i % 3], i % 2 == 0);
         printf("Inserted record\n");
     }
@@ -55,6 +59,7 @@ int main(int argc, char** argv) {
     }*/
 
     vdb_free_schema(schema);
+    printf("schema freed\n");
 
     if (vdb_close(h)) {
         printf("Closed 'school' database\n");

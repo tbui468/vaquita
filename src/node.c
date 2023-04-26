@@ -216,24 +216,30 @@ void vdbnode_data_write_free_size(uint8_t* buf, uint32_t free_size) {
 
 //returns offset of written varlen data in buf
 uint32_t vdbnode_data_write_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written) {
-    uint32_t off = VDB_PAGE_SIZE - vdbnode_data_read_free_size(buf);
+    uint32_t datum_header_size = sizeof(uint32_t) * 4;
+    uint32_t free = vdbnode_data_read_free_size(buf);
+    assert(datum_header_size < free);
+
+    uint32_t off = VDB_PAGE_SIZE - free;
+    uint32_t can_fit = 0;
 
     switch (datum->type) {
         case VDBF_STR:
+            can_fit = free - datum_header_size < datum->as.Str->len - *len_written ? free - datum_header_size : datum->as.Str->len - *len_written;
+
             *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;
             *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)) = 0;
             *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)) = 0;
-            *((uint32_t*)(buf + off + sizeof(uint32_t) * 3)) = datum->as.Str->len;
-            //TODO: should compute if entire string can fit or not, and write only up to amount that can fit
-            memcpy(buf + off + sizeof(uint32_t) * 4, datum->as.Str->start, datum->as.Str->len);
-            *len_written += datum->as.Str->len;
+            *((uint32_t*)(buf + off + sizeof(uint32_t) * 3)) = can_fit;
+
+            memcpy(buf + off + datum_header_size, datum->as.Str->start + *len_written, can_fit);
+            *len_written += can_fit;
             break;
         default:
             break;
     }
 
-    uint32_t datum_header_size = sizeof(uint32_t) * 4;
-    vdbnode_data_write_free_size(buf, vdbnode_data_read_free_size(buf) - datum_header_size - datum->as.Str->len);
+    vdbnode_data_write_free_size(buf, free - datum_header_size - can_fit);
 
     return off;
 }

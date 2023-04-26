@@ -13,7 +13,6 @@ uint32_t vdb_pager_fresh_page(FILE* f) {
     uint8_t* buf = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
     fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f); 
     free(buf);
-
     return idx;
 }
 

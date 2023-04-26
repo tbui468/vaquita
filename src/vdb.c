@@ -163,15 +163,25 @@ bool vdb_drop_table(VDBHANDLE h, const char* name) {
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    //TODO: move this to tree function - should alos verify data types
+    /*
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
 
     va_list args;
     va_start(args, name);
     struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
+    va_end(args);*/
+    //TODO: end
+
+    va_list args;
+    va_start(args, name);
+    struct VdbRecord* rec = vdbtree_construct_record(tree, args);
     va_end(args);
 
     vdb_tree_insert_record(tree, rec);
+    vdb_record_free(rec);
 }
 
 /*
@@ -212,39 +222,10 @@ bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
     return true;
 }*/
 
-
-void vdb_debug_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
-    char spaces[depth * 4 + 1];
-    memset(spaces, ' ', sizeof(spaces) - 1);
-    spaces[depth * 4] = '\0';
-    printf("%s%d", spaces, idx);
-
-    if (vdbtree_node_type(tree, idx) == VDBN_INTERN) {
-        printf("\n");
-        for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
-            vdb_debug_print_node(tree, vdbtree_intern_read_ptr(tree, idx, i).idx, depth + 1);
-        }
-
-        vdb_debug_print_node(tree, vdbtree_intern_read_right_ptr(tree, idx).idx, depth + 1);
-    } else {
-        printf(": ");
-        for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
-            uint32_t key = vdbtree_leaf_read_record_key(tree, idx, i);
-            printf("%d", key);
-            if (i < vdbtree_leaf_read_record_count(tree, idx) - 1) {
-                printf(", ");
-            }
-        }
-        printf("\n");
-    }
-
-}
-
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    uint32_t root_idx = vdbtree_meta_read_root(tree);
-    vdb_debug_print_node(tree, root_idx, 0);
+    vdbtree_print_node(tree, 1, 0);
 }
 

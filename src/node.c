@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "node.h"
 #include "util.h"
@@ -122,6 +123,57 @@ uint32_t vdbnode_leaf_read_record_count(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
+struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSchema* schema, uint32_t rec_idx) {
+    int off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * rec_idx;
+
+    uint32_t data_off;
+    read_u32(&data_off, buf, &off);
+
+    struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
+    rec->count = schema->count;
+    data_off += sizeof(uint32_t) * 2; //skip next and size fields
+    rec->key = *((uint32_t*)(buf + data_off));
+    data_off += sizeof(uint32_t);
+    rec->data = malloc_w(sizeof(struct VdbDatum) * rec->count);
+
+    for (uint32_t i = 0; i < schema->count; i++) {
+        enum VdbField f = schema->fields[i];
+        rec->data[i].type = f;
+        switch (f) {
+            case VDBF_INT:
+                rec->data[i].as.Int = *((uint64_t*)(buf + data_off));
+                data_off += sizeof(uint64_t);
+                break;
+            case VDBF_STR:
+                rec->data[i].block_idx = *((uint32_t*)(buf + data_off));
+                data_off += sizeof(uint32_t);
+                rec->data[i].offset_idx = *((uint32_t*)(buf + data_off));
+                data_off += sizeof(uint32_t);
+                break;
+            case VDBF_BOOL:
+                rec->data[i].as.Bool = *((bool*)(buf + data_off));
+                data_off += sizeof(bool);
+                break;
+        }
+    }
+
+    return rec;
+}
+
+struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off) {
+    struct VdbDatum d;
+    d.type = VDBF_STR;
+    //* 0 is next field
+    d.block_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 1));
+    d.offset_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 2));
+
+    d.as.Str = malloc_w(sizeof(struct VdbString));
+    d.as.Str->len = *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
+    d.as.Str->start = malloc_w(sizeof(char) * d.as.Str->len);
+    memcpy(d.as.Str->start, buf + off + sizeof(uint32_t) * 4, d.as.Str->len);
+    return d;
+}
+
 void vdbnode_leaf_write_type(uint8_t* buf) {
     *((uint32_t*)(buf)) = (uint32_t)VDBN_LEAF;
 }
@@ -183,7 +235,7 @@ uint32_t vdbnode_data_read_free_size(uint8_t* buf) {
 //caller needs to call this function again with different block/offset 
 //  to get more data if overflow block idx is not 0
 struct VdbDatum vdbnode_data_read_datum(uint8_t* buf, uint32_t off) {
-    uint32_t size = *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
+    //uint32_t size = *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
     
     struct VdbDatum d;
 

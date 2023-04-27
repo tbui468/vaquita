@@ -14,16 +14,21 @@
     Use Yahoo or some other database standard metric to focus on core features
 
 **************************************************************************
-    Fetch
-        Make sure that data can be read correctly from fixed/varlen data <---------START HERE
-
-    Clean up tree.c 
-        group all functions for nodes (meta, intern, leaf, data) together
+    fetch <---------------START HERE
+        First record shows up fine, but second does not....
+        For some reason if vdb_fetch_record is called in main.c, students.vtb is empty <-----investigate this!!!!
+            remove some code to see what is causing the problem
+        
 
     Instead of using datacells size field, just call it 'free' - this allows us to
         avoid having to compute it everytime we need to check block - just recompute it when adding a record
 
     Deal with situation when leaves/interns are full
+        splitting leaves
+        splitting internal nodes if:
+            root
+            parent of internal node is below capacity
+            parent of internal node is at/above capacity
 
     Fetch record
 

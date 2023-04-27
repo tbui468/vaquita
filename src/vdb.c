@@ -164,17 +164,6 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    //TODO: move this to tree function - should alos verify data types
-    /*
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
-
-    va_list args;
-    va_start(args, name);
-    struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
-    va_end(args);*/
-    //TODO: end
-
     va_list args;
     va_start(args, name);
     struct VdbRecord* rec = vdbtree_construct_record(tree, args);
@@ -184,21 +173,14 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     vdb_record_free(rec);
 }
 
-/*
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct Vdb* db = (struct Vdb*)h;
-    struct VdbFile* file = vdb_filelist_get_file(db->files, name);
-    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    struct VdbRecord* rec = vdb_tree_fetch_record(tree, key);
-
-    if (rec)
-        rec = vdb_record_copy(rec);
-
-    return rec;
-    return NULL;
+    return vdb_tree_fetch_record(tree, key);
 }
 
+/*
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbFile* file = vdb_filelist_get_file(db->files, name);

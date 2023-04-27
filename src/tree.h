@@ -30,15 +30,8 @@ void vdb_tree_release(struct VdbTree* tree);
 
 struct VdbRecord* vdbtree_construct_record(struct VdbTree* tree, va_list args);
 
-static struct VdbPtr vdbtree_intern_read_right_ptr(struct VdbTree* tree, uint32_t idx);
-static struct VdbPtr vdbtree_intern_read_ptr(struct VdbTree* tree, uint32_t idx, uint32_t ptr_idx);
-static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx);
-static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx);
-static struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree);
-static uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree);
-static uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t leaf_idx, uint32_t rec_idx);
-
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
+struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 /*
 struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);

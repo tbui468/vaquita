@@ -118,6 +118,13 @@ static void vdbtree_intern_write_right_ptr(struct VdbTree* tree, uint32_t idx, s
     vdb_pager_unpin_page(page);
 }
 
+static void vdbtree_intern_write_new_ptr(struct VdbTree* tree, uint32_t idx, struct VdbPtr ptr) {
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    page->dirty = true;
+    vdbnode_intern_write_new_ptr(page->buf, ptr);
+    vdb_pager_unpin_page(page);
+}
+
 static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
@@ -160,6 +167,13 @@ static uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
     vdb_pager_unpin_page(page);
 
     return idx;
+}
+
+static uint32_t vdbtree_leaf_read_parent(struct VdbTree* tree, uint32_t idx) {
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    uint32_t parent_idx = vdbnode_read_parent(page->buf);
+    vdb_pager_unpin_page(page);
+    return parent_idx;
 }
 
 static uint32_t vdbtree_leaf_read_data_block(struct VdbTree* tree, uint32_t idx) {
@@ -284,6 +298,37 @@ static struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t
 
     vdb_pager_unpin_page(page);
     return rec;
+}
+
+static bool vdbtree_leaf_can_fit(struct VdbTree* tree, uint32_t idx, uint32_t size) {
+    assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    bool can_fit = vdbnode_leaf_can_fit(page->buf, size);
+    vdb_pager_unpin_page(page);
+    return can_fit;
+}
+
+static uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, uint32_t new_right_key) {
+    assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+
+    //TODO: deal with situation when parent is full here
+    //if parent will be full with new ptr/index, then need to split internal node here
+
+    uint32_t count = vdbtree_leaf_read_record_count(tree, idx);
+    uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, idx, count - 1);
+
+    struct VdbPtr ptr = {idx, last_rec_key};
+    uint32_t parent = vdbtree_leaf_read_parent(tree, idx);
+    vdbtree_intern_write_new_ptr(tree, parent, ptr);
+
+    uint32_t new_leaf = vdbtree_leaf_init(tree, parent);
+    struct VdbPtr new_right = {new_leaf, new_right_key};
+    vdbtree_intern_write_right_ptr(tree, parent, new_right);
+
+    vdb_pager_unpin_page(page);
+
+    return new_leaf;
 }
 
 /*
@@ -430,7 +475,7 @@ static uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
 
     //Check to see if any ptrs have correct key
-    /*
+    //TODO: switch to binary search
     for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
         struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, i);
         if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF && vdbtree_leaf_read_record_count(tree, p.idx) > 0) {
@@ -449,7 +494,7 @@ static uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_
                 return vdb_tree_traverse_to(tree, p.idx, key);
             }
         }
-    }*/
+    }
 
     //if not found, check right pointer
     struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);
@@ -466,11 +511,10 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->key);
     
-    //TODO: deal with this situation
-    /*
-    if (vdb_node_leaf_full(leaf, rec)) {
-        leaf = _vdb_tree_split_leaf(tree, leaf);
-    }*/
+    uint32_t idx_cell_size = sizeof(uint32_t);
+    if (!vdbtree_leaf_can_fit(tree, leaf_idx, vdbrecord_fixedlen_size(rec) + idx_cell_size)) {
+        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec->key);
+    }
 
     vdbtree_leaf_write_record(tree, leaf_idx, rec);
 }
@@ -603,7 +647,6 @@ void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
         for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
             vdbtree_print_node(tree, vdbtree_intern_read_ptr(tree, idx, i).idx, depth + 1);
         }
-
         vdbtree_print_node(tree, vdbtree_intern_read_right_ptr(tree, idx).idx, depth + 1);
     } else {
         printf(": ");

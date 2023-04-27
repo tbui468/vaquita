@@ -81,7 +81,7 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     return r;
 }
 
-uint32_t vdbrecord_size(struct VdbRecord* rec) {
+uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec) {
     uint32_t size = 0;
     size += sizeof(uint32_t); //key
     for (uint32_t i = 0; i < rec->count; i++) {

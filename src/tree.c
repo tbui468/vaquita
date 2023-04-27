@@ -269,8 +269,11 @@ static struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t
             memcpy(d->as.Str->start + d->as.Str->len, datum.as.Str->start, datum.as.Str->len);
             d->as.Str->len += datum.as.Str->len;
 
+            block_idx = datum.block_idx;
+            offset_idx = datum.offset_idx;
             free(datum.as.Str->start);
             free(datum.as.Str);
+
             vdb_pager_unpin_page(page);
 
             if (!datum.block_idx)

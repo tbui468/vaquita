@@ -13,15 +13,12 @@
 
     Use Yahoo or some other database standard metric to focus on core features
 
-**************************************************************************
-    fetch <---------------START HERE
-        First record shows up fine, but second does not....
-        For some reason if vdb_fetch_record is called in main.c, students.vtb is empty <-----investigate this!!!!
-            remove some code to see what is causing the problem
-        
-
+*******************************Storage Engine*******************************************
     Instead of using datacells size field, just call it 'free' - this allows us to
         avoid having to compute it everytime we need to check block - just recompute it when adding a record
+
+    Need index cells in data blocks (which we don't have now) since it will be required when data blocks
+        need to be defragmented (unless there's a way to defrag without index cells...)
 
     Deal with situation when leaves/interns are full
         splitting leaves
@@ -29,8 +26,6 @@
             root
             parent of internal node is below capacity
             parent of internal node is at/above capacity
-
-    Fetch record
 
     update records
 
@@ -41,6 +36,8 @@
     Transactions - need a way of rolling back changes if transaction fails
 
     Logging - database should never be in inconsistent state if system fails
+
+************************Execution Engine**********************
 
     Execution engine
         selection WHERE

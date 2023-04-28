@@ -43,6 +43,6 @@ struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name);
 struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* name);
 void vdb_treelist_free(struct VdbTreeList* tl);
 
-void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth);
+void vdbtree_print(struct VdbTree* tree);
 
 #endif //VDB_TREE_H

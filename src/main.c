@@ -31,9 +31,8 @@ int main(int argc, char** argv) {
     word[99] = '\0';
     
     const char* words[] = {word, "dogs", "turtles"};
-    for (int i = 1; i <= 15; i++) {
+    for (int i = 1; i <= 500; i++) {
         vdb_insert_record(h, "students", i * 2, words[i % 3], i % 2 == 0);
-        printf("inserted record\n");
     }
 
     vdb_debug_print_tree(h, "students");

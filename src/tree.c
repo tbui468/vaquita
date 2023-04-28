@@ -394,13 +394,14 @@ static uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, uint32_t 
 
     if (!vdbtree_intern_can_fit_ptr(tree, parent)) {
         parent = vdbtree_intern_split(tree, parent, new_right_key);
+    } else {
+        //copy right pointer into ptr list to make room for new right ptr
+        uint32_t count = vdbtree_leaf_read_record_count(tree, idx);
+        uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, idx, count - 1);
+
+        struct VdbPtr ptr = {idx, last_rec_key};
+        vdbtree_intern_write_new_ptr(tree, parent, ptr);
     }
-
-    uint32_t count = vdbtree_leaf_read_record_count(tree, idx);
-    uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, idx, count - 1);
-
-    struct VdbPtr ptr = {idx, last_rec_key};
-    vdbtree_intern_write_new_ptr(tree, parent, ptr);
 
     uint32_t new_leaf = vdbtree_leaf_init(tree, parent);
     struct VdbPtr new_right = {new_leaf, new_right_key};
@@ -592,7 +593,6 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->key);
     
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
-        printf("split leaf\n");
         leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec->key);
     }
 
@@ -716,7 +716,7 @@ void vdb_treelist_free(struct VdbTreeList* tl) {
 }
 
 
-void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
+static void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
     char spaces[depth * 4 + 1];
     memset(spaces, ' ', sizeof(spaces) - 1);
     spaces[depth * 4] = '\0';
@@ -724,6 +724,11 @@ void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
 
     if (vdbtree_node_type(tree, idx) == VDBN_INTERN) {
         printf("\n");
+        //TODO: make not printing leaves an option later
+        if (vdbtree_node_type(tree, vdbtree_intern_read_right_ptr(tree, idx).idx) == VDBN_LEAF) {
+            //skip printing leaves
+            return;
+        }
         for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
             vdbtree_print_node(tree, vdbtree_intern_read_ptr(tree, idx, i).idx, depth + 1);
         }
@@ -742,3 +747,7 @@ void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t depth) {
 
 }
 
+void vdbtree_print(struct VdbTree* tree) {
+    uint32_t root = vdbtree_meta_read_root(tree);
+    vdbtree_print_node(tree, root, 0);
+}

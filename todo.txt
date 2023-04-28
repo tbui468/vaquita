@@ -20,8 +20,6 @@
     Use SDL and Vulkan to visualize SQL + b-tree (2d first, and then 3d)
 
 *******************************Storage Engine*******************************************
-    replace all read/writing parent nodes with a single general function
-
     Check that internal splitting works
 
     Cursor abstraction - would this be helpful as the intermediary between vdb.c and tree.c?

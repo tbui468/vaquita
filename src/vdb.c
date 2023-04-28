@@ -208,6 +208,6 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    vdbtree_print_node(tree, 1, 0);
+    vdbtree_print(tree);
 }
 

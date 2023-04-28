@@ -116,6 +116,14 @@ void vdbnode_intern_write_new_ptr(uint8_t* buf, struct VdbPtr ptr) {
     vdbnode_intern_write_datacells_size(buf, datacells_size + sizeof(uint32_t) * 2);
 }
 
+bool vdbnode_intern_can_fit_ptr(uint8_t* buf) {
+    uint32_t indexcells_size = vdbnode_intern_read_ptr_count(buf) * sizeof(uint32_t);
+    uint32_t datacells_size = vdbnode_intern_read_datacells_size(buf);
+    uint32_t ptr_entry_size = sizeof(uint32_t) * 3; //index cell + two pointer fields (idx and key)
+
+    return VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE >= indexcells_size + datacells_size + ptr_entry_size;
+}
+
 /* 
  * Leaf node de/serialization
  * [type|parent_idx|data block idx|record count|datacells size| ... |index cells ... datacells]
@@ -235,11 +243,12 @@ void vdbnode_leaf_write_fixedlen_data(uint8_t* buf, struct VdbRecord* rec) {
     vdbnode_leaf_write_record_count(buf, rec_count);
 }
 
-bool vdbnode_leaf_can_fit(uint8_t* buf, uint32_t size) {
+bool vdbnode_leaf_can_fit_record(uint8_t* buf, struct VdbRecord* rec) {
     uint32_t idx_cells_size = vdbnode_leaf_read_record_count(buf) * sizeof(uint32_t);
     uint32_t data_cells_size = vdbnode_leaf_read_datacells_size(buf);
+    uint32_t record_entry_size = vdbrecord_fixedlen_size(rec) + sizeof(uint32_t) * 3; //3 for: index cell + next + size fields
 
-    return idx_cells_size + data_cells_size + size < VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE;
+    return idx_cells_size + data_cells_size + record_entry_size <= VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE;
 }
 
 /* 
@@ -336,4 +345,8 @@ enum VdbNodeType vdbnode_type(uint8_t* buf) {
 
 uint32_t vdbnode_read_parent(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t)));
+}
+
+void vdbnode_write_parent(uint8_t* buf, uint32_t parent) {
+    *((uint32_t*)(buf + sizeof(uint32_t))) = parent;
 }

@@ -15,21 +15,16 @@
 
     cstack.github.io for short guide to basics of SQL implementation (not complete)
 
+    Read Edward Sciore's book on implementing a relational database
+
 *******************************Storage Engine*******************************************
-    static uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, uint32_t new_right_key) <-------FINISH THIS
-        a few functions are not implemented yet
+    Not splitting leaves is stil broken - keys are all messed up just after 8 records
 
-        deal with situation when parent is full
+    Splitting leaves is not working - keys are all messed up.... (are out of order)
 
-    Deal with situation when leaves/interns are full
-        Currently breaks on insertion of 8th record (key is 0 - probably idx/record overwriting eachother in buffer)
-        splitting leaves
-        splitting internal nodes if:
-            root
-            parent of internal node is below capacity
-            parent of internal node is at/above capacity
+    Check that internal splitting works
 
-        Uncomment vdbtree_traverse_to to allow checking of children nodes (only checking right ptr now)
+    Cursor abstraction - would this be helpful as the intermediary between vdb.c and tree.c?
 
     Need index cells in data blocks (which we don't have now) since it will be required when data blocks
         need to be defragmented (unless there's a way to defrag without index cells...)

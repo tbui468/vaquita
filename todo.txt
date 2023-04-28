@@ -17,10 +17,10 @@
 
     Read Edward Sciore's book on implementing a relational database
 
-*******************************Storage Engine*******************************************
-    Not splitting leaves is stil broken - keys are all messed up just after 8 records
+    Use SDL and Vulkan to visualize SQL + b-tree (2d first, and then 3d)
 
-    Splitting leaves is not working - keys are all messed up.... (are out of order)
+*******************************Storage Engine*******************************************
+    replace all read/writing parent nodes with a single general function
 
     Check that internal splitting works
 
@@ -28,7 +28,7 @@
 
     Need index cells in data blocks (which we don't have now) since it will be required when data blocks
         need to be defragmented (unless there's a way to defrag without index cells...)
-        Easier to change 'free' field into datacells size (since is easy to compute from end of the page)
+        Change 'free' field in data blocks into datacells size like in leaf/intern nodes. (since is easy to compute from end of the page)
 
     update records
 
@@ -36,6 +36,10 @@
 
     pager eviction policy
         make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
+
+    Custom keys
+        Unique or not?
+        Have to rewrite tree to split/merge based on where inserted (since it will not be in order anymore)
 
     Concurrency - need to get read/write locks on file
 

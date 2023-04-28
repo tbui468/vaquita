@@ -25,7 +25,7 @@ static uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t leaf
 
 static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx) {
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    enum VdbNodeType type = vdbnode_type(page->buf);
+    enum VdbNodeType type = vdbnode_read_type(page->buf);
     vdb_pager_unpin_page(page);
     return type;
 }
@@ -39,8 +39,8 @@ static uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
-    vdbnode_meta_write_type(page->buf);
-    vdbnode_meta_write_parent(page->buf, 0);
+    vdbnode_write_type(page->buf, VDBN_META);
+    vdbnode_write_parent(page->buf, 0);
     vdbnode_meta_write_primary_key_counter(page->buf, 0);
     vdbnode_meta_write_root(page->buf, 0);
     vdbnode_meta_write_schema(page->buf, schema);
@@ -99,8 +99,8 @@ static uint32_t vdbtree_intern_init(struct VdbTree* tree, uint32_t parent_idx) {
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
-    vdbnode_intern_write_type(page->buf);
-    vdbnode_intern_write_parent(page->buf, parent_idx);
+    vdbnode_write_type(page->buf, VDBN_INTERN);
+    vdbnode_write_parent(page->buf, parent_idx);
     struct VdbPtr right_ptr = {0, 0};
     vdbnode_intern_write_right_ptr(page->buf, right_ptr);
     vdbnode_intern_write_ptr_count(page->buf, 0);
@@ -181,8 +181,8 @@ static uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
-    vdbnode_leaf_write_type(page->buf);
-    vdbnode_leaf_write_parent(page->buf, parent_idx);
+    vdbnode_write_type(page->buf, VDBN_LEAF);
+    vdbnode_write_parent(page->buf, parent_idx);
     vdbnode_leaf_write_data_block(page->buf, 0);
     vdbnode_leaf_write_record_count(page->buf, 0);
     vdbnode_leaf_write_datacells_size(page->buf, 0);
@@ -420,8 +420,8 @@ static uint32_t vdbtree_data_init(struct VdbTree* tree, int32_t parent_idx) {
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
-    vdbnode_data_write_type(page->buf);
-    vdbnode_data_write_parent(page->buf, parent_idx);
+    vdbnode_write_type(page->buf, VDBN_DATA);
+    vdbnode_write_parent(page->buf, parent_idx);
     vdbnode_data_write_next(page->buf, 0);
     vdbnode_data_write_free_size(page->buf, VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE);
 

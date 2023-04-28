@@ -27,14 +27,6 @@ struct VdbSchema* vdbnode_meta_read_schema(uint8_t* buf) {
     return vdb_schema_deserialize(buf + sizeof(uint32_t) * 4, &off);
 }
 
-void vdbnode_meta_write_type(uint8_t* buf) {
-    *((uint32_t*)(buf)) = (uint32_t)VDBN_META;
-}
-
-void vdbnode_meta_write_parent(uint8_t* buf, uint32_t parent_idx) {
-    *((uint32_t*)(buf + sizeof(uint32_t))) = parent_idx;
-}
-
 void vdbnode_meta_write_primary_key_counter(uint8_t* buf, uint32_t pk_counter) {
     *((uint32_t*)(buf + 2 * sizeof(uint32_t))) = pk_counter;
 }
@@ -79,14 +71,6 @@ struct VdbPtr vdbnode_intern_read_ptr(uint8_t* buf, uint32_t idx) {
 
 uint32_t vdbnode_intern_read_datacells_size(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 5));
-}
-
-void vdbnode_intern_write_type(uint8_t* buf) {
-    *((uint32_t*)(buf)) = (uint32_t)VDBN_INTERN;
-}
-
-void vdbnode_intern_write_parent(uint8_t* buf, uint32_t parent_idx) {
-    *((uint32_t*)(buf + sizeof(uint32_t))) = parent_idx;
 }
 
 void vdbnode_intern_write_right_ptr(uint8_t* buf, struct VdbPtr ptr) {
@@ -201,14 +185,6 @@ struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off) {
     return d;
 }
 
-void vdbnode_leaf_write_type(uint8_t* buf) {
-    *((uint32_t*)(buf)) = (uint32_t)VDBN_LEAF;
-}
-
-void vdbnode_leaf_write_parent(uint8_t* buf, uint32_t parent_idx) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 1)) = parent_idx;
-}
-
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = data_idx;
 }
@@ -285,14 +261,6 @@ struct VdbDatum vdbnode_data_read_datum(uint8_t* buf, uint32_t off) {
     return d;
 }
 
-void vdbnode_data_write_type(uint8_t* buf) {
-    *((uint32_t*)(buf)) = (uint32_t)VDBN_DATA;
-}
-
-void vdbnode_data_write_parent(uint8_t* buf, uint32_t parent_idx) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 1)) = parent_idx;
-}
-
 void vdbnode_data_write_next(uint8_t* buf, uint32_t next_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = next_idx;
 }
@@ -339,8 +307,12 @@ void vdbnode_data_write_datum_overflow(uint8_t* buf, uint32_t datum_off, uint32_
 /*
  * Other functions
  */
-enum VdbNodeType vdbnode_type(uint8_t* buf) {
+enum VdbNodeType vdbnode_read_type(uint8_t* buf) {
     return *((uint32_t*)(buf)); 
+}
+
+void vdbnode_write_type(uint8_t* buf, enum VdbNodeType type) {
+    *((uint32_t*)(buf)) = (uint32_t)type;
 }
 
 uint32_t vdbnode_read_parent(uint8_t* buf) {
@@ -350,3 +322,4 @@ uint32_t vdbnode_read_parent(uint8_t* buf) {
 void vdbnode_write_parent(uint8_t* buf, uint32_t parent) {
     *((uint32_t*)(buf + sizeof(uint32_t))) = parent;
 }
+

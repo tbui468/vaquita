@@ -197,42 +197,37 @@ void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
 }
 
-void vdbnode_leaf_write_fixedlen_data(uint8_t* buf, struct VdbRecord* rec) {
-    uint32_t rec_count = vdbnode_leaf_read_record_count(buf);
+void vdbnode_leaf_write_record(uint8_t* buf, uint32_t rec_idx, struct VdbRecord* rec) {
+    int off = VDB_PAGE_HDR_SIZE + rec_idx * sizeof(uint32_t);
+    int data_off = *((uint32_t*)(buf + off));
 
+    uint32_t next_field = 0;
+    write_u32(buf, next_field, &data_off);
     uint32_t rec_size = vdbrecord_fixedlen_size(rec);
-    uint32_t prev_data_size = vdbnode_leaf_read_datacells_size(buf);
-    int data_off = VDB_PAGE_SIZE - prev_data_size - rec_size - sizeof(uint32_t) * 2;
-
-    int off = VDB_PAGE_HDR_SIZE + rec_count * sizeof(uint32_t);
-    write_u32(buf, data_off, &off);
-
-    write_u32(buf, 0, &data_off);
     write_u32(buf, rec_size, &data_off);
 
     vdbrecord_write(buf + data_off, rec);
-
-    uint32_t new_data_size = prev_data_size + rec_size + sizeof(uint32_t) * 2;
-    vdbnode_leaf_write_datacells_size(buf, new_data_size);
-
-    rec_count++;
-    vdbnode_leaf_write_record_count(buf, rec_count);
 }
 
-bool vdbnode_leaf_can_fit_record(uint8_t* buf, struct VdbRecord* rec) {
-    uint32_t idx_cells_size = vdbnode_leaf_read_record_count(buf) * sizeof(uint32_t);
-    uint32_t data_cells_size = vdbnode_leaf_read_datacells_size(buf);
-    uint32_t record_entry_size = vdbrecord_fixedlen_size(rec) + sizeof(uint32_t) * 3; //3 for: index cell + next + size fields
+void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec) {
+    uint32_t new_rec_idx = vdbnode_leaf_read_record_count(buf);
+    uint32_t new_datacells_size = vdbnode_leaf_read_datacells_size(buf) + sizeof(uint32_t) * 2 + vdbrecord_fixedlen_size(rec);
+    *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + new_rec_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
 
-    return idx_cells_size + data_cells_size + record_entry_size <= VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE;
+    vdbnode_leaf_write_record(buf, new_rec_idx, rec);
+
+    vdbnode_leaf_write_datacells_size(buf, new_datacells_size);
+    vdbnode_leaf_write_record_count(buf, new_rec_idx + 1);
 }
 
 /* 
- * Data node de/serialization
- * [type|parent_idx|next data block idx|free size| ... |...data cells...]
+ * Data node header (no index cells)
+ * [type|parent_idx|next data block idx|free size|freelist] ....[ Data Cells] 
+ * [ 0  |     1    |         2         |     3   |    4   ]
  *
- * Datacell
- * [next|overflow block idx|overflow offset|size|...string data...]
+ * Data Cell
+ * [   next   |overflow block idx|overflow offset|  size  |...string data...]
+ * [    0     |       1          |         2     |    3   |      ....
  */
 
 uint32_t vdbnode_data_read_next(uint8_t* buf) {
@@ -243,10 +238,27 @@ uint32_t vdbnode_data_read_free_size(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
+uint32_t vdbnode_data_read_freelist_head(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 4));
+}
+
+void vdbnode_data_write_freelist_head(uint8_t* buf, uint32_t freelist_head_off) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = freelist_head_off;
+}
+
+uint32_t vdbnode_data_read_datacell_next(uint8_t* buf, uint32_t off) {
+    return *((uint32_t*)(buf + off + sizeof(uint32_t) * 0));
+}
+
+void vdbnode_data_write_datacell_next(uint8_t* buf, uint32_t off, uint32_t next) {
+    *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = next;
+}
+
+
 //caller needs to call this function again with different block/offset 
 //  to get more data if overflow block idx is not 0
+//TODO: rename to vdbnode_data_read_datacell
 struct VdbDatum vdbnode_data_read_datum(uint8_t* buf, uint32_t off) {
-    //uint32_t size = *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
     
     struct VdbDatum d;
 
@@ -302,6 +314,18 @@ uint32_t vdbnode_data_write_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t
 void vdbnode_data_write_datum_overflow(uint8_t* buf, uint32_t datum_off, uint32_t block_idx, uint32_t offset_idx) {
     *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 1)) = block_idx;
     *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 2)) = offset_idx;
+}
+
+uint32_t vdbnode_data_read_datacell_overflow_block(uint8_t* buf, uint32_t off) {
+    return *((uint32_t*)(buf + off + sizeof(uint32_t) * 1));
+}
+
+uint32_t vdbnode_data_read_datacell_overflow_offset(uint8_t* buf, uint32_t off) {
+    return *((uint32_t*)(buf + off + sizeof(uint32_t) * 2));
+}
+
+uint32_t vdbnode_data_read_datacell_size(uint8_t* buf, uint32_t off) {
+    return *((uint32_t*)(buf + off + sizeof(uint32_t) * 3));
 }
 
 /*

@@ -31,21 +31,22 @@ int main(int argc, char** argv) {
     word[99] = '\0';
     
     const char* words[] = {word, "dogs", "turtles"};
-    for (int i = 1; i <= 500; i++) {
+    for (int i = 1; i <= 800; i++) {
         vdb_insert_record(h, "students", i * 2, words[i % 3], i % 2 == 0);
     }
 
     vdb_debug_print_tree(h, "students");
     //vdb_update_record(h, "students", 100, 0, "lions", true);
-    //vdb_delete_record(h, "students", 2);
+    vdb_delete_record(h, "students", 1); //key: 1, 2, dogs, 0
     //vdb_delete_record(h, "students", 3);
 
-    int keys[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    int keys[] = {1, 299, 399, 400, 500, 600, 800, 801};
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 8; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "students", keys[i]);
         if (r) {
             printf("key %d: %ld, %.*s, %d\n", r->key, r->data[0].as.Int, r->data[1].as.Str->len, r->data[1].as.Str->start, r->data[2].as.Bool);
+            vdb_record_free(r);
         } else {
             printf("not found!\n");
         }

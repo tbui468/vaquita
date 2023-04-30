@@ -18,22 +18,67 @@
     Read Edward Sciore's book on implementing a relational database
 
     Use SDL and Vulkan to visualize SQL + b-tree (2d first, and then 3d)
+        visualize how b-tree grows and nodes split as new entries are added
+        visualize how tree is traversed as data is queried
+        use ipc (?) to have two programs talk to each other:
+            use vdb REPL to modify database
+            run visualization program to read vdb data to visualize it
 
 *******************************Storage Engine*******************************************
-    Check that internal splitting works
+    delete records
+
+    update records
+        update fixedlen data in record
+        for varlen data:
+            if new string is same size, just replace
+            elif new string is different size
+                1. find empty space in freelist that matches perfectly
+                2. allocate new space at end of current data block
+                put old string space into freelist
+
+    Verify that delete and update use freelist properly
+
+    Fields need names so that we can select certain attributes only
+        This needs to be implemented before 'select' can be implemented (projection)
+        Datablock needs to be attached to metanode
+
+    Test making multiple trees - insert and fetch data from multiple trees (tables)
+
+    REPL
+        basic parsing of commands
+            > open school;
+            > create table students (name string, age int, male bool);
+            > insert into students (name, age, male) values ("Bob", 12, true);
+            > insert into students (name, age, male) values ("Kate", 11, false);
+            > insert into students (name, age, male) values ("Kate", 13, false);
+            > select * from students;
+            > select id, name from students;
+            > select id, name, male from students where age >= 12;
+            > drop table students;
+            > close school;
+
+        executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
+        Have C code fill in database with default data first, then query in repl
 
     Cursor abstraction - would this be helpful as the intermediary between vdb.c and tree.c?
+        will we need to know which attribute to index by? (primary key should be default)
+        vdbcursor_to_end()
+        vdbcursor_to(key)
+        vdbcurosr_next()
 
     Need index cells in data blocks (which we don't have now) since it will be required when data blocks
         need to be defragmented (unless there's a way to defrag without index cells...)
         Change 'free' field in data blocks into datacells size like in leaf/intern nodes. (since is easy to compute from end of the page)
-
-    update records
-
-    delete records
+        vdbtree_leaf_defrag(tree, leaf)
+            uses data in leaf (eg, deleted records) to defrag data blocks attached to that leaf
 
     pager eviction policy
         make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
+        Or just manually limit number of pages allowed to hold at a time
+        Use O_DIRECT to bypass OS pager
+
+    Foreign keys to connect two or more tables
+        joins will be needed here
 
     Custom keys
         Unique or not?

@@ -18,7 +18,7 @@ struct VdbPtr {
     uint32_t key;
 };
 
-//meta buffer de/serialization
+//meta data node
 uint32_t vdbnode_meta_read_primary_key_counter(uint8_t* buf);
 uint32_t vdb_node_meta_read_root(uint8_t* buf);
 struct VdbSchema* vdbnode_meta_read_schema(uint8_t* buf);
@@ -27,7 +27,7 @@ void vdbnode_meta_write_primary_key_counter(uint8_t* buf, uint32_t pk_counter);
 void vdbnode_meta_write_root(uint8_t* buf, uint32_t root_idx);
 void vdbnode_meta_write_schema(uint8_t* buf, struct VdbSchema* schema);
 
-//intern
+//internal node
 struct VdbPtr vdbnode_intern_read_right_ptr(uint8_t* buf);
 uint32_t vdbnode_intern_read_ptr_count(uint8_t* buf);
 struct VdbPtr vdbnode_intern_read_ptr(uint8_t* buf, uint32_t idx);
@@ -38,7 +38,7 @@ void vdbnode_intern_write_datacells_size(uint8_t* buf, uint32_t size);
 void vdbnode_intern_write_new_ptr(uint8_t* buf, struct VdbPtr ptr);
 bool vdbnode_intern_can_fit_ptr(uint8_t* buf);
 
-//leaf
+//leaf node
 uint32_t vdbnode_leaf_read_data_block(uint8_t* buf);
 uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx);
 uint32_t vdbnode_leaf_read_record_count(uint8_t* buf);
@@ -48,11 +48,11 @@ struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off);
 
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx);
 void vdbnode_leaf_write_record_count(uint8_t* buf, uint32_t count);
-void vdbnode_leaf_write_fixedlen_data(uint8_t* buf, struct VdbRecord* rec);
+void vdbnode_leaf_write_record(uint8_t* buf, uint32_t rec_idx, struct VdbRecord* rec);
+void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec);
 void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size);
-bool vdbnode_leaf_can_fit_record(uint8_t* buf, struct VdbRecord* rec);
 
-//data
+//data node
 uint32_t vdbnode_data_read_next(uint8_t* buf);
 uint32_t vdbnode_data_read_free_size(uint8_t* buf);
 struct VdbDatum vdbnode_data_read_datum(uint8_t* buf, uint32_t off);
@@ -61,6 +61,14 @@ void vdbnode_data_write_next(uint8_t* buf, uint32_t next_idx);
 void vdbnode_data_write_free_size(uint8_t* buf, uint32_t free_size);
 uint32_t vdbnode_data_write_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written); //returns offset of written datum
 void vdbnode_data_write_datum_overflow(uint8_t* buf, uint32_t datum_off, uint32_t block_idx, uint32_t offset_idx);
+
+uint32_t vdbnode_data_read_freelist_head(uint8_t* buf);
+void vdbnode_data_write_freelist_head(uint8_t* buf, uint32_t freelist_head_off);
+uint32_t vdbnode_data_read_datacell_next(uint8_t* buf, uint32_t off);
+void vdbnode_data_write_datacell_next(uint8_t* buf, uint32_t off, uint32_t next);
+uint32_t vdbnode_data_read_datacell_overflow_block(uint8_t* buf, uint32_t off);
+uint32_t vdbnode_data_read_datacell_overflow_offset(uint8_t* buf, uint32_t off);
+uint32_t vdbnode_data_read_datacell_size(uint8_t* buf, uint32_t off);
 
 //other
 enum VdbNodeType vdbnode_read_type(uint8_t* buf);

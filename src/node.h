@@ -69,6 +69,7 @@ void vdbnode_data_write_datacell_next(uint8_t* buf, uint32_t off, uint32_t next)
 uint32_t vdbnode_data_read_datacell_overflow_block(uint8_t* buf, uint32_t off);
 uint32_t vdbnode_data_read_datacell_overflow_offset(uint8_t* buf, uint32_t off);
 uint32_t vdbnode_data_read_datacell_size(uint8_t* buf, uint32_t off);
+uint32_t vdbnode_data_datacell_header_size(void);
 
 //other
 enum VdbNodeType vdbnode_read_type(uint8_t* buf);

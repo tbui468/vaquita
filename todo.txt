@@ -25,16 +25,17 @@
             run visualization program to read vdb data to visualize it
 
 *******************************Storage Engine*******************************************
-    delete records
+    Idea:
+        rewrite data blocks to use index cells along with data cells
+        when an index cell is freed, add it to the freelist (which no longer points to free datacells)
+        on freeing an index cell, use mmove to copy datacells to the right to remove freed space
+        also update datacells_size 
+        
+        Then when adding a new string to data block, look for free index cell, and simply append datacells as usual
+            this is a lot simplier than before, but requires a good rewrite
 
+    delete records
     update records
-        update fixedlen data in record
-        for varlen data:
-            if new string is same size, just replace
-            elif new string is different size
-                1. find empty space in freelist that matches perfectly
-                2. allocate new space at end of current data block
-                put old string space into freelist
 
     Verify that delete and update use freelist properly
 
@@ -51,6 +52,8 @@
             > insert into students (name, age, male) values ("Bob", 12, true);
             > insert into students (name, age, male) values ("Kate", 11, false);
             > insert into students (name, age, male) values ("Kate", 13, false);
+            > update students set name = "Jim", age = 12, male = true where id = 2;
+            > delete from students where id = 1;
             > select * from students;
             > select id, name from students;
             > select id, name, male from students where age >= 12;

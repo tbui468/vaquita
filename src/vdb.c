@@ -166,7 +166,12 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
 
     va_list args;
     va_start(args, name);
-    struct VdbRecord* rec = vdbtree_construct_record(tree, args);
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
+    struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
+    vdb_schema_free(schema);
+
     va_end(args);
 
     vdb_tree_insert_record(tree, rec);
@@ -185,6 +190,25 @@ bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     return vdbtree_delete_record(tree, key);
+}
+
+bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    va_list args;
+    va_start(args, key);
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
+    vdb_schema_free(schema);
+
+    va_end(args);
+
+    bool result = vdbtree_update_record(tree, rec);
+    vdb_record_free(rec);
+
+    return result;
 }
 /*
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {

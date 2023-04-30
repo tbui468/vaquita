@@ -28,13 +28,13 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
 struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager);
 void vdb_tree_release(struct VdbTree* tree);
 
-struct VdbRecord* vdbtree_construct_record(struct VdbTree* tree, va_list args);
+struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree);
+uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree);
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
 struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key);
 bool vdbtree_delete_record(struct VdbTree* tree, uint32_t key);
-
-//bool vdb_tree_update_record(struct VdbTree* tree, struct VdbRecord* rec);
+bool vdbtree_update_record(struct VdbTree* tree, struct VdbRecord* rec);
 
 struct VdbTreeList* vdb_treelist_init();
 void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree);

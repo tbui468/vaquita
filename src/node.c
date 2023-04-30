@@ -230,6 +230,10 @@ void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec) {
  * [    0     |       1          |         2     |    3   |      ....
  */
 
+uint32_t vdbnode_data_datacell_header_size(void) {
+    return sizeof(uint32_t) * 4;
+}
+
 uint32_t vdbnode_data_read_next(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 2));
 }

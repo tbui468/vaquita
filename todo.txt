@@ -25,15 +25,6 @@
             run visualization program to read vdb data to visualize it
 
 *******************************Storage Engine*******************************************
-    Idea:
-        rewrite data blocks to use index cells along with data cells
-        when an index cell is freed, add it to the freelist (which no longer points to free datacells)
-        on freeing an index cell, use mmove to copy datacells to the right to remove freed space
-        also update datacells_size 
-        
-        Then when adding a new string to data block, look for free index cell, and simply append datacells as usual
-            this is a lot simplier than before, but requires a good rewrite
-
     delete records
     update records
 

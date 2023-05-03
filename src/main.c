@@ -31,17 +31,15 @@ int main(int argc, char** argv) {
     word[99] = '\0';
     
     const char* words[] = {word, "dogs", "turtles"};
-    for (int i = 1; i <= 800; i++) {
+    for (int i = 1; i <= 200; i++) {
         vdb_insert_record(h, "students", i * 2, words[i % 3], i % 2 == 0);
     }
 
     vdb_debug_print_tree(h, "students");
-    //vdb_update_record(h, "students", 100, 0, "lions", true);
-    vdb_delete_record(h, "students", 1); //key: 1, 2, dogs, 0
-    vdb_update_record(h, "students", 2, 99, "cats", false);
-    //vdb_delete_record(h, "students", 3);
+    //vdb_delete_record(h, "students", 1); //key: 1, 2, dogs, 0
+    //vdb_update_record(h, "students", 2, 99, "cats", false);
 
-    int keys[] = {1, 2, 399, 400, 500, 600, 800, 801};
+    int keys[] = {0, 1, 98, 99, 100, 101, 200, 201};
 
     for (int i = 0; i < 8; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "students", keys[i]);

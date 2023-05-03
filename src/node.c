@@ -171,7 +171,10 @@ struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSche
     return rec;
 }
 
-struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off) {
+struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t idx) {
+    uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t)));
+
+
     struct VdbDatum d;
     d.type = VDBF_STR;
     //* 0 is next field
@@ -221,41 +224,72 @@ void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec) {
 }
 
 /* 
- * Data node header (no index cells)
- * [type|parent_idx|next data block idx|free size|freelist] ....[ Data Cells] 
- * [ 0  |     1    |         2         |     3   |    4   ]
- *
- * Data Cell
- * [   next   |overflow block idx|overflow offset|  size  |...string data...]
- * [    0     |       1          |         2     |    3   |      ....
+ * Data Node Header
+ * [type|parent_idx|next data block idx| index count | datacells size|index freelist|datacells freelist]
+ * [ 0  |     1    |         2         |     3       |       4       |      5       |        6         ]
  */
 
-uint32_t vdbnode_data_datacell_header_size(void) {
-    return sizeof(uint32_t) * 4;
-}
 
-uint32_t vdbnode_data_read_next(uint8_t* buf) {
+uint32_t vdbdata_read_next(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 2));
 }
 
-uint32_t vdbnode_data_read_free_size(uint8_t* buf) {
+void vdbdata_write_next(uint8_t* buf, uint32_t next_idx) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = next_idx;
+}
+
+uint32_t vdbdata_read_idx_count(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
-uint32_t vdbnode_data_read_freelist_head(uint8_t* buf) {
+void vdbdata_write_idx_count(uint8_t* buf, uint32_t count) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 3)) = count;
+}
+
+uint32_t vdbdata_read_datacells_size(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 4));
 }
 
-void vdbnode_data_write_freelist_head(uint8_t* buf, uint32_t freelist_head_off) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = freelist_head_off;
+void vdbdata_write_datacells_size(uint8_t* buf, uint32_t size) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
 }
 
-uint32_t vdbnode_data_read_datacell_next(uint8_t* buf, uint32_t off) {
+uint32_t vdbdata_read_idx_freelist_head(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 5));
+}
+void vdbdata_write_idx_freelist_head(uint8_t* buf, uint32_t idx_freelist_head) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = idx_freelist_head;
+}
+
+uint32_t vdbdata_read_datacells_freelist_head(uint8_t* buf) {
+    return *((uint32_t*)(buf + sizeof(uint32_t) * 6));
+}
+
+void vdbdata_write_datacells_freelist_head(uint8_t* buf, uint32_t datacells_freelist_head) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = datacells_freelist_head;
+}
+
+/* 
+ * Data Node Datacell Header
+ * [   next   |overflow block idx|overflow offset|  size  ]
+ * [    0     |       1          |         2     |    3   ]
+ */
+uint32_t vdbdata_datacell_header_size(void) {
+    return sizeof(uint32_t) * 4;
+}
+
+uint32_t vdbdata_read_datacell_next(uint8_t* buf, uint32_t off) {
     return *((uint32_t*)(buf + off + sizeof(uint32_t) * 0));
 }
 
-void vdbnode_data_write_datacell_next(uint8_t* buf, uint32_t off, uint32_t next) {
+void vdbdata_write_datacell_next(uint8_t* buf, uint32_t off, uint32_t next) {
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = next;
+}
+
+
+void vdbdata_read_datacell_overflow(uint8_t* buf, uint32_t off, uint32_t* block_idx, uint32_t* datum_idx) {
+    *block_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 1));
+    *datum_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 2));
 }
 
 
@@ -277,55 +311,37 @@ struct VdbDatum vdbnode_data_read_datum(uint8_t* buf, uint32_t off) {
     return d;
 }
 
-void vdbnode_data_write_next(uint8_t* buf, uint32_t next_idx) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = next_idx;
-}
-
-void vdbnode_data_write_free_size(uint8_t* buf, uint32_t free_size) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 3)) = free_size;
-}
-
 //returns offset of written varlen data in buf
-uint32_t vdbnode_data_write_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written) {
-    uint32_t datum_header_size = sizeof(uint32_t) * 4;
-    uint32_t free = vdbnode_data_read_free_size(buf);
-    assert(datum_header_size < free);
+uint32_t vdbdata_write_datacell_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written) {
+    uint32_t idx_count = vdbdata_read_idx_count(buf);
+    uint32_t idx_size = idx_count * sizeof(uint32_t);
+    uint32_t datacells_size = vdbdata_read_datacells_size(buf);
+    uint32_t free = VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - (idx_size + datacells_size);
+    uint32_t header_size = vdbdata_datacell_header_size();
+    assert(header_size < free);
+    assert(datum->type == VDBF_STR);
 
-    uint32_t off = VDB_PAGE_SIZE - free;
-    uint32_t can_fit = 0;
+    uint32_t can_fit = free - header_size < datum->as.Str->len - *len_written ? free - header_size : datum->as.Str->len - *len_written;
+    uint32_t off = VDB_PAGE_SIZE - datacells_size - can_fit - header_size;
 
-    switch (datum->type) {
-        case VDBF_STR:
-            can_fit = free - datum_header_size < datum->as.Str->len - *len_written ? free - datum_header_size : datum->as.Str->len - *len_written;
+    *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;
+    *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)) = 0;
+    *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)) = 0;
+    *((uint32_t*)(buf + off + sizeof(uint32_t) * 3)) = can_fit;
 
-            *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;
-            *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)) = 0;
-            *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)) = 0;
-            *((uint32_t*)(buf + off + sizeof(uint32_t) * 3)) = can_fit;
+    memcpy(buf + off + header_size, datum->as.Str->start + *len_written, can_fit);
+    *len_written += can_fit;
 
-            memcpy(buf + off + datum_header_size, datum->as.Str->start + *len_written, can_fit);
-            *len_written += can_fit;
-            break;
-        default:
-            break;
-    }
+    vdbdata_write_datacells_size(buf, datacells_size + header_size + can_fit);
+    *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idx_size)) = off;
+    vdbdata_write_idx_count(buf, idx_count + 1);
 
-    vdbnode_data_write_free_size(buf, free - datum_header_size - can_fit);
-
-    return off;
+    return idx_count;
 }
 
-void vdbnode_data_write_datum_overflow(uint8_t* buf, uint32_t datum_off, uint32_t block_idx, uint32_t offset_idx) {
+void vdbdata_write_datacell_overflow(uint8_t* buf, uint32_t datum_off, uint32_t block_idx, uint32_t datum_idx) {
     *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 1)) = block_idx;
-    *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 2)) = offset_idx;
-}
-
-uint32_t vdbnode_data_read_datacell_overflow_block(uint8_t* buf, uint32_t off) {
-    return *((uint32_t*)(buf + off + sizeof(uint32_t) * 1));
-}
-
-uint32_t vdbnode_data_read_datacell_overflow_offset(uint8_t* buf, uint32_t off) {
-    return *((uint32_t*)(buf + off + sizeof(uint32_t) * 2));
+    *((uint32_t*)(buf + datum_off + sizeof(uint32_t) * 2)) = datum_idx;
 }
 
 uint32_t vdbnode_data_read_datacell_size(uint8_t* buf, uint32_t off) {

@@ -279,7 +279,7 @@ static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, s
             continue;
 
         //must have enough free space to fit header + at least 1 char
-        if (vdbtree_data_read_free_size(tree, data_block_idx) < vdbnode_data_datacell_header_size() + sizeof(char)) {
+        if (vdbtree_data_read_free_size(tree, data_block_idx) < vdbdata_datacell_header_size() + sizeof(char)) {
             uint32_t new_data_idx = vdbtree_data_init(tree, data_block_idx);
             vdbtree_data_write_next(tree, data_block_idx, new_data_idx);
             data_block_idx = new_data_idx;
@@ -316,7 +316,7 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
 
     vdb_pager_unpin_page(page);
 }
-
+/*
 static void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, struct VdbRecord* rec) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
@@ -329,7 +329,7 @@ static void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint3
     vdbnode_leaf_write_record(page->buf, rec_idx, rec);
 
     vdb_pager_unpin_page(page);
-}
+}*/
 
 static uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
@@ -439,8 +439,11 @@ static uint32_t vdbtree_data_init(struct VdbTree* tree, int32_t parent_idx) {
 
     vdbnode_write_type(page->buf, VDBN_DATA);
     vdbnode_write_parent(page->buf, parent_idx);
-    vdbnode_data_write_next(page->buf, 0);
-    vdbnode_data_write_free_size(page->buf, VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE);
+    vdbdata_write_next(page->buf, 0);
+    vdbdata_write_idx_count(page->buf, 0);
+    vdbdata_write_datacells_size(page->buf, 0);
+    vdbdata_write_idx_freelist_head(page->buf, 0);
+    vdbdata_write_datacells_freelist_head(page->buf, 0);
 
     vdb_pager_unpin_page(page);
 
@@ -451,7 +454,7 @@ static uint32_t vdbtree_data_write_datum(struct VdbTree* tree, uint32_t idx, str
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
-    uint32_t off = vdbnode_data_write_datum(page->buf, datum, len_written);
+    uint32_t off = vdbdata_write_datacell_datum(page->buf, datum, len_written);
     vdb_pager_unpin_page(page);
     return off;
 }
@@ -460,7 +463,7 @@ static void vdbtree_data_write_datum_overflow(struct VdbTree* tree, uint32_t idx
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
-    vdbnode_data_write_datum_overflow(page->buf, datum_off, overflow_block, overflow_off);
+    vdbdata_write_datacell_overflow(page->buf, datum_off, overflow_block, overflow_off);
     vdb_pager_unpin_page(page);
 }
 
@@ -468,22 +471,27 @@ static void vdbtree_data_write_next(struct VdbTree* tree, uint32_t idx, uint32_t
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
-    vdbnode_data_write_next(page->buf, next);
+    vdbdata_write_next(page->buf, next);
     vdb_pager_unpin_page(page);
 }
 
 static uint32_t vdbtree_data_read_free_size(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    uint32_t free_size = vdbnode_data_read_free_size(page->buf);
+
+    uint32_t idx_size = vdbdata_read_idx_count(page->buf);
+    uint32_t datacells_size = vdbdata_read_datacells_size(page->buf);
+    uint32_t free_size = VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - idx_size - datacells_size;
+
     vdb_pager_unpin_page(page);
+
     return free_size;
 }
 
 uint32_t vdbtree_data_read_datacell_next(struct VdbTree* tree, uint32_t idx, uint32_t off) {
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    uint32_t datacell_next = vdbnode_data_read_datacell_next(page->buf, off);
+    uint32_t datacell_next = vdbdata_read_datacell_next(page->buf, off);
     vdb_pager_unpin_page(page);
     return datacell_next;
 }
@@ -492,30 +500,30 @@ void vdbtree_data_write_datacell_next(struct VdbTree* tree, uint32_t idx, uint32
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
-    vdbnode_data_write_datacell_next(page->buf, off, next);
+    vdbdata_write_datacell_next(page->buf, off, next);
     vdb_pager_unpin_page(page);
 }
 
 
+/*
 void vdbtree_data_insert_into_freelist(struct VdbTree* tree, uint32_t block_idx, uint32_t offset_idx) {
     assert(vdbtree_node_type(tree, block_idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
     page->dirty = true;
 
     uint32_t freelist_head = vdbnode_data_read_freelist_head(page->buf);
-    vdbnode_data_write_datacell_next(page->buf, offset_idx, freelist_head);
+    vdbdata_write_datacell_next(page->buf, offset_idx, freelist_head);
     vdbnode_data_write_freelist_head(page->buf, offset_idx);
 
     vdb_pager_unpin_page(page);
-}
+}*/
 
 void vdbtree_data_read_datacell_overflow(struct VdbTree* tree, uint32_t block_idx, uint32_t offset_idx, uint32_t* overflow_block_idx, uint32_t* overflow_offset_idx) {
     assert(vdbtree_node_type(tree, block_idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
     page->dirty = true;
 
-    *overflow_block_idx = vdbnode_data_read_datacell_overflow_block(page->buf, offset_idx);
-    *overflow_offset_idx = vdbnode_data_read_datacell_overflow_offset(page->buf, offset_idx);
+    vdbdata_read_datacell_overflow(page->buf, offset_idx, overflow_block_idx, overflow_offset_idx);
 
     vdb_pager_unpin_page(page);
 }
@@ -621,7 +629,7 @@ struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key) {
 
     return NULL;
 }
-
+/*
 void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum d = rec->data[i]; 
@@ -660,9 +668,9 @@ bool vdbtree_delete_record(struct VdbTree* tree, uint32_t key) {
     }
 
     return false;
-}
+}*/
 
-
+/*
 bool vdbtree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
     if (rec->key > vdbtree_meta_read_primary_key_counter(tree)) {
         return false;
@@ -684,7 +692,7 @@ bool vdbtree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
     }
 
     return false;
-}
+}*/
 
 struct VdbTreeList* vdb_treelist_init() {
     struct VdbTreeList* tl = malloc_w(sizeof(struct VdbTreeList));

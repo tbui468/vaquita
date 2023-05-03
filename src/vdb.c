@@ -184,14 +184,14 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) 
 
     return vdb_tree_fetch_record(tree, key);
 }
-
+/*
 bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     return vdbtree_delete_record(tree, key);
-}
-
+}*/
+/*
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
@@ -209,22 +209,7 @@ bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     vdb_record_free(rec);
 
     return result;
-}
-/*
-bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbFile* file = vdb_filelist_get_file(db->files, name);
-    struct VdbTree* tree = vdb_tree_catch(file->f, db->pager);
-
-    va_list args;
-    va_start(args, key);
-    struct VdbRecord* rec = vdb_record_alloc(key, tree->schema, args);
-    va_end(args);
-
-    return vdb_tree_update_record(tree, rec);
-    return true;
-}
-*/
+}*/
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;

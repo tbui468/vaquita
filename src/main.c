@@ -37,9 +37,9 @@ int main(int argc, char** argv) {
 
     vdb_debug_print_tree(h, "students");
     //vdb_delete_record(h, "students", 1); //key: 1, 2, dogs, 0
-    //vdb_update_record(h, "students", 2, 99, "cats", false);
+    //vdb_update_record(h, "students", 1, 99, "cats", false);
 
-    int keys[] = {0, 1, 98, 99, 100, 101, 200, 201};
+    int keys[] = {0, 1, 98, 99, 198, 199, 200, 201};
 
     for (int i = 0; i < 8; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "students", keys[i]);

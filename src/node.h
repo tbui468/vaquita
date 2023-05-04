@@ -53,28 +53,17 @@ void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec);
 void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size);
 
 //Data Node
+void vdbdata_init(uint8_t* buf, uint32_t parent_idx);
 uint32_t vdbdata_read_next(uint8_t* buf);
 uint32_t vdbdata_read_idx_count(uint8_t* buf);
-uint32_t vdbdata_read_datacells_size(uint8_t* buf);
-uint32_t vdbdata_read_idx_freelist_head(uint8_t* buf);
-uint32_t vdbdata_read_datacells_freelist_head(uint8_t* buf);
+struct VdbDatum vdbdata_read_datum(uint8_t* buf, uint32_t idxcell_idx);
+uint32_t vdbdata_get_free_space(uint8_t* buf);
+
 void vdbdata_write_next(uint8_t* buf, uint32_t next_idx);
 void vdbdata_write_idx_count(uint8_t* buf, uint32_t count);
-void vdbdata_write_datacells_size(uint8_t* buf, uint32_t free_size);
-void vdbdata_write_idx_freelist_head(uint8_t* buf, uint32_t freelist_head_off);
-void vdbdata_write_datacells_freelist_head(uint8_t* buf, uint32_t freelist_head_off);
-
-//Data Node Datacell
-uint32_t vdbdata_read_datacell_next(uint8_t* buf, uint32_t off);
-void vdbdata_read_datacell_overflow(uint8_t* buf, uint32_t off, uint32_t* block_idx, uint32_t* datum_idx);
-uint32_t vdbdata_read_datacell_size(uint8_t* buf, uint32_t off);
-struct VdbDatum vdbdata_read_datacell_datum(uint8_t* buf, uint32_t off);
-
-void vdbdata_write_datacell_next(uint8_t* buf, uint32_t off, uint32_t next);
-void vdbdata_write_datacell_overflow(uint8_t* buf, uint32_t datum_off, uint32_t block_idx, uint32_t datum_idx);
-uint32_t vdbdata_write_datacell_size(uint8_t* buf, uint32_t size);
-uint32_t vdbdata_write_datacell_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written); //returns offset of written datum
-uint32_t vdbdata_datacell_header_size(void);
+uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written);
+void vdbdata_free_cells(uint8_t* buf, uint32_t idxcell_idx, uint32_t* overflow_block_idx, uint32_t* overflow_idxcell_idx);
+void vdbdata_data_write_overflow(uint8_t* buf, uint32_t idxcell_idx, uint32_t of_block_idx, uint32_t of_idxcell_idx);
 
 //other
 enum VdbNodeType vdbnode_read_type(uint8_t* buf);

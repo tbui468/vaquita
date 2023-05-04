@@ -29,7 +29,7 @@ struct VdbDatum {
         bool Bool;
     } as;
     uint32_t block_idx;
-    uint32_t offset_idx;
+    uint32_t idxcell_idx;
 };
 
 struct VdbSchema* vdb_schema_alloc(int count, va_list args);

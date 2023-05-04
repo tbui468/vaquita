@@ -24,9 +24,15 @@
             use vdb REPL to modify database
             run visualization program to read vdb data to visualize it
 
-*******************************Storage Engine*******************************************
-    delete records
+***********************Documentation*****************************
+Example
+Major components
+Todos
+
+*******************************Storage Engine******************************************
     update records
+
+    delete records
 
     Verify that delete and update use freelist properly
 

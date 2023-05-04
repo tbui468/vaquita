@@ -31,7 +31,7 @@ struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_li
                 break;
         }
         rec->data[i].block_idx = 0;
-        rec->data[i].offset_idx = 0;
+        rec->data[i].idxcell_idx = 0;
     }
 
     return rec;
@@ -75,7 +75,7 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
                 break;
         }
         r->data[i].block_idx = d->block_idx;
-        r->data[i].offset_idx = d->offset_idx;
+        r->data[i].idxcell_idx = d->idxcell_idx;
     }
 
     return r;
@@ -115,7 +115,7 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
                 break;
             case VDBF_STR: {
                 write_u32(buf, d->block_idx, &off);
-                write_u32(buf, d->offset_idx, &off);
+                write_u32(buf, d->idxcell_idx, &off);
                 break;
             }
             case VDBF_BOOL:

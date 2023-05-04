@@ -327,6 +327,7 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
 
     vdb_pager_unpin_page(page);
 }
+
 /*
 static void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, struct VdbRecord* rec) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
@@ -483,47 +484,6 @@ static uint32_t vdbtree_data_get_free_space(struct VdbTree* tree, uint32_t idx) 
     return free_size;
 }
 
-/*
-uint32_t vdbtree_data_read_datacell_next(struct VdbTree* tree, uint32_t idx, uint32_t off) {
-    assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    uint32_t datacell_next = vdbdata_read_datacell_next(page->buf, off);
-    vdb_pager_unpin_page(page);
-    return datacell_next;
-}
-
-void vdbtree_data_write_datacell_next(struct VdbTree* tree, uint32_t idx, uint32_t off, uint32_t next) {
-    assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    page->dirty = true;
-    vdbdata_write_datacell_next(page->buf, off, next);
-    vdb_pager_unpin_page(page);
-}*/
-
-
-/*
-void vdbtree_data_insert_into_freelist(struct VdbTree* tree, uint32_t block_idx, uint32_t offset_idx) {
-    assert(vdbtree_node_type(tree, block_idx) == VDBN_DATA);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
-    page->dirty = true;
-
-    uint32_t freelist_head = vdbnode_data_read_freelist_head(page->buf);
-    vdbdata_write_datacell_next(page->buf, offset_idx, freelist_head);
-    vdbnode_data_write_freelist_head(page->buf, offset_idx);
-
-    vdb_pager_unpin_page(page);
-}*/
-
-/*
-void vdbtree_data_read_datacell_overflow(struct VdbTree* tree, uint32_t block_idx, uint32_t indexcell_off, uint32_t* overflow_block_idx, uint32_t* overflow_offset_idx) {
-    assert(vdbtree_node_type(tree, block_idx) == VDBN_DATA);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
-    page->dirty = true;
-
-    vdbdata_read_datacell_overflow(page->buf, indexcell_off, overflow_block_idx, overflow_offset_idx);
-
-    vdb_pager_unpin_page(page);
-}*/
 
 
 /*

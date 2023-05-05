@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     //vdb_update_record(h, "students", 99, 99, "cats", false);
     //vdb_delete_record(h, "students", 200);
 
-    int keys[] = {0, 1, 98, 99, 198, 199, 200, 201};
+    int keys[] = {0, 1, 2, 3, 198, 199, 200, 201};
 
     for (int i = 0; i < 8; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "students", keys[i]);

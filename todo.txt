@@ -38,6 +38,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
 *******************************Storage Engine******************************************
     Fetching is not working correctly (may be due to reading record error)
+        tree_read_record seems to be the issue - only reading partial data (written data looks valid)
+        found it!!!! Data blocks are overwriting idxcell_idx with data cells!!!
 
     Verify that delete and update use freelist properly
 

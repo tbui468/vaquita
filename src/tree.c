@@ -376,7 +376,7 @@ static struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t
         d->as.Str->start = NULL;
         d->as.Str->len = 0;
 
-        while (true) {
+        while (block_idx) {
             struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
             struct VdbDatum datum = vdbnode_leaf_read_varlen_datum(page->buf, offset_idx);
 
@@ -390,9 +390,6 @@ static struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t
             free(datum.as.Str);
 
             vdb_pager_unpin_page(page);
-
-            if (!datum.block_idx)
-                break;
         }
 
     }

@@ -173,7 +173,7 @@ struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSche
 
 struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t idx) {
     uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t)));
-
+    
 
     struct VdbDatum d;
     d.type = VDBF_STR;
@@ -310,7 +310,6 @@ static void vdbdata_defrag(uint8_t* buf) {
         vdbdata_write_datacells_size(buf, prev_datacells_size - right_shift_size);
 
         free_data_off = *((uint32_t*)(buf + free_data_off + sizeof(uint32_t) * 0));
-        printf("free datacell off: %d\n", free_data_off);
     }
 }
 
@@ -331,18 +330,14 @@ void vdbdata_write_idx_count(uint8_t* buf, uint32_t count) {
 uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written) {
     uint32_t free = vdbdata_get_free_space(buf);
 
-    uint32_t idxcell_idx = *((uint32_t*)(buf + sizeof(uint32_t) * 5));
-    if (idxcell_idx > 0) {
-        idxcell_idx = (idxcell_idx - VDB_PAGE_HDR_SIZE) / sizeof(uint32_t);
-    }
-
-    if (idxcell_idx) {
-        //if not zero, write into next into new idxcell freelist head
+    uint32_t idxcell_off = *((uint32_t*)(buf + sizeof(uint32_t) * 5));
+    uint32_t idxcell_idx;
+    if (idxcell_off > 0) {
+        idxcell_idx = (idxcell_off - VDB_PAGE_HDR_SIZE) / sizeof(uint32_t);
         *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = *((uint32_t*)(buf + idxcell_idx * sizeof(uint32_t)));
-        assert(free > 0); //at least 1 for datum and 1 for potential idxcell - this is messy and should be rewritten
     } else {
         idxcell_idx = vdbdata_read_idx_count(buf);
-        assert(free > 1); //one spot for idxcell
+        free -= sizeof(uint32_t);
         vdbdata_write_idx_count(buf, idxcell_idx + 1);
     }
 
@@ -350,7 +345,6 @@ uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* le
     uint32_t header_size = vdbdata_datacell_header_size();
 
     uint32_t can_fit = free < datum->as.Str->len - *len_written ? free : datum->as.Str->len - *len_written;
-    printf("free: %d, can_fit: %d, length_to_write: %d\n", free, can_fit, datum->as.Str->len - *len_written);
     uint32_t off = VDB_PAGE_SIZE - datacells_size - can_fit - header_size;
 
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;

@@ -37,15 +37,13 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
 *******************************Storage Engine******************************************
-    Fetching is not working correctly (may be due to reading record error)
-        tree_read_record seems to be the issue - only reading partial data (written data looks valid)
-        found it!!!! Data blocks are overwriting idxcell_idx with data cells!!!
-
-    Verify that delete and update use freelist properly
+    Refactor these two confusing functions:
+        vdbdata_defrag
+        vdbdata_append_datum
 
     Fields need names so that we can select certain attributes only
         This needs to be implemented before 'select' can be implemented (projection)
-        Datablock needs to be attached to metanode
+        Datablock needs to be attached to metanode with attribute names
 
     Test making multiple trees - insert and fetch data from multiple trees (tables)
 

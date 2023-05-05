@@ -286,21 +286,26 @@ struct VdbDatum vdbdata_read_datum(uint8_t* buf, uint32_t idxcell_idx) {
 
 static void vdbdata_defrag(uint8_t* buf) {
     uint32_t free_data_off = *((uint32_t*)(buf + sizeof(uint32_t) * 6));
-
+    *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = 0;
     while (free_data_off) {
-        uint32_t datum_size = *((uint32_t*)(buf + free_data_off + sizeof(uint32_t) * 2));
+        //caching free_data_off to use in the rest of loop since its
+        //values will be overwritten when shifting right with memmove
+        uint32_t cached_free_data_off = free_data_off;
+        free_data_off = *((uint32_t*)(buf + free_data_off + sizeof(uint32_t) * 0));
+
+        uint32_t datum_size = *((uint32_t*)(buf + cached_free_data_off + sizeof(uint32_t) * 2));
         uint32_t right_shift_size = vdbdata_datacell_header_size() + datum_size;
 
         uint32_t start_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * vdbdata_read_idx_count(buf);
         uint8_t* src = buf + start_off;
-        assert(free_data_off > start_off); //TODO why is free_data_off larger than start_off
-        memmove(src + right_shift_size, src, free_data_off - start_off);
+        assert(cached_free_data_off >= start_off); //TODO why is free_data_off larger than start_off
+        memmove(src + right_shift_size, src, cached_free_data_off - start_off);
 
         //for all idxcells, shift right if less than free_data_off AND greater than max idxcell offset
         uint32_t end_of_idxcells = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * vdbdata_read_idx_count(buf);
         for (uint32_t i = 0; i < vdbdata_read_idx_count(buf); i++) {
             uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * i));
-            if (end_of_idxcells <= off && off < free_data_off) {
+            if (end_of_idxcells <= off && off < cached_free_data_off) {
                 *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * i)) += right_shift_size;
             }
         }
@@ -308,8 +313,6 @@ static void vdbdata_defrag(uint8_t* buf) {
         //idxcells can be reused but not freed, so don't modify idxcells_count field
         uint32_t prev_datacells_size = vdbdata_read_datacells_size(buf);
         vdbdata_write_datacells_size(buf, prev_datacells_size - right_shift_size);
-
-        free_data_off = *((uint32_t*)(buf + free_data_off + sizeof(uint32_t) * 0));
     }
 }
 
@@ -334,7 +337,7 @@ uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* le
     uint32_t idxcell_idx;
     if (idxcell_off > 0) {
         idxcell_idx = (idxcell_off - VDB_PAGE_HDR_SIZE) / sizeof(uint32_t);
-        *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = *((uint32_t*)(buf + idxcell_idx * sizeof(uint32_t)));
+        *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = *((uint32_t*)(buf + idxcell_off));
     } else {
         idxcell_idx = vdbdata_read_idx_count(buf);
         free -= sizeof(uint32_t);
@@ -378,8 +381,6 @@ void vdbdata_free_cells(uint8_t* buf, uint32_t idxcell_idx, uint32_t* overflow_b
     uint32_t datacell_freelist_head = *((uint32_t*)(buf + sizeof(uint32_t) * 6));
     *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = datacell_freelist_head;
     *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = datacell_off;
-
-    printf("idxcell_off: %d, datacell_off: %d\n", idxcell_off, datacell_off);
 }
 
 void vdbdata_data_write_overflow(uint8_t* buf, uint32_t idxcell_idx, uint32_t of_block_idx, uint32_t of_idxcell_idx) {

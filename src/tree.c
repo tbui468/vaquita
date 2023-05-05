@@ -338,7 +338,6 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
     }
 
     vdbnode_leaf_write_record(page->buf, rec_idx, rec);
-
     vdb_pager_unpin_page(page);
 }
 

@@ -51,6 +51,7 @@ void vdbnode_leaf_write_record_count(uint8_t* buf, uint32_t count);
 void vdbnode_leaf_write_record(uint8_t* buf, uint32_t rec_idx, struct VdbRecord* rec);
 void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec);
 void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size);
+void vdbleaf_write_record_key(uint8_t* buf, uint32_t rec_idx, uint32_t key);
 
 //Data Node
 void vdbdata_init(uint8_t* buf, uint32_t parent_idx);

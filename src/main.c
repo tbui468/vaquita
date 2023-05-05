@@ -36,8 +36,9 @@ int main(int argc, char** argv) {
     }
 
     vdb_debug_print_tree(h, "students");
-    //vdb_delete_record(h, "students", 1); //key: 1, 2, dogs, 0
-    //vdb_update_record(h, "students", 1, 99, "cats", false);
+    //vdb_delete_record(h, "students", 1);
+    //vdb_update_record(h, "students", 99, 99, "cats", false);
+    //vdb_delete_record(h, "students", 200);
 
     int keys[] = {0, 1, 98, 99, 198, 199, 200, 201};
 

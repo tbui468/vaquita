@@ -16,6 +16,7 @@
     cstack.github.io for short guide to basics of SQL implementation (not complete)
 
     Read Edward Sciore's book on implementing a relational database
+        Chapter 4: Memory Management (PDF 92)
 
     Use SDL and Vulkan to visualize SQL + b-tree (2d first, and then 3d)
         visualize how b-tree grows and nodes split as new entries are added
@@ -29,10 +30,14 @@ Example
 Major components
 Todos
 
-*******************************Storage Engine******************************************
-    update records
+**********************************Client**************************
+The dbms should run as a server (rather than embedded) and have a scheduler that
+    gives connecting clients the illusion that they have sole access to the dbms
 
-    delete records
+    Seems like mysql uses tcp sockets
+
+*******************************Storage Engine******************************************
+    Fetching is not working correctly (may be due to reading record error)
 
     Verify that delete and update use freelist properly
 
@@ -65,12 +70,6 @@ Todos
         vdbcursor_to_end()
         vdbcursor_to(key)
         vdbcurosr_next()
-
-    Need index cells in data blocks (which we don't have now) since it will be required when data blocks
-        need to be defragmented (unless there's a way to defrag without index cells...)
-        Change 'free' field in data blocks into datacells size like in leaf/intern nodes. (since is easy to compute from end of the page)
-        vdbtree_leaf_defrag(tree, leaf)
-            uses data in leaf (eg, deleted records) to defrag data blocks attached to that leaf
 
     pager eviction policy
         make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it

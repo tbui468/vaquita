@@ -184,14 +184,14 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) 
 
     return vdb_tree_fetch_record(tree, key);
 }
-/*
+
 bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     return vdbtree_delete_record(tree, key);
-}*/
-/*
+}
+
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
@@ -209,7 +209,7 @@ bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     vdb_record_free(rec);
 
     return result;
-}*/
+}
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;

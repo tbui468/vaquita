@@ -298,10 +298,10 @@ static void vdbdata_defrag(uint8_t* buf) {
 
         uint32_t start_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * vdbdata_read_idx_count(buf);
         uint8_t* src = buf + start_off;
-        assert(cached_free_data_off >= start_off); //TODO why is free_data_off larger than start_off
+        assert(cached_free_data_off >= start_off);
         memmove(src + right_shift_size, src, cached_free_data_off - start_off);
 
-        //for all idxcells, shift right if less than free_data_off AND greater than max idxcell offset
+        //if idxcells refer to any offset that was shifted right, increment those idxcell values to realign
         uint32_t end_of_idxcells = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * vdbdata_read_idx_count(buf);
         for (uint32_t i = 0; i < vdbdata_read_idx_count(buf); i++) {
             uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * i));
@@ -335,10 +335,10 @@ uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* le
 
     uint32_t idxcell_off = *((uint32_t*)(buf + sizeof(uint32_t) * 5));
     uint32_t idxcell_idx;
-    if (idxcell_off > 0) {
+    if (idxcell_off > 0) { //reuse unused idxcell
         idxcell_idx = (idxcell_off - VDB_PAGE_HDR_SIZE) / sizeof(uint32_t);
         *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = *((uint32_t*)(buf + idxcell_off));
-    } else {
+    } else { //create new idxcell
         idxcell_idx = vdbdata_read_idx_count(buf);
         free -= sizeof(uint32_t);
         vdbdata_write_idx_count(buf, idxcell_idx + 1);

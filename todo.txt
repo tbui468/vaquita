@@ -37,15 +37,10 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
 *******************************Storage Engine******************************************
-    Refactor these two confusing functions:
-        vdbdata_defrag
-        vdbdata_append_datum
-
     Fields need names so that we can select certain attributes only
         This needs to be implemented before 'select' can be implemented (projection)
         Datablock needs to be attached to metanode with attribute names
-
-    Test making multiple trees - insert and fetch data from multiple trees (tables)
+        schema needs a name field
 
     REPL
         basic parsing of commands
@@ -64,6 +59,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
         executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
         Have C code fill in database with default data first, then query in repl
+
+    Test making multiple trees - insert and fetch data from multiple trees (tables)
 
     Cursor abstraction - would this be helpful as the intermediary between vdb.c and tree.c?
         will we need to know which attribute to index by? (primary key should be default)

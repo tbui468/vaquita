@@ -13,6 +13,7 @@ enum VdbField {
 
 struct VdbSchema {
     enum VdbField* fields;
+    char** names;
     uint32_t count;
 };
 

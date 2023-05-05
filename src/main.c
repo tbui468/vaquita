@@ -16,7 +16,7 @@ int main(int argc, char** argv) {
     }
 
 
-    struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, VDBF_STR, VDBF_BOOL);
+    struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, "age", VDBF_STR, "name", VDBF_BOOL, "graduated");
 
     if (vdb_create_table(h, "students", schema)) {
         printf("Created 'students' table\n");

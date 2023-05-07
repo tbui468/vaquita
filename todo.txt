@@ -37,9 +37,11 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
 *******************************Storage Engine******************************************
-    make struct Parser (should hold token list and current token) <-----START HERE
-
-    vdb_parse should parse an identifier as a VdbExpr - finish this struct
+    parse insert into
+    parse update (including where expression)
+    parse delete from [table]
+    parse select * from [table]
+    parse select ,,, from [table]
 
     REPL
         basic parsing of commands
@@ -58,6 +60,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
         executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
         Have C code fill in database with default data first, then query in repl
+
+    Deal with parser errors
+        have parser/lexer track errors and display them / not execute code
 
     Test making multiple trees - insert and fetch data from multiple trees (tables)
 

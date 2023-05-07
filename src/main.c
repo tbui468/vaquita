@@ -374,6 +374,12 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
             stmt.as.create.schema = vdbparser_parse_schema(parser);
             break;
         }
+        case VDBT_DROP: {
+            stmt.type = VDBST_DROP;
+            vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
+            stmt.as.create.table_name = vdbparser_parse_identifier(parser);
+            break;
+        }
         case VDBT_EXIT: {
             stmt.type = VDBST_EXIT;
             break; 
@@ -400,6 +406,7 @@ struct VdbStmtList* vdb_parse(struct VdbTokenList* tl) {
     return sl;
 }
 
+//TODO: actually make API call to storage engine
 bool vdb_execute(struct VdbStmtList* sl) {
     for (int i = 0; i < sl->count; i++) {
         struct VdbStmt* stmt = &sl->stmts[i];
@@ -427,6 +434,11 @@ bool vdb_execute(struct VdbStmtList* sl) {
                     struct VdbToken type = schema.as.schema.types->tokens[i];
                     printf("    [%.*s]: %.*s\n", name.len, name.lexeme, type.len, type.lexeme);
                 }
+                break;
+            }
+            case VDBST_DROP: {
+                struct VdbExpr expr = stmt->as.create.table_name;
+                printf("<drop table [%.*s]>\n", expr.as.identifier.token.len, expr.as.identifier.token.lexeme);
                 break;
             }
             default:

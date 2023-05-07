@@ -37,10 +37,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
 *******************************Storage Engine******************************************
-    Fields need names so that we can select certain attributes only
-        This needs to be implemented before 'select' can be implemented (projection)
-        Datablock needs to be attached to metanode with attribute names
-        schema needs a name field
+    make struct Parser (should hold token list and current token) <-----START HERE
+
+    vdb_parse should parse an identifier as a VdbExpr - finish this struct
 
     REPL
         basic parsing of commands

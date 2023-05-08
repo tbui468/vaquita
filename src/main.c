@@ -13,10 +13,14 @@ enum VdbTokenType {
     VDBT_CREATE,
     VDBT_DROP,
     VDBT_TABLE,
+    VDBT_INSERT,
+    VDBT_INTO,
+    VDBT_VALUES,
     VDBT_IDENTIFIER,
     VDBT_STR,
     VDBT_INT,
-    VDBT_BOOL,
+    VDBT_TRUE,
+    VDBT_FALSE,
     VDBT_TYPE_STR,
     VDBT_TYPE_INT,
     VDBT_TYPE_BOOL,
@@ -37,81 +41,31 @@ struct VdbTokenList {
     int capacity;
 };
 
-void vdbtokenlist_print(struct VdbTokenList* tl) {
-    for (int i = 0; i < tl->count; i++) {
-        struct VdbToken t = tl->tokens[i];
-        switch (t.type) {
-            case VDBT_EXIT: printf("VDBT_EXIT\n"); break;
-            case VDBT_OPEN: printf("VDBT_OPEN\n"); break;
-            case VDBT_CLOSE: printf("VDBT_CLOSE\n"); break;
-            case VDBT_CREATE: printf("VDBT_CREATE\n"); break;
-            case VDBT_DROP: printf("VDBT_DROP\n"); break;
-            case VDBT_TABLE: printf("VDBT_TABLE\n"); break;
-            case VDBT_IDENTIFIER: printf("VDBT_IDENTIFIER\n"); break;
-            case VDBT_STR: printf("VDBT_STR\n"); break;
-            case VDBT_INT: printf("VDBT_INT\n"); break;
-            case VDBT_BOOL: printf("VDBT_BOOL\n"); break;
-            case VDBT_TYPE_STR: printf("VDBT_TYPE_STR\n"); break;
-            case VDBT_TYPE_INT: printf("VDBT_TYPE_INT\n"); break;
-            case VDBT_TYPE_BOOL: printf("VDBT_TYPE_BOOL\n"); break;
-            case VDBT_LPAREN: printf("VDBT_LPAREN\n"); break;
-            case VDBT_RPAREN: printf("VDBT_RPAREN\n"); break;
-            case VDBT_COMMA: printf("VDBT_COMMA\n"); break;
-            default: break;
-        }
-    }
-}
-
-enum VdbExprType {
-    VDBEX_IDENTIFIER,
-    VDBEX_SCHEMA
-    /*
-    VDBEX_DTYPE,
-    VDBEX_ATTRIBUTES, //tuple of attribute names during insertion
-    VDBEX_VALUES, //tuple of values during insertion
-    VDBEX_WHERE,
-    VDBEX_ASSIGN //eg, age = 5 when updating records
-    */
-};
-
-struct VdbExpr {
-    enum VdbExprType type;
-    union {
-        struct {
-            struct VdbToken token; 
-        } identifier;
-        struct {
-            struct VdbTokenList* names;
-            struct VdbTokenList* types;
-        } schema;
-    } as;
-};
-
 enum VdbStmtType {
     VDBST_EXIT,
     VDBST_OPEN,
     VDBST_CLOSE,
     VDBST_CREATE,
-    VDBST_DROP
+    VDBST_DROP,
+    VDBST_INSERT
 };
 
 struct VdbStmt {
     enum VdbStmtType type;
     union {
+        struct VdbToken db_name;
+        struct VdbToken table_name;
         struct {
-            struct VdbExpr db_name;
-        } open;
-        struct {
-            struct VdbExpr db_name;
-        } close;
-        struct {
-            struct VdbExpr table_name;
-            struct VdbExpr schema;
+            struct VdbToken table_name;
+            struct VdbTokenList* attributes;
+            struct VdbTokenList* types;
         } create;
         struct {
-            struct VdbExpr table_name;
-        } drop;
-    } as;
+            struct VdbToken table_name;
+            struct VdbTokenList* attributes;
+            struct VdbTokenList* values;
+        } insert;
+    } get;
 };
 
 struct VdbStmtList {
@@ -125,6 +79,36 @@ struct VdbParser {
     struct VdbTokenList* tl;
     int current;
 };
+
+
+void vdbtokenlist_print(struct VdbTokenList* tl) {
+    for (int i = 0; i < tl->count; i++) {
+        struct VdbToken t = tl->tokens[i];
+        switch (t.type) {
+            case VDBT_EXIT: printf("VDBT_EXIT\n"); break;
+            case VDBT_OPEN: printf("VDBT_OPEN\n"); break;
+            case VDBT_CLOSE: printf("VDBT_CLOSE\n"); break;
+            case VDBT_CREATE: printf("VDBT_CREATE\n"); break;
+            case VDBT_DROP: printf("VDBT_DROP\n"); break;
+            case VDBT_TABLE: printf("VDBT_TABLE\n"); break;
+            case VDBT_IDENTIFIER: printf("VDBT_IDENTIFIER: %.*s\n", t.len, t.lexeme); break;
+            case VDBT_STR: printf("VDBT_TYPE_STR: %.*s\n", t.len, t.lexeme); break;
+            case VDBT_INT: printf("VDBT_INT: %.*s\n", t.len, t.lexeme); break;
+            case VDBT_TYPE_STR: printf("VDBT_TYPE_STR\n"); break;
+            case VDBT_TYPE_INT: printf("VDBT_TYPE_INT\n"); break;
+            case VDBT_TYPE_BOOL: printf("VDBT_TYPE_BOOL\n"); break;
+            case VDBT_LPAREN: printf("VDBT_LPAREN\n"); break;
+            case VDBT_RPAREN: printf("VDBT_RPAREN\n"); break;
+            case VDBT_COMMA: printf("VDBT_COMMA\n"); break;
+            case VDBT_INSERT: printf("VDBT_INSERT\n"); break;
+            case VDBT_INTO: printf("VDBT_INTO\n"); break;
+            case VDBT_VALUES: printf("VDBT_VALUES\n"); break;
+            case VDBT_TRUE: printf("VDBT_TRUE\n"); break;
+            case VDBT_FALSE: printf("VDBT_FALSE\n"); break;
+            default: break;
+        }
+    }
+}
 
 
 struct VdbStmtList* vdbstmtlist_init() {
@@ -173,6 +157,18 @@ void vdbtokenlist_append_token(struct VdbTokenList* tl, struct VdbToken t) {
     tl->tokens[tl->count++] = t;
 }
 
+bool is_alpha(char c) {
+    return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z');
+}
+
+bool is_numeric(char c) {
+    return '0' <= c && c <= '9';
+}
+
+bool is_alpha_numeric(char c) {
+    return is_alpha(c) || is_numeric(c) || c == '_';
+}
+
 static void vdblexer_skip_whitespace(char* command, int* cur) {
     char c;
     while ((c = command[*cur]) == ' ' || c == '\n' || c == '\t') {
@@ -188,7 +184,7 @@ static struct VdbToken vdblexer_read_number(char* command, int* cur) {
     t.len = 1;
    
     char c; 
-    while ((c = command[++(*cur)]) != ' ' && c != EOF && c != '\0') {
+    while ((c = command[++(*cur)]) != ' ' && c != EOF && c != '\0' && is_numeric(c)) {
         t.len++;
     }
 
@@ -200,7 +196,7 @@ static struct VdbToken vdblexer_read_string(char* command, int* cur) {
     t.type = VDBT_STR;
     t.lexeme = &command[*cur + 1]; //skip first "
 
-    t.len = 1;
+    t.len = 0;
    
     char c; 
     while ((c = command[++(*cur)]) != '\"' && c != EOF && c != '\0') {
@@ -211,14 +207,6 @@ static struct VdbToken vdblexer_read_string(char* command, int* cur) {
     ++(*cur);
 
     return t;
-}
-
-bool is_numeric(char c) {
-    return '0' <= c && c <= '9';
-}
-
-bool is_alpha_numeric(char c) {
-    return ('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || is_numeric(c) || c == '_';
 }
 
 static struct VdbToken vdblexer_read_word(char* command, int* cur) {
@@ -251,6 +239,16 @@ static struct VdbToken vdblexer_read_word(char* command, int* cur) {
         t.type = VDBT_TYPE_INT;
     } else if (strncmp(t.lexeme, "bool", 4) == 0) {
         t.type = VDBT_TYPE_BOOL;
+    } else if (strncmp(t.lexeme, "insert", 6) == 0) {
+        t.type = VDBT_INSERT;
+    } else if (strncmp(t.lexeme, "into", 4) == 0) {
+        t.type = VDBT_INTO;
+    } else if (strncmp(t.lexeme, "values", 6) == 0) {
+        t.type = VDBT_VALUES;
+    } else if (strncmp(t.lexeme, "true", 4) == 0) {
+        t.type = VDBT_TRUE;
+    } else if (strncmp(t.lexeme, "false", 5) == 0) {
+        t.type = VDBT_FALSE;
     }
 
     return t;
@@ -320,64 +318,69 @@ struct VdbToken vdbparser_consume_token(struct VdbParser* parser) {
     return parser->tl->tokens[parser->current++];
 }
 
-struct VdbExpr vdbparser_parse_schema(struct VdbParser* parser) {
-    vdbparser_consume_token(parser); //left paren
-    struct VdbExpr expr;
-    expr.type = VDBEX_SCHEMA;
-    expr.as.schema.names = vdbtokenlist_init();
-    expr.as.schema.types = vdbtokenlist_init();
-
-    while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-        vdbtokenlist_append_token(expr.as.schema.names, vdbparser_consume_token(parser));
-        vdbtokenlist_append_token(expr.as.schema.types, vdbparser_consume_token(parser));
-        if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-            vdbparser_consume_token(parser);
-        }
-    }
-
-    vdbparser_consume_token(parser); //right paren
-    return expr;
-}
-
-struct VdbExpr vdbparser_parse_identifier(struct VdbParser* parser) {
-    struct VdbExpr expr;
-    switch (vdbparser_peek_token(parser).type) {
-        case VDBT_IDENTIFIER: {
-            expr.type = VDBEX_IDENTIFIER;
-            expr.as.identifier.token = vdbparser_consume_token(parser);
-            break;
-        }
-        default:
-            printf("not implemented\n");
-            break;
-    }
-    return expr;
-}
-
 struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
     struct VdbStmt stmt;
     switch (vdbparser_consume_token(parser).type) {
         case VDBT_OPEN: {
             stmt.type = VDBST_OPEN;
-            stmt.as.open.db_name = vdbparser_parse_identifier(parser);
+            stmt.get.db_name = vdbparser_consume_token(parser);
             break;
         }
         case VDBT_CLOSE: {
             stmt.type = VDBST_CLOSE;
-            stmt.as.close.db_name = vdbparser_parse_identifier(parser);
+            stmt.get.db_name = vdbparser_consume_token(parser);
             break;
         }
         case VDBT_CREATE: {
             stmt.type = VDBST_CREATE;
             vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
-            stmt.as.create.table_name = vdbparser_parse_identifier(parser);
-            stmt.as.create.schema = vdbparser_parse_schema(parser);
+            stmt.get.create.table_name = vdbparser_consume_token(parser);
+            stmt.get.create.attributes = vdbtokenlist_init();
+            stmt.get.create.types = vdbtokenlist_init();
+            vdbparser_consume_token(parser); //left paren
+            while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+                vdbtokenlist_append_token(stmt.get.create.attributes, vdbparser_consume_token(parser));
+                vdbtokenlist_append_token(stmt.get.create.types, vdbparser_consume_token(parser));
+                if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                    vdbparser_consume_token(parser);
+                }
+            }
+
+            vdbparser_consume_token(parser); //right paren
             break;
         }
         case VDBT_DROP: {
             stmt.type = VDBST_DROP;
             vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
-            stmt.as.create.table_name = vdbparser_parse_identifier(parser);
+            stmt.get.table_name = vdbparser_consume_token(parser);
+            break;
+        }
+        case VDBT_INSERT: {
+            stmt.type = VDBST_INSERT;
+            vdbparser_consume_token(parser); //TODO: skip 'into'
+            stmt.get.insert.table_name = vdbparser_consume_token(parser);
+
+            stmt.get.insert.attributes = vdbtokenlist_init();
+            vdbparser_consume_token(parser); //left paren
+            while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+                vdbtokenlist_append_token(stmt.get.insert.attributes, vdbparser_consume_token(parser));
+                if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                    vdbparser_consume_token(parser);
+                }
+            }
+            vdbparser_consume_token(parser); //right paren
+
+            vdbparser_consume_token(parser); //'values' token
+
+            stmt.get.insert.values = vdbtokenlist_init();
+            vdbparser_consume_token(parser); //left paren
+            while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+                vdbtokenlist_append_token(stmt.get.insert.values, vdbparser_consume_token(parser));
+                if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                    vdbparser_consume_token(parser);
+                }
+            }
+            vdbparser_consume_token(parser); //right paren
             break;
         }
         case VDBT_EXIT: {
@@ -416,29 +419,33 @@ bool vdb_execute(struct VdbStmtList* sl) {
                 return true;
             }
             case VDBST_OPEN: {
-                struct VdbExpr expr = stmt->as.open.db_name;
-                printf("<open [%.*s]>\n", expr.as.identifier.token.len, expr.as.identifier.token.lexeme);
+                printf("<open [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
                 break;
             }
             case VDBST_CLOSE: {
-                struct VdbExpr expr = stmt->as.close.db_name;
-                printf("<close [%.*s]>\n", expr.as.identifier.token.len, expr.as.identifier.token.lexeme);
+                printf("<close [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
                 break;
             }
             case VDBST_CREATE: {
-                struct VdbExpr expr = stmt->as.create.table_name;
-                printf("<create table [%.*s]>\n", expr.as.identifier.token.len, expr.as.identifier.token.lexeme);
-                struct VdbExpr schema = stmt->as.create.schema;
-                for (int i = 0; i < schema.as.schema.names->count; i++) {
-                    struct VdbToken name = schema.as.schema.names->tokens[i];
-                    struct VdbToken type = schema.as.schema.types->tokens[i];
-                    printf("    [%.*s]: %.*s\n", name.len, name.lexeme, type.len, type.lexeme);
+                printf("<create table [%.*s]>\n", stmt->get.create.table_name.len, stmt->get.create.table_name.lexeme);
+                for (int i = 0; i < stmt->get.create.attributes->count; i++) {
+                    struct VdbToken attribute = stmt->get.create.attributes->tokens[i];
+                    struct VdbToken type = stmt->get.create.types->tokens[i];
+                    printf("    [%.*s]: %.*s\n", attribute.len, attribute.lexeme, type.len, type.lexeme);
                 }
                 break;
             }
             case VDBST_DROP: {
-                struct VdbExpr expr = stmt->as.create.table_name;
-                printf("<drop table [%.*s]>\n", expr.as.identifier.token.len, expr.as.identifier.token.lexeme);
+                printf("<drop table [%.*s]>\n", stmt->get.table_name.len, stmt->get.table_name.lexeme);
+                break;
+            }
+            case VDBST_INSERT: {
+                printf("<insert into table [%.*s]>\n", stmt->get.insert.table_name.len, stmt->get.insert.table_name.lexeme);
+                for (int i = 0; i < stmt->get.insert.attributes->count; i++) {
+                    struct VdbToken attribute = stmt->get.insert.attributes->tokens[i];
+                    struct VdbToken value = stmt->get.insert.values->tokens[i];
+                    printf("    [%.*s]: %.*s\n", attribute.len, attribute.lexeme, value.len, value.lexeme);
+                }
                 break;
             }
             default:
@@ -461,6 +468,7 @@ void run_cli() {
         line[strlen(line) - 1] = '\0'; //get rid of newline
         struct VdbTokenList* tl = vdb_lex(line);
         struct VdbStmtList* sl = vdb_parse(tl);
+        //vdbtokenlist_print(tl);
         //struct VdbOpList* ol = vdb_generate_code(sl);
         //vdb_execute(ol);
         bool end = vdb_execute(sl);

@@ -38,10 +38,20 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
 *******************************Storage Engine******************************************
     parse insert into
+        Are struct VdbExpr really necessary right now? <----just parse the tokens into tokenlists
+        Make expressions later if necessary
+        
     parse update (including where expression)
     parse delete from [table]
     parse select * from [table]
     parse select ,,, from [table]
+
+    Put cli/parsing/tokens/lexing into own translation units
+
+    Handle lexing/parsing errors
+        next_token(parser) - go to next token without error checking
+        consume_token(parser, type) - expect a certain type
+        peek_token(parser) - just look without going to next token
 
     REPL
         basic parsing of commands

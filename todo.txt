@@ -37,11 +37,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
 *******************************Storage Engine******************************************
-    parse insert into
-        Are struct VdbExpr really necessary right now? <----just parse the tokens into tokenlists
-        Make expressions later if necessary
-        
-    parse update (including where expression)
     parse delete from [table]
     parse select * from [table]
     parse select ,,, from [table]
@@ -52,6 +47,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         next_token(parser) - go to next token without error checking
         consume_token(parser, type) - expect a certain type
         peek_token(parser) - just look without going to next token
+
+        Give the user useful messages rather than segfaulting
 
     REPL
         basic parsing of commands

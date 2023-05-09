@@ -25,6 +25,8 @@
             use vdb REPL to modify database
             run visualization program to read vdb data to visualize it
 
+    sqlite documentation has great explanation of how bytecode works
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -37,10 +39,10 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
 *******************************Storage Engine******************************************
-    parse delete from [table]
-    parse select * from [table]
-    parse select ,,, from [table]
-
+    token.c
+    lexer.c
+    parser.c
+    generator.c
     Put cli/parsing/tokens/lexing into own translation units
 
     Handle lexing/parsing errors
@@ -67,6 +69,13 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
         executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
         Have C code fill in database with default data first, then query in repl
+
+    Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
+        > open school
+            [what message?]
+        > select * from students
+        > close school
+            [what message?]
 
     Deal with parser errors
         have parser/lexer track errors and display them / not execute code

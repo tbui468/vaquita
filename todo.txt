@@ -38,36 +38,22 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
     Seems like mysql uses tcp sockets
 
+    Some basic SQL implemented in parser:
+        > open school;
+        > create table students (name string, age int, male bool);
+        > insert into students (name, age, male) values ("Bob", 12, true);
+        > insert into students (name, age, male) values ("Kate", 11, false);
+        > insert into students (name, age, male) values ("Kate", 13, false), ("John", 14, true)
+        > update students set name = "Jim", age = 12, male = true where id = 2;
+        > delete from students where id = 1;
+        > select * from students;
+        > select id, name from students;
+        > select id, name, male from students where age >= 12;
+        > drop table students;
+        > close school;
+
 *******************************Storage Engine******************************************
-    token.c
-    lexer.c
-    parser.c
-    generator.c
-    Put cli/parsing/tokens/lexing into own translation units
-
-    Handle lexing/parsing errors
-        next_token(parser) - go to next token without error checking
-        consume_token(parser, type) - expect a certain type
-        peek_token(parser) - just look without going to next token
-
-        Give the user useful messages rather than segfaulting
-
-    REPL
-        basic parsing of commands
-            > open school;
-            > create table students (name string, age int, male bool);
-            > insert into students (name, age, male) values ("Bob", 12, true);
-            > insert into students (name, age, male) values ("Kate", 11, false);
-            > insert into students (name, age, male) values ("Kate", 13, false);
-            > update students set name = "Jim", age = 12, male = true where id = 2;
-            > delete from students where id = 1;
-            > select * from students;
-            > select id, name from students;
-            > select id, name, male from students where age >= 12;
-            > drop table students;
-            > close school;
-
-        executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
+    executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
         Have C code fill in database with default data first, then query in repl
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
@@ -77,8 +63,19 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         > close school
             [what message?]
 
-    Deal with parser errors
-        have parser/lexer track errors and display them / not execute code
+    Put cli/parsing/tokens/lexing into own translation units
+        cli.c
+        token.c
+        lexer.c
+        parser.c
+        generator.c
+
+    Handle lexing/parsing errors
+        next_token(parser) - go to next token without error checking
+        consume_token(parser, type) - expect a certain type
+        peek_token(parser) - just look without going to next token
+
+        Give the user useful messages rather than segfaulting
 
     Test making multiple trees - insert and fetch data from multiple trees (tables)
 

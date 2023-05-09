@@ -620,6 +620,17 @@ struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser) {
     return vdbparser_parse_equality(parser);
 }
 
+void vdbparser_parse_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {
+    vdbparser_consume_token(parser); //left paren
+    while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+        vdbtokenlist_append_token(tl, vdbparser_consume_token(parser));
+        if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+            vdbparser_consume_token(parser);
+        }
+    }
+    vdbparser_consume_token(parser); //right paren
+}
+
 struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
     struct VdbStmt stmt;
     switch (vdbparser_consume_token(parser).type) {
@@ -663,26 +674,18 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
             stmt.get.insert.table_name = vdbparser_consume_token(parser);
 
             stmt.get.insert.attributes = vdbtokenlist_init();
-            vdbparser_consume_token(parser); //left paren
-            while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-                vdbtokenlist_append_token(stmt.get.insert.attributes, vdbparser_consume_token(parser));
-                if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-                    vdbparser_consume_token(parser);
-                }
-            }
-            vdbparser_consume_token(parser); //right paren
+            vdbparser_parse_tuple(parser, stmt.get.insert.attributes);
 
             vdbparser_consume_token(parser); //'values' token
 
             stmt.get.insert.values = vdbtokenlist_init();
-            vdbparser_consume_token(parser); //left paren
-            while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-                vdbtokenlist_append_token(stmt.get.insert.values, vdbparser_consume_token(parser));
+            while (vdbparser_peek_token(parser).type == VDBT_LPAREN) {
+                vdbparser_parse_tuple(parser, stmt.get.insert.values);
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                     vdbparser_consume_token(parser);
                 }
             }
-            vdbparser_consume_token(parser); //right paren
+
             break;
         }
         case VDBT_UPDATE: {
@@ -806,11 +809,22 @@ bool vdb_execute(struct VdbStmtList* sl) {
             }
             case VDBST_INSERT: {
                 printf("<insert into table [%.*s]>\n", stmt->get.insert.table_name.len, stmt->get.insert.table_name.lexeme);
-                printf("\tvalues:\n");
+                printf("\tcolumns:\n");
                 for (int i = 0; i < stmt->get.insert.attributes->count; i++) {
                     struct VdbToken attribute = stmt->get.insert.attributes->tokens[i];
-                    struct VdbToken value = stmt->get.insert.values->tokens[i];
-                    printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, value.len, value.lexeme);
+                    printf("\t\t[%.*s]\n", attribute.len, attribute.lexeme);
+                }
+                printf("\tvalues:\n");
+                for (int i = 0; i < stmt->get.insert.values->count; i += stmt->get.insert.attributes->count) {
+                    printf("\t\t");
+                    for (int j = i; j < i + stmt->get.insert.attributes->count; j++) {
+                        struct VdbToken value = stmt->get.insert.values->tokens[j];
+                        printf("%.*s", value.len, value.lexeme);
+                        if (j < i +  stmt->get.insert.attributes->count -1) {
+                            printf(", ");
+                        }
+                    }
+                    printf("\n");
                 }
                 break;
             }

@@ -19,6 +19,7 @@ struct Vdb {
 
 VDBHANDLE vdb_open(const char* name);
 bool vdb_close(VDBHANDLE h);
+char* vdb_dbname(VDBHANDLE h);
 
 struct VdbSchema* vdb_alloc_schema(int count, ...);
 void vdb_free_schema(struct VdbSchema* schema);

@@ -69,6 +69,11 @@ bool vdb_close(VDBHANDLE h) {
     return true;
 }
 
+char* vdb_dbname(VDBHANDLE h) {
+    struct Vdb* db = (struct Vdb*)h;
+    return db->name;
+}
+
 struct VdbSchema* vdb_alloc_schema(int count, ...) {
     
     va_list args;

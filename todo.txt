@@ -39,28 +39,50 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
     Some basic SQL implemented in parser:
-        > open school;
-        > create table students (name string, age int, male bool);
-        > insert into students (name, age, male) values ("Bob", 12, true);
-        > insert into students (name, age, male) values ("Kate", 11, false);
-        > insert into students (name, age, male) values ("Kate", 13, false), ("John", 14, true)
-        > update students set name = "Jim", age = 12, male = true where id = 2;
-        > delete from students where id = 1;
-        > select * from students;
-        > select id, name from students;
-        > select id, name, male from students where age >= 12;
-        > drop table students;
-        > close school;
+        vdb > open school;
+        vdb:school > show tables
+        vdb:school > describe students
+        vdb:school > describe teachers
+        vdb:school > create table students (name string, age int, male bool);
+        vdb:school > insert into students (name, age, male) values ("Bob", 12, true);
+        vdb:school > insert into students (name, age, male) values ("Kate", 11, false);
+        vdb:school > insert into students (name, age, male) values ("Kate", 13, false), ("John", 14, true)
+        vdb:school > update students set name = "Jim", age = 12, male = true where id = 2;
+        vdb:school > delete from students where id = 1;
+        vdb:school > select * from students;
+        vdb:school > select id, name from students;
+        vdb:school > select id, name, male from students where age >= 12;
+        vdb:school > drop table students;
+        vdb:school > close school;
+        vdb >
 
-*******************************Storage Engine******************************************
+*******************************TODO**************************************************
     executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
         Have C code fill in database with default data first, then query in repl
+        case VDBST_CREATE: <---------FINISH THIS in execute function
+
+    Parse 'show tables' and 'describe [table_name]'
+        show tables will show all tables of current open database
+        describe [table_name] will show attributes/types
+
+    Display 'vdb' before >
+      
+    Dispaly 'vdb:[open db]' > if a database is current open
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school
-            [what message?]
+            database school opened
         > select * from students
+            +----+------+-----+
+            | id | name | age |
+            +----+------+-----+
+            |  1 | John |  23 |
+            |  2 | Kate |  12 |
+            |  3 | Timm |  22 |
+            +----+------+-----+
+            3 rows in set
         > close school
+            database school closed
             [what message?]
 
     Put cli/parsing/tokens/lexing into own translation units
@@ -78,6 +100,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         Give the user useful messages rather than segfaulting
 
     Test making multiple trees - insert and fetch data from multiple trees (tables)
+
+    Vdb Data Types - need this to allow NULL to be a value (specifically, represent the absence of a value)
 
     Cursor abstraction - would this be helpful as the intermediary between vdb.c and tree.c?
         will we need to know which attribute to index by? (primary key should be default)

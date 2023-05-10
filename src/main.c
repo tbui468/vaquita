@@ -775,98 +775,159 @@ struct VdbStmtList* vdb_parse(struct VdbTokenList* tl) {
     return sl;
 }
 
-//TODO: actually make API call to storage engine
-//also need an intermediate step that converst the stmtlist to bytecode
-bool vdb_execute(struct VdbStmtList* sl) {
+void vdbstmt_print(struct VdbStmt* stmt) {
+    switch (stmt->type) {
+        case VDBST_EXIT: {
+            printf("<exit>\n");
+            break;
+        }
+        case VDBST_OPEN: {
+            printf("<open database [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
+            break;
+        }
+        case VDBST_CLOSE: {
+            printf("<close database [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
+            break;
+        }
+        case VDBST_CREATE: {
+            printf("<create table [%.*s]>\n", stmt->get.create.table_name.len, stmt->get.create.table_name.lexeme);
+            printf("\tschema:\n");
+            for (int i = 0; i < stmt->get.create.attributes->count; i++) {
+                struct VdbToken attribute = stmt->get.create.attributes->tokens[i];
+                struct VdbToken type = stmt->get.create.types->tokens[i];
+                printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, type.len, type.lexeme);
+            }
+            break;
+        }
+        case VDBST_DROP: {
+            printf("<drop table [%.*s]>\n", stmt->get.table_name.len, stmt->get.table_name.lexeme);
+            break;
+        }
+        case VDBST_INSERT: {
+            printf("<insert into table [%.*s]>\n", stmt->get.insert.table_name.len, stmt->get.insert.table_name.lexeme);
+            printf("\tcolumns:\n");
+            for (int i = 0; i < stmt->get.insert.attributes->count; i++) {
+                struct VdbToken attribute = stmt->get.insert.attributes->tokens[i];
+                printf("\t\t[%.*s]\n", attribute.len, attribute.lexeme);
+            }
+            printf("\tvalues:\n");
+            for (int i = 0; i < stmt->get.insert.values->count; i += stmt->get.insert.attributes->count) {
+                printf("\t\t");
+                for (int j = i; j < i + stmt->get.insert.attributes->count; j++) {
+                    struct VdbToken value = stmt->get.insert.values->tokens[j];
+                    printf("%.*s", value.len, value.lexeme);
+                    if (j < i +  stmt->get.insert.attributes->count -1) {
+                        printf(", ");
+                    }
+                }
+                printf("\n");
+            }
+            break;
+        }
+        case VDBST_UPDATE: {
+            printf("<update record(s) in table [%.*s]>\n", stmt->get.update.table_name.len, stmt->get.update.table_name.lexeme);
+            printf("\tset:\n");
+            for (int i = 0; i < stmt->get.update.attributes->count; i++) {
+                struct VdbToken attribute = stmt->get.update.attributes->tokens[i];
+                struct VdbToken value = stmt->get.update.values->tokens[i];
+                printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, value.len, value.lexeme);
+            }
+            printf("\tcondition:\n");
+            if (stmt->get.update.selection) {
+                printf("\t\t");
+                vdbexpr_print(stmt->get.update.selection);
+                printf("\n");
+            }
+            break;
+        }
+        case VDBST_DELETE: {
+            printf("<delete record(s) from table [%.*s]>\n", stmt->get.delete.table_name.len, stmt->get.delete.table_name.lexeme);
+            printf("\tcondition:\n");
+            if (stmt->get.delete.selection) {
+                printf("\t\t");
+                vdbexpr_print(stmt->get.delete.selection);
+                printf("\n");
+            }
+            break;
+        }
+        case VDBST_SELECT: {
+            printf("<select record(s) from table [%.*s]>\n", stmt->get.select.table_name.len, stmt->get.select.table_name.lexeme);
+            printf("\tcolumns:\n");
+            for (int i = 0; i < stmt->get.select.projection->count; i++) {
+                struct VdbToken t = stmt->get.select.projection->tokens[i];
+                printf("\t\t[%.*s]\n", t.len, t.lexeme);
+            }
+            printf("\tcondition:\n");
+            if (stmt->get.select.selection) {
+                printf("\t\t");
+                vdbexpr_print(stmt->get.select.selection);
+                printf("\n");
+            }
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+//TODO: need an generator that converst the stmtlist to bytecode
+bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
     for (int i = 0; i < sl->count; i++) {
         struct VdbStmt* stmt = &sl->stmts[i];
         switch (stmt->type) {
             case VDBST_EXIT: {
-                printf("<exit>\n");
                 return true;
             }
             case VDBST_OPEN: {
-                printf("<open database [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
+                int len = stmt->get.db_name.len;
+                char db_name[len + 1];
+                memcpy(db_name, stmt->get.db_name.lexeme, len);
+                db_name[len] = '\0';
+                if ((*h = vdb_open(db_name))) {
+                    printf("opened database %s\n", db_name);
+                } else {
+                    printf("failed to open database %s\n", db_name);
+                }
                 break;
             }
             case VDBST_CLOSE: {
-                printf("<close database [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
+                int len = stmt->get.db_name.len;
+                char db_name[len + 1];
+                memcpy(db_name, stmt->get.db_name.lexeme, len);
+                db_name[len] = '\0';
+                if (vdb_close(*h)) {
+                    printf("closed database %s\n", db_name);
+                    *h = NULL;
+                } else {
+                    printf("failed to close database %s\n", db_name);
+                }
                 break;
             }
             case VDBST_CREATE: {
-                printf("<create table [%.*s]>\n", stmt->get.create.table_name.len, stmt->get.create.table_name.lexeme);
-                printf("\tschema:\n");
-                for (int i = 0; i < stmt->get.create.attributes->count; i++) {
-                    struct VdbToken attribute = stmt->get.create.attributes->tokens[i];
-                    struct VdbToken type = stmt->get.create.types->tokens[i];
-                    printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, type.len, type.lexeme);
+                struct VdbSchema* schema = vdb_alloc_schema(3, VDBF_INT, "age", VDBF_STR, "name", VDBF_BOOL, "graduated");
+
+                if (vdb_create_table(*h, "students", schema)) {
+                    printf("Created 'students' table\n");
+                } else {
+                    printf("Failed to create 'students' table\n");
                 }
+
+                vdb_free_schema(schema);
                 break;
             }
             case VDBST_DROP: {
-                printf("<drop table [%.*s]>\n", stmt->get.table_name.len, stmt->get.table_name.lexeme);
                 break;
             }
             case VDBST_INSERT: {
-                printf("<insert into table [%.*s]>\n", stmt->get.insert.table_name.len, stmt->get.insert.table_name.lexeme);
-                printf("\tcolumns:\n");
-                for (int i = 0; i < stmt->get.insert.attributes->count; i++) {
-                    struct VdbToken attribute = stmt->get.insert.attributes->tokens[i];
-                    printf("\t\t[%.*s]\n", attribute.len, attribute.lexeme);
-                }
-                printf("\tvalues:\n");
-                for (int i = 0; i < stmt->get.insert.values->count; i += stmt->get.insert.attributes->count) {
-                    printf("\t\t");
-                    for (int j = i; j < i + stmt->get.insert.attributes->count; j++) {
-                        struct VdbToken value = stmt->get.insert.values->tokens[j];
-                        printf("%.*s", value.len, value.lexeme);
-                        if (j < i +  stmt->get.insert.attributes->count -1) {
-                            printf(", ");
-                        }
-                    }
-                    printf("\n");
-                }
                 break;
             }
             case VDBST_UPDATE: {
-                printf("<update record(s) in table [%.*s]>\n", stmt->get.update.table_name.len, stmt->get.update.table_name.lexeme);
-                printf("\tset:\n");
-                for (int i = 0; i < stmt->get.update.attributes->count; i++) {
-                    struct VdbToken attribute = stmt->get.update.attributes->tokens[i];
-                    struct VdbToken value = stmt->get.update.values->tokens[i];
-                    printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, value.len, value.lexeme);
-                }
-                printf("\tcondition:\n");
-                if (stmt->get.update.selection) {
-                    printf("\t\t");
-                    vdbexpr_print(stmt->get.update.selection);
-                    printf("\n");
-                }
                 break;
             }
             case VDBST_DELETE: {
-                printf("<delete record(s) from table [%.*s]>\n", stmt->get.delete.table_name.len, stmt->get.delete.table_name.lexeme);
-                printf("\tcondition:\n");
-                if (stmt->get.delete.selection) {
-                    printf("\t\t");
-                    vdbexpr_print(stmt->get.delete.selection);
-                    printf("\n");
-                }
                 break;
             }
             case VDBST_SELECT: {
-                printf("<select record(s) from table [%.*s]>\n", stmt->get.select.table_name.len, stmt->get.select.table_name.lexeme);
-                printf("\tcolumns:\n");
-                for (int i = 0; i < stmt->get.select.projection->count; i++) {
-                    struct VdbToken t = stmt->get.select.projection->tokens[i];
-                    printf("\t\t[%.*s]\n", t.len, t.lexeme);
-                }
-                printf("\tcondition:\n");
-                if (stmt->get.select.selection) {
-                    printf("\t\t");
-                    vdbexpr_print(stmt->get.select.selection);
-                    printf("\n");
-                }
                 break;
             }
             default:
@@ -881,18 +942,25 @@ void run_cli() {
     char* line = NULL;
     size_t len = 0;
     ssize_t nread;
+    VDBHANDLE h = NULL;
+    char* db_name = NULL;
     while (true) {
-        printf("> ");
+        printf("vdb");
+        if (h) {
+            db_name = vdb_dbname(h);
+            printf(":%s", db_name);
+        }
+        printf(" > ");
         nread = getline(&line, &len, stdin);
         if (nread == -1)
             break;
         line[strlen(line) - 1] = '\0'; //get rid of newline
         struct VdbTokenList* tl = vdb_lex(line);
-        vdbtokenlist_print(tl);
+        //vdbtokenlist_print(tl);
         struct VdbStmtList* sl = vdb_parse(tl);
         //struct VdbOpList* ol = vdb_generate_code(sl);
         //vdb_execute(ol);
-        bool end = vdb_execute(sl);
+        bool end = vdb_execute(sl, &h);
 
         vdbstmtlist_free(sl);
         vdbtokenlist_free(tl);

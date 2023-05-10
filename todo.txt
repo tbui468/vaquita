@@ -59,15 +59,19 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 *******************************TODO**************************************************
     executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
         Have C code fill in database with default data first, then query in repl
-        case VDBST_CREATE: <---------FINISH THIS in execute function
+        case VDBST_CREATE: <--------- need to implement new vdb_alloc_schema that takes in token lists as arguments
+
+    Rewrite SQL commands:
+        open school - this should only open an existing database - will cause error if database does not exist
+        create database school - this should create a database
+        drop database school - drop a database and corresponding tables
+        only workds when a database is open:
+            show tables
+            describe students
 
     Parse 'show tables' and 'describe [table_name]'
         show tables will show all tables of current open database
         describe [table_name] will show attributes/types
-
-    Display 'vdb' before >
-      
-    Dispaly 'vdb:[open db]' > if a database is current open
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school

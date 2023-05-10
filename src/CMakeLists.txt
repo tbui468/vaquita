@@ -7,6 +7,8 @@ set(Sources
     node.c
     record.c
     pager.c
+    lexer.c
+    parser.c
     )
 
 set(Headers
@@ -17,6 +19,8 @@ set(Headers
     node.h
     record.h
     pager.h
+    lexer.h
+    parser.h
     )
 
 add_executable(

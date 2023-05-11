@@ -18,6 +18,37 @@ struct VdbSchema* vdb_schema_alloc(int count, va_list args) {
     return schema;
 }
 
+struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types) {
+    struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
+    schema->count = count;
+    schema->fields = malloc_w(sizeof(enum VdbField) * count);
+    schema->names = malloc_w(sizeof(char*) * count);
+
+    for (int i = 0; i < count; i++) {
+        //TODO: schema should use enum VdbTokenTypes directly instead of converting
+        switch (types->tokens[i].type) {
+            case VDBT_TYPE_STR:
+                schema->fields[i] = VDBF_STR;
+                break;
+            case VDBT_TYPE_INT:
+                schema->fields[i] = VDBF_INT;
+                break;
+            case VDBT_TYPE_BOOL:
+                schema->fields[i] = VDBF_BOOL;
+                break;
+            default:
+                break;
+        }
+
+        int len = attributes->tokens[i].len;
+        schema->names[i] = malloc_w(len + 1);
+        memcpy(schema->names[i], attributes->tokens[i].lexeme, len);
+        schema->names[i][len] = '\0';
+    }
+
+    return schema;
+}
+
 void vdb_schema_free(struct VdbSchema* schema) {
     for (uint32_t i = 0; i < schema->count; i++) {
         free(schema->names[i]);

@@ -41,41 +41,41 @@ enum VdbStmtType {
     VDBST_EXIT,
     VDBST_OPEN,
     VDBST_CLOSE,
-    VDBST_CREATE,
-    VDBST_DROP,
+    VDBST_CREATE_TAB,
+    VDBST_DROP_TAB,
     VDBST_INSERT,
     VDBST_UPDATE,
     VDBST_DELETE,
-    VDBST_SELECT
+    VDBST_SELECT,
+    VDBST_SHOW_DBS,
+    VDBST_CREATE_DB,
+    VDBST_SHOW_TABS,
+    VDBST_DESCRIBE_TAB,
+    VDBST_DROP_DB,
+    VDBST_CONNECT
 };
 
 struct VdbStmt {
     enum VdbStmtType type;
+    struct VdbToken target;
     union {
-        struct VdbToken db_name;
-        struct VdbToken table_name;
         struct {
-            struct VdbToken table_name;
             struct VdbTokenList* attributes;
             struct VdbTokenList* types;
         } create;
         struct {
-            struct VdbToken table_name;
             struct VdbTokenList* attributes;
             struct VdbTokenList* values;
         } insert;
         struct {
-            struct VdbToken table_name;
             struct VdbTokenList* attributes;
             struct VdbTokenList* values;
             struct VdbExpr* selection;
         } update;
         struct {
-            struct VdbToken table_name;
             struct VdbExpr* selection;
         } delete;
         struct {
-            struct VdbToken table_name;
             struct VdbTokenList* projection;
             struct VdbExpr* selection;
         } select;

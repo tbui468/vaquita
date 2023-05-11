@@ -39,14 +39,16 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Seems like mysql uses tcp sockets
 
     Some basic SQL implemented in parser:
+        vdb > connect 3000;
+        vdb > show databases;
+        vdb > create database school;
         vdb > open school;
-        vdb:school > show tables
-        vdb:school > describe students
-        vdb:school > describe teachers
-        vdb:school > create table students (name string, age int, male bool);
+        
+        vdb:school > show tables;
+        vdb:school > create table students (name string, age int, grad bool);
+        vdb:school > describe students;
         vdb:school > insert into students (name, age, male) values ("Bob", 12, true);
-        vdb:school > insert into students (name, age, male) values ("Kate", 11, false);
-        vdb:school > insert into students (name, age, male) values ("Kate", 13, false), ("John", 14, true)
+        vdb:school > insert into students (name, age, male) values ("Kate", 13, false), ("John", 14, true);
         vdb:school > update students set name = "Jim", age = 12, male = true where id = 2;
         vdb:school > delete from students where id = 1;
         vdb:school > select * from students;
@@ -54,24 +56,36 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb:school > select id, name, male from students where age >= 12;
         vdb:school > drop table students;
         vdb:school > close school;
-        vdb >
+
+        vdb > drop database school;
+        vdb > exit;
 
 *******************************TODO**************************************************
-    executing SQL to open/close databases, create/drop table, insert/update/delete/fetch records
-        Have C code fill in database with default data first, then query in repl
-        case VDBST_CREATE: <--------- need to implement new vdb_alloc_schema that takes in token lists as arguments
+    Include semicolon at end of each statement
+
+    parse, print and execute these statements
+        VDBST_SHOW_DBS
+        VDBST_CREATE_DB
+        VDBST_SHOW_TABS
+        VDBST_DESCRIBE_TAB
+        VDBST_DROP_DB
+        VDBST_CONNECT
 
     Rewrite SQL commands:
-        open school - this should only open an existing database - will cause error if database does not exist
-        create database school - this should create a database
-        drop database school - drop a database and corresponding tables
-        only workds when a database is open:
-            show tables
-            describe students
+        show databases;
+        create database school;  - will need to split vdb_open into create/open
+        show tables;
+        describe students;
+        drop database school;
 
-    Parse 'show tables' and 'describe [table_name]'
-        show tables will show all tables of current open database
-        describe [table_name] will show attributes/types
+        include ; as statement terminator - makes it possible to do multi-line SQL
+
+    Implement remaining statements in vdb_execute
+
+    Schema should use enum VdbTokenType for data types rather than enum VdbField
+
+    Good chance to add VdbData types rather than using c-types
+        mainly this will allow NULL type
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school
@@ -88,13 +102,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         > close school
             database school closed
             [what message?]
-
-    Put cli/parsing/tokens/lexing into own translation units
-        cli.c
-        token.c
-        lexer.c
-        parser.c
-        generator.c
 
     Handle lexing/parsing errors
         next_token(parser) - go to next token without error checking

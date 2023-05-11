@@ -216,18 +216,18 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
     switch (vdbparser_consume_token(parser).type) {
         case VDBT_OPEN: {
             stmt.type = VDBST_OPEN;
-            stmt.get.db_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             break;
         }
         case VDBT_CLOSE: {
             stmt.type = VDBST_CLOSE;
-            stmt.get.db_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             break;
         }
         case VDBT_CREATE: {
-            stmt.type = VDBST_CREATE;
+            stmt.type = VDBST_CREATE_TAB;
             vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
-            stmt.get.create.table_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             stmt.get.create.attributes = vdbtokenlist_init();
             stmt.get.create.types = vdbtokenlist_init();
             vdbparser_consume_token(parser); //left paren
@@ -243,15 +243,15 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
             break;
         }
         case VDBT_DROP: {
-            stmt.type = VDBST_DROP;
+            stmt.type = VDBST_DROP_TAB;
             vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
-            stmt.get.table_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             break;
         }
         case VDBT_INSERT: {
             stmt.type = VDBST_INSERT;
             vdbparser_consume_token(parser); //TODO: skip 'into'
-            stmt.get.insert.table_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
 
             stmt.get.insert.attributes = vdbtokenlist_init();
             vdbparser_parse_tuple(parser, stmt.get.insert.attributes);
@@ -270,7 +270,7 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
         }
         case VDBT_UPDATE: {
             stmt.type = VDBST_UPDATE;
-            stmt.get.update.table_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             vdbparser_consume_token(parser); //'set' keyword
 
             stmt.get.update.attributes = vdbtokenlist_init();
@@ -300,7 +300,7 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
         case VDBT_DELETE: {
             stmt.type = VDBST_DELETE;
             vdbparser_consume_token(parser); //'from' keyword
-            stmt.get.delete.table_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             stmt.get.delete.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
                 vdbparser_consume_token(parser); //'where' keyword
@@ -321,7 +321,7 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
             }
 
             vdbparser_consume_token(parser); // 'from' keyword
-            stmt.get.select.table_name = vdbparser_consume_token(parser);
+            stmt.target = vdbparser_consume_token(parser);
             stmt.get.select.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
                 vdbparser_consume_token(parser); //'where' keyword
@@ -348,15 +348,15 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             break;
         }
         case VDBST_OPEN: {
-            printf("<open database [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
+            printf("<open database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_CLOSE: {
-            printf("<close database [%.*s]>\n", stmt->get.db_name.len, stmt->get.db_name.lexeme);
+            printf("<close database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
-        case VDBST_CREATE: {
-            printf("<create table [%.*s]>\n", stmt->get.create.table_name.len, stmt->get.create.table_name.lexeme);
+        case VDBST_CREATE_TAB: {
+            printf("<create table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tschema:\n");
             for (int i = 0; i < stmt->get.create.attributes->count; i++) {
                 struct VdbToken attribute = stmt->get.create.attributes->tokens[i];
@@ -365,12 +365,12 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             }
             break;
         }
-        case VDBST_DROP: {
-            printf("<drop table [%.*s]>\n", stmt->get.table_name.len, stmt->get.table_name.lexeme);
+        case VDBST_DROP_TAB: {
+            printf("<drop table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_INSERT: {
-            printf("<insert into table [%.*s]>\n", stmt->get.insert.table_name.len, stmt->get.insert.table_name.lexeme);
+            printf("<insert into table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcolumns:\n");
             for (int i = 0; i < stmt->get.insert.attributes->count; i++) {
                 struct VdbToken attribute = stmt->get.insert.attributes->tokens[i];
@@ -391,7 +391,7 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             break;
         }
         case VDBST_UPDATE: {
-            printf("<update record(s) in table [%.*s]>\n", stmt->get.update.table_name.len, stmt->get.update.table_name.lexeme);
+            printf("<update record(s) in table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tset:\n");
             for (int i = 0; i < stmt->get.update.attributes->count; i++) {
                 struct VdbToken attribute = stmt->get.update.attributes->tokens[i];
@@ -407,7 +407,7 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             break;
         }
         case VDBST_DELETE: {
-            printf("<delete record(s) from table [%.*s]>\n", stmt->get.delete.table_name.len, stmt->get.delete.table_name.lexeme);
+            printf("<delete record(s) from table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcondition:\n");
             if (stmt->get.delete.selection) {
                 printf("\t\t");
@@ -417,7 +417,7 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             break;
         }
         case VDBST_SELECT: {
-            printf("<select record(s) from table [%.*s]>\n", stmt->get.select.table_name.len, stmt->get.select.table_name.lexeme);
+            printf("<select record(s) from table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcolumns:\n");
             for (int i = 0; i < stmt->get.select.projection->count; i++) {
                 struct VdbToken t = stmt->get.select.projection->tokens[i];

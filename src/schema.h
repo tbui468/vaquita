@@ -5,6 +5,8 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
+#include "lexer.h"
+
 enum VdbField {
     VDBF_INT,
     VDBF_STR,
@@ -34,6 +36,7 @@ struct VdbDatum {
 };
 
 struct VdbSchema* vdb_schema_alloc(int count, va_list args);
+struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types);
 void vdb_schema_free(struct VdbSchema* schema);
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
 void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off);

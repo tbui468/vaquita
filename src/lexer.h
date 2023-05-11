@@ -36,6 +36,13 @@ enum VdbTokenType {
     VDBT_SET,
     VDBT_FROM,
     VDBT_STAR,
+    VDBT_SEMICOLON,
+    VDBT_SHOW,
+    VDBT_DATABASES,
+    VDBT_DATABASE,
+    VDBT_TABLES,
+    VDBT_DESCRIBE,
+    VDBT_CONNECT,
     VDBT_EOF
 };
 

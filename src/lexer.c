@@ -67,6 +67,13 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
             case VDBT_SET: printf("VDBT_SET\n"); break;
             case VDBT_FROM: printf("VDBT_FROM\n"); break;
             case VDBT_STAR: printf("VDBT_STAR\n"); break;
+            case VDBT_SEMICOLON: printf("VDBT_SEMICOLON\n"); break;
+            case VDBT_SHOW: printf("VDBT_SHOW\n"); break;
+            case VDBT_DATABASES: printf("VDBT_DATABASES\n"); break;
+            case VDBT_DATABASE: printf("VDBT_DATABASE\n"); break;
+            case VDBT_TABLES: printf("VDBT_TABLES\n"); break;
+            case VDBT_DESCRIBE: printf("VDBT_DESCRIBE\n"); break;
+            case VDBT_CONNECT: printf("VDBT_CONNECT\n"); break;
             default: printf("not implemented\n"); break;
         }
     }
@@ -193,6 +200,18 @@ struct VdbToken vdblexer_read_word(char* command, int* cur) {
         t.type = VDBT_SET;
     } else if (strncmp(t.lexeme, "from", 4) == 0) {
         t.type = VDBT_FROM;
+    } else if (strncmp(t.lexeme, "show", 4) == 0) {
+        t.type = VDBT_SHOW;
+    } else if (strncmp(t.lexeme, "databases", 9) == 0) {
+        t.type = VDBT_DATABASES;
+    } else if (strncmp(t.lexeme, "database", 8) == 0) {
+        t.type = VDBT_DATABASE;
+    } else if (strncmp(t.lexeme, "tables", 6) == 0) {
+        t.type = VDBT_TABLES;
+    } else if (strncmp(t.lexeme, "describe", 8) == 0) {
+        t.type = VDBT_DESCRIBE;
+    } else if (strncmp(t.lexeme, "connect", 7) == 0) {
+        t.type = VDBT_CONNECT;
     }
 
     return t;
@@ -275,6 +294,13 @@ struct VdbToken vdblexer_read_token(char* command, int* cur) {
         case '*': {
             struct VdbToken t;
             t.type = VDBT_STAR;
+            t.lexeme = &command[(*cur)++];
+            t.len = 1;
+            return t;
+        }
+        case ';': {
+            struct VdbToken t;
+            t.type = VDBT_SEMICOLON;
             t.lexeme = &command[(*cur)++];
             t.len = 1;
             return t;

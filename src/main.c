@@ -44,8 +44,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_CREATE_TAB: {
-                int count = stmt->get.create.attributes->count;
-                struct VdbSchema* schema = vdbschema_alloc(count, stmt->get.create.attributes, stmt->get.create.types);
+                int count = stmt->as.create.attributes->count;
+                struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types);
 
                 int len = stmt->target.len;
                 char table_name[len + 1];
@@ -115,18 +115,21 @@ void run_cli() {
             continue;
         }
        
-       /* 
         struct VdbStmtList* stmts;
         struct VdbErrorList* parse_errors;
 
         if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
+            for (int i = 0; i < parse_errors->count; i++) {
+                struct VdbError e = parse_errors->errors[i];
+                printf("error [%d]: %s\n", e.line, e.msg);
+            }
             vdbtokenlist_free(tokens);
             vdberrorlist_free(lex_errors);
             vdbstmtlist_free(stmts);
             vdberrorlist_free(parse_errors);
             continue;
         }
-
+/*
         bool end = vdb_execute(stmts, &h);
 
         vdbtokenlist_free(tokens);

@@ -2,6 +2,7 @@
 #define VDB_PARSER_H
 
 #include "lexer.h"
+#include "error.h"
 
 enum VdbExprType {
     VDBET_LITERAL,
@@ -79,7 +80,7 @@ struct VdbStmt {
             struct VdbTokenList* projection;
             struct VdbExpr* selection;
         } select;
-    } get;
+    } as;
 };
 
 struct VdbStmtList {
@@ -91,9 +92,10 @@ struct VdbStmtList {
 struct VdbParser {
     struct VdbTokenList* tl;
     int current;
+    struct VdbErrorList* errors;
 };
 
-struct VdbStmtList* vdbparser_parse(struct VdbTokenList* tl);
+enum VdbReturnCode vdbparser_parse(struct VdbTokenList* tokens, struct VdbStmtList** stmts, struct VdbErrorList** errors);
 struct VdbExpr* vdbexpr_init_literal(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_identifier(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_unary(struct VdbToken op, struct VdbExpr* right);
@@ -109,13 +111,14 @@ struct VdbStmtList* vdbstmtlist_init();
 void vdbstmtlist_free(struct VdbStmtList* sl);
 void vdbstmtlist_append_stmt(struct VdbStmtList* sl, struct VdbStmt stmt);
 struct VdbToken vdbparser_peek_token(struct VdbParser* parser);
-struct VdbToken vdbparser_consume_token(struct VdbParser* parser);
+struct VdbToken vdbparser_consume_token(struct VdbParser* parser, enum VdbTokenType type);
+struct VdbToken vdbparser_next_token(struct VdbParser* parser);
 struct VdbExpr* vdbparser_parse_literal(struct VdbParser* parser);
 struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser);
 struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser);
 struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser);
 void vdbparser_parse_tuple(struct VdbParser* parser, struct VdbTokenList* tl);
-struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser);
+enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt);
 void vdbstmt_print(struct VdbStmt* stmt);
 
 #endif //VDB_PARSER_H

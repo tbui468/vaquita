@@ -62,25 +62,7 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
 *******************************TODO**************************************************
     add error checking to parser
-        this will be trickier since we need to exit early if error occurs
-        if error occurs, skip all tokens until past semicolon (or end of token list), and try to continue parsing
-        will NOT execute code if any lexing/parsing errors occur, but good to give user some error message
-        only allow single line statements for now
-
-    vdbparser_next_token will not check token type - when is this needed???
-
-        If an error is spotted, throw away the rest of the statement (until the semicolon)
-            How to do this?  Exiting current statement is easy, but how to exit current expression
-                when an error is encountered
-
-    Include semicolon at end of each statement
-        Handle lexing/parsing errors
-            next_token(parser) - go to next token without error checking
-            consume_token(parser, type) - expect a certain type
-            peek_token(parser) - just look without going to next token
-
-            Give the user useful messages rather than segfaulting
-
+        errors seems not very useful
 
     parse, print and execute these statements
         VDBST_SHOW_DBS - need to create function for this

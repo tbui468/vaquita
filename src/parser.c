@@ -5,18 +5,31 @@
 #include "parser.h"
 #include "util.h"
 
-struct VdbStmtList* vdbparser_parse(struct VdbTokenList* tl) {
-    struct VdbStmtList* sl = vdbstmtlist_init();
+enum VdbReturnCode vdbparser_parse(struct VdbTokenList* tokens, struct VdbStmtList** stmts, struct VdbErrorList** errors) {
+    *stmts = vdbstmtlist_init();
+    *errors = vdberrorlist_init();
 
     struct VdbParser parser;
-    parser.tl = tl;
+    parser.tl = tokens;
     parser.current = 0;
-   
-    while (parser.current < tl->count) {
-        vdbstmtlist_append_stmt(sl, vdbparser_parse_stmt(&parser));
+    parser.errors = *errors;
+
+    while (parser.current < tokens->count) {
+        struct VdbStmt stmt;
+        if (vdbparser_parse_stmt(&parser, &stmt) == VDBRC_SUCCESS) {
+            vdbstmtlist_append_stmt(*stmts, stmt);
+        } else {
+            while (parser.current < tokens->count) {
+                if (tokens->tokens[parser.current++].type == VDBT_SEMICOLON)
+                    break;
+            }
+        }
     }
 
-    return sl;
+    if (parser.errors->count > 0)
+        return VDBRC_ERROR;
+    else
+        return VDBRC_SUCCESS;
 }
 
 void vdbexpr_print(struct VdbExpr* expr) {
@@ -144,11 +157,36 @@ struct VdbToken vdbparser_peek_token(struct VdbParser* parser) {
     return parser->tl->tokens[parser->current];
 }
 
-struct VdbToken vdbparser_consume_token(struct VdbParser* parser) {
-    struct VdbToken token = parser->tl->tokens[parser->current++];
-    //should return error is token is unexpected
+struct VdbToken vdbparser_consume_token(struct VdbParser* parser, enum VdbTokenType type) {
+    struct VdbToken token;
+    if (parser->current >= parser->tl->count) {
+        token.type = VDBT_INVALID;
+        token.len = 0;
+        token.lexeme = NULL;
+    } else {
+        token = parser->tl->tokens[parser->current++];
+    }
+
+    if (token.type != type) {
+        vdberrorlist_append_error(parser->errors, 1, "unexpected token");
+    }
+
     return token;
 }
+
+struct VdbToken vdbparser_next_token(struct VdbParser* parser) {
+    struct VdbToken token;
+    if (parser->current >= parser->tl->count) {
+        token.type = VDBT_INVALID;
+        token.len = 0;
+        token.lexeme = NULL;
+    } else {
+        token = parser->tl->tokens[parser->current++];
+    }
+
+    return token;
+}
+
 /*
 struct VdbExpr* vdbparser_parse_group(struct VdbParser* parser) {
 }*/
@@ -158,9 +196,9 @@ struct VdbExpr* vdbparser_parse_literal(struct VdbParser* parser) {
         case VDBT_STR:
         case VDBT_TRUE:
         case VDBT_FALSE:
-            return vdbexpr_init_literal(vdbparser_consume_token(parser));
+            return vdbexpr_init_literal(vdbparser_next_token(parser));
         case VDBT_IDENTIFIER:
-            return vdbexpr_init_identifier(vdbparser_consume_token(parser));
+            return vdbexpr_init_identifier(vdbparser_consume_token(parser, VDBT_IDENTIFIER));
         default:
             return NULL;
     }
@@ -178,7 +216,7 @@ struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser) {
            vdbparser_peek_token(parser).type == VDBT_GREATER ||
            vdbparser_peek_token(parser).type == VDBT_LESS_EQUALS ||
            vdbparser_peek_token(parser).type == VDBT_GREATER_EQUALS) {
-        struct VdbToken op = vdbparser_consume_token(parser);
+        struct VdbToken op = vdbparser_next_token(parser);
         left = vdbexpr_init_binary(op, left, vdbparser_parse_literal(parser));
     }
 
@@ -187,7 +225,7 @@ struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser) {
 struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser) {
     struct VdbExpr* left = vdbparser_parse_relational(parser);
     while (vdbparser_peek_token(parser).type == VDBT_EQUALS) {
-        struct VdbToken equal = vdbparser_consume_token(parser);
+        struct VdbToken equal = vdbparser_consume_token(parser, VDBT_EQUALS);
         left = vdbexpr_init_binary(equal, left, vdbparser_parse_relational(parser));
     }
 
@@ -202,137 +240,156 @@ struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser) {
     return vdbparser_parse_equality(parser);
 }
 
-void vdbparser_parse_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {
-    vdbparser_consume_token(parser); //left paren
+void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {
+    vdbparser_consume_token(parser, VDBT_LPAREN);
     while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-        vdbtokenlist_append_token(tl, vdbparser_consume_token(parser));
+        vdbtokenlist_append_token(tl, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
         if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-            vdbparser_consume_token(parser);
+            vdbparser_consume_token(parser, VDBT_COMMA);
+        } else {
+            break;
         }
     }
-    vdbparser_consume_token(parser); //right paren
+    vdbparser_consume_token(parser, VDBT_RPAREN);
 }
 
-struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
-    struct VdbStmt stmt;
-    switch (vdbparser_consume_token(parser).type) {
+void vdbparser_parse_value_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {
+    vdbparser_consume_token(parser, VDBT_LPAREN);
+    while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+        vdbtokenlist_append_token(tl, vdbparser_next_token(parser));
+        if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+            vdbparser_consume_token(parser, VDBT_COMMA);
+        } else {
+            break;
+        }
+    }
+    vdbparser_consume_token(parser, VDBT_RPAREN);
+}
+
+enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt) {
+    switch (vdbparser_next_token(parser).type) {
         case VDBT_OPEN: {
-            stmt.type = VDBST_OPEN;
-            stmt.target = vdbparser_consume_token(parser);
+            stmt->type = VDBST_OPEN;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             break;
         }
         case VDBT_CLOSE: {
-            stmt.type = VDBST_CLOSE;
-            stmt.target = vdbparser_consume_token(parser);
+            stmt->type = VDBST_CLOSE;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             break;
         }
         case VDBT_CREATE: {
-            stmt.type = VDBST_CREATE_TAB;
-            vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
-            stmt.target = vdbparser_consume_token(parser);
-            stmt.get.create.attributes = vdbtokenlist_init();
-            stmt.get.create.types = vdbtokenlist_init();
-            vdbparser_consume_token(parser); //left paren
+            stmt->type = VDBST_CREATE_TAB;
+            vdbparser_consume_token(parser, VDBT_TABLE);
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            stmt->as.create.attributes = vdbtokenlist_init();
+            stmt->as.create.types = vdbtokenlist_init();
+
+            vdbparser_consume_token(parser, VDBT_LPAREN);
             while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-                vdbtokenlist_append_token(stmt.get.create.attributes, vdbparser_consume_token(parser));
-                vdbtokenlist_append_token(stmt.get.create.types, vdbparser_consume_token(parser));
+                vdbtokenlist_append_token(stmt->as.create.attributes, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+                vdbtokenlist_append_token(stmt->as.create.types, vdbparser_next_token(parser));
+
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-                    vdbparser_consume_token(parser);
+                    vdbparser_consume_token(parser, VDBT_COMMA);
+                } else {
+                    break;
                 }
             }
-
-            vdbparser_consume_token(parser); //right paren
+            vdbparser_consume_token(parser, VDBT_RPAREN);
             break;
         }
         case VDBT_DROP: {
-            stmt.type = VDBST_DROP_TAB;
-            vdbparser_consume_token(parser); //TODO: parse error if not keyword 'table'
-            stmt.target = vdbparser_consume_token(parser);
+            stmt->type = VDBST_DROP_TAB;
+            vdbparser_consume_token(parser, VDBT_TABLE);
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             break;
         }
         case VDBT_INSERT: {
-            stmt.type = VDBST_INSERT;
-            vdbparser_consume_token(parser); //TODO: skip 'into'
-            stmt.target = vdbparser_consume_token(parser);
+            stmt->type = VDBST_INSERT;
+            vdbparser_consume_token(parser, VDBT_INTO);
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
 
-            stmt.get.insert.attributes = vdbtokenlist_init();
-            vdbparser_parse_tuple(parser, stmt.get.insert.attributes);
+            stmt->as.insert.attributes = vdbtokenlist_init();
+            vdbparser_parse_identifier_tuple(parser, stmt->as.insert.attributes);
 
-            vdbparser_consume_token(parser); //'values' token
+            vdbparser_consume_token(parser, VDBT_VALUES);
 
-            stmt.get.insert.values = vdbtokenlist_init();
+            stmt->as.insert.values = vdbtokenlist_init();
             while (vdbparser_peek_token(parser).type == VDBT_LPAREN) {
-                vdbparser_parse_tuple(parser, stmt.get.insert.values);
+                vdbparser_parse_value_tuple(parser, stmt->as.insert.values);
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-                    vdbparser_consume_token(parser);
+                    vdbparser_consume_token(parser, VDBT_COMMA);
+                } else {
+                    break;
                 }
             }
 
             break;
         }
         case VDBT_UPDATE: {
-            stmt.type = VDBST_UPDATE;
-            stmt.target = vdbparser_consume_token(parser);
-            vdbparser_consume_token(parser); //'set' keyword
+            stmt->type = VDBST_UPDATE;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            vdbparser_consume_token(parser, VDBT_SET);
 
-            stmt.get.update.attributes = vdbtokenlist_init();
-            stmt.get.update.values = vdbtokenlist_init();
+            stmt->as.update.attributes = vdbtokenlist_init();
+            stmt->as.update.values = vdbtokenlist_init();
 
             while (true) {
-                vdbtokenlist_append_token(stmt.get.update.attributes, vdbparser_consume_token(parser));
-                vdbparser_consume_token(parser); // '='
-                vdbtokenlist_append_token(stmt.get.update.values, vdbparser_consume_token(parser));
+                vdbtokenlist_append_token(stmt->as.update.attributes, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+                vdbparser_consume_token(parser, VDBT_EQUALS);
+                vdbtokenlist_append_token(stmt->as.update.values, vdbparser_next_token(parser));
 
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-                    vdbparser_consume_token(parser);
+                    vdbparser_consume_token(parser, VDBT_COMMA);
                     continue;
                 }
 
                 break;
             }
 
-            stmt.get.update.selection = NULL;
+            stmt->as.update.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
-                vdbparser_consume_token(parser); //'where' keyword
-                stmt.get.update.selection = vdbparser_parse_expr(parser);
+                vdbparser_consume_token(parser, VDBT_WHERE);
+                stmt->as.update.selection = vdbparser_parse_expr(parser);
             }
 
             break;
         }
         case VDBT_DELETE: {
-            stmt.type = VDBST_DELETE;
-            vdbparser_consume_token(parser); //'from' keyword
-            stmt.target = vdbparser_consume_token(parser);
-            stmt.get.delete.selection = NULL;
+            stmt->type = VDBST_DELETE;
+            vdbparser_consume_token(parser, VDBT_FROM);
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            stmt->as.delete.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
-                vdbparser_consume_token(parser); //'where' keyword
-                stmt.get.delete.selection = vdbparser_parse_expr(parser);
+                vdbparser_consume_token(parser, VDBT_WHERE);
+                stmt->as.delete.selection = vdbparser_parse_expr(parser);
             }
             break;
         }
         case VDBT_SELECT:  {
-            stmt.type = VDBST_SELECT;
-            stmt.get.select.projection = vdbtokenlist_init();
+            stmt->type = VDBST_SELECT;
+            stmt->as.select.projection = vdbtokenlist_init();
             while (true) {
-                vdbtokenlist_append_token(stmt.get.select.projection, vdbparser_consume_token(parser));
+                vdbtokenlist_append_token(stmt->as.select.projection, vdbparser_next_token(parser));
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-                    vdbparser_consume_token(parser);
+                    vdbparser_consume_token(parser, VDBT_COMMA);
                     continue;
                 }
                 break;
             }
 
-            vdbparser_consume_token(parser); // 'from' keyword
-            stmt.target = vdbparser_consume_token(parser);
-            stmt.get.select.selection = NULL;
+            vdbparser_consume_token(parser, VDBT_FROM);
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            stmt->as.select.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
-                vdbparser_consume_token(parser); //'where' keyword
-                stmt.get.select.selection = vdbparser_parse_expr(parser);
+                vdbparser_consume_token(parser, VDBT_WHERE);
+                stmt->as.select.selection = vdbparser_parse_expr(parser);
             }
             break;
         }
         case VDBT_EXIT: {
-            stmt.type = VDBST_EXIT;
+            stmt->type = VDBST_EXIT;
             break; 
         }
         default:
@@ -340,9 +397,9 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
             break;
     }
 
-    vdbparser_consume_token(parser); //semicolon
+    vdbparser_consume_token(parser, VDBT_SEMICOLON);
 
-    return stmt;
+    return VDBRC_SUCCESS;
 }
 
 void vdbstmt_print(struct VdbStmt* stmt) {
@@ -362,9 +419,9 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         case VDBST_CREATE_TAB: {
             printf("<create table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tschema:\n");
-            for (int i = 0; i < stmt->get.create.attributes->count; i++) {
-                struct VdbToken attribute = stmt->get.create.attributes->tokens[i];
-                struct VdbToken type = stmt->get.create.types->tokens[i];
+            for (int i = 0; i < stmt->as.create.attributes->count; i++) {
+                struct VdbToken attribute = stmt->as.create.attributes->tokens[i];
+                struct VdbToken type = stmt->as.create.types->tokens[i];
                 printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, type.len, type.lexeme);
             }
             break;
@@ -376,17 +433,17 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         case VDBST_INSERT: {
             printf("<insert into table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcolumns:\n");
-            for (int i = 0; i < stmt->get.insert.attributes->count; i++) {
-                struct VdbToken attribute = stmt->get.insert.attributes->tokens[i];
+            for (int i = 0; i < stmt->as.insert.attributes->count; i++) {
+                struct VdbToken attribute = stmt->as.insert.attributes->tokens[i];
                 printf("\t\t[%.*s]\n", attribute.len, attribute.lexeme);
             }
             printf("\tvalues:\n");
-            for (int i = 0; i < stmt->get.insert.values->count; i += stmt->get.insert.attributes->count) {
+            for (int i = 0; i < stmt->as.insert.values->count; i += stmt->as.insert.attributes->count) {
                 printf("\t\t");
-                for (int j = i; j < i + stmt->get.insert.attributes->count; j++) {
-                    struct VdbToken value = stmt->get.insert.values->tokens[j];
+                for (int j = i; j < i + stmt->as.insert.attributes->count; j++) {
+                    struct VdbToken value = stmt->as.insert.values->tokens[j];
                     printf("%.*s", value.len, value.lexeme);
-                    if (j < i +  stmt->get.insert.attributes->count -1) {
+                    if (j < i +  stmt->as.insert.attributes->count -1) {
                         printf(", ");
                     }
                 }
@@ -397,15 +454,15 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         case VDBST_UPDATE: {
             printf("<update record(s) in table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tset:\n");
-            for (int i = 0; i < stmt->get.update.attributes->count; i++) {
-                struct VdbToken attribute = stmt->get.update.attributes->tokens[i];
-                struct VdbToken value = stmt->get.update.values->tokens[i];
+            for (int i = 0; i < stmt->as.update.attributes->count; i++) {
+                struct VdbToken attribute = stmt->as.update.attributes->tokens[i];
+                struct VdbToken value = stmt->as.update.values->tokens[i];
                 printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, value.len, value.lexeme);
             }
             printf("\tcondition:\n");
-            if (stmt->get.update.selection) {
+            if (stmt->as.update.selection) {
                 printf("\t\t");
-                vdbexpr_print(stmt->get.update.selection);
+                vdbexpr_print(stmt->as.update.selection);
                 printf("\n");
             }
             break;
@@ -413,9 +470,9 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         case VDBST_DELETE: {
             printf("<delete record(s) from table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcondition:\n");
-            if (stmt->get.delete.selection) {
+            if (stmt->as.delete.selection) {
                 printf("\t\t");
-                vdbexpr_print(stmt->get.delete.selection);
+                vdbexpr_print(stmt->as.delete.selection);
                 printf("\n");
             }
             break;
@@ -423,14 +480,14 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         case VDBST_SELECT: {
             printf("<select record(s) from table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcolumns:\n");
-            for (int i = 0; i < stmt->get.select.projection->count; i++) {
-                struct VdbToken t = stmt->get.select.projection->tokens[i];
+            for (int i = 0; i < stmt->as.select.projection->count; i++) {
+                struct VdbToken t = stmt->as.select.projection->tokens[i];
                 printf("\t\t[%.*s]\n", t.len, t.lexeme);
             }
             printf("\tcondition:\n");
-            if (stmt->get.select.selection) {
+            if (stmt->as.select.selection) {
                 printf("\t\t");
-                vdbexpr_print(stmt->get.select.selection);
+                vdbexpr_print(stmt->as.select.selection);
                 printf("\n");
             }
             break;

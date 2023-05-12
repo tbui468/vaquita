@@ -94,15 +94,17 @@ struct VdbParser {
 };
 
 struct VdbStmtList* vdbparser_parse(struct VdbTokenList* tl);
-void vdbexpr_print(struct VdbExpr* expr);
 struct VdbExpr* vdbexpr_init_literal(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_identifier(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_unary(struct VdbToken op, struct VdbExpr* right);
 struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, struct VdbExpr* right);
+
+void vdbexpr_print(struct VdbExpr* expr);
 void vdbexpr_free(struct VdbExpr* expr);
 struct VdbExprList* vdbexprlist_init();
 void vdbexprlist_free(struct VdbExprList* el);
 void vdbexprlist_append_expr(struct VdbExprList* el, struct VdbExpr* expr);
+
 struct VdbStmtList* vdbstmtlist_init();
 void vdbstmtlist_free(struct VdbStmtList* sl);
 void vdbstmtlist_append_stmt(struct VdbStmtList* sl, struct VdbStmt stmt);

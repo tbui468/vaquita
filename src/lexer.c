@@ -74,6 +74,7 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
             case VDBT_TABLES: printf("VDBT_TABLES\n"); break;
             case VDBT_DESCRIBE: printf("VDBT_DESCRIBE\n"); break;
             case VDBT_CONNECT: printf("VDBT_CONNECT\n"); break;
+            case VDBT_INVALID: printf("VDBT_INVALID: %.*s\n", t.len, t.lexeme); break;
             default: printf("not implemented\n"); break;
         }
     }
@@ -91,219 +92,222 @@ bool is_alpha_numeric(char c) {
     return is_alpha(c) || is_numeric(c) || c == '_';
 }
 
-void vdblexer_skip_whitespace(char* command, int* cur) {
+void vdblexer_skip_whitespace(struct VdbLexer* lexer) {
     char c;
-    while ((c = command[*cur]) == ' ' || c == '\n' || c == '\t') {
-        (*cur)++;
+    while ((c = lexer->src[lexer->cur]) == ' ' || c == '\n' || c == '\t') {
+        lexer->cur++;
     }
 }
 
-struct VdbTokenList* vdblexer_lex(char* command) {
-    struct VdbTokenList* tl = vdbtokenlist_init();
-    int cur = 0;
-    while (cur < (int)strlen(command)) {
-        struct VdbToken t = vdblexer_read_token(command, &cur);
-        vdbtokenlist_append_token(tl, t);
+enum VdbReturnCode vdblexer_read_until_whitespace(struct VdbLexer* lexer, struct VdbToken* t) {
+    t->type = VDBT_INVALID;
+    t->lexeme = &lexer->src[lexer->cur];
+    t->len = 1;
+    char c;
+    while ((c = lexer->src[lexer->cur]) != ' ' && c != '\n' && c != '\t') {
+        lexer->cur++;
+        t->len++;
     }
 
-    struct VdbToken t;
-    t.type = VDBT_EOF;
-    t.lexeme = NULL;
-    t.len = 0;
-    vdbtokenlist_append_token(tl, t);
-
-    return tl;
+    return VDBRC_SUCCESS;
 }
 
-struct VdbToken vdblexer_read_number(char* command, int* cur) {
-    struct VdbToken t;
-    t.type = VDBT_INT;
-    t.lexeme = &command[*cur];
+enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct VdbTokenList** errors) {
+    struct VdbLexer lexer;
+    lexer.src = src;
+    lexer.cur = 0;
+    *tokens = vdbtokenlist_init();
+    *errors = vdbtokenlist_init();
 
-    t.len = 1;
+    enum VdbReturnCode result = VDBRC_SUCCESS;
+
+    while (lexer.cur < (int)strlen(lexer.src)) {
+        struct VdbToken t;
+        enum VdbReturnCode rc;
+        if ((rc = vdblexer_read_token(&lexer, &t)) == VDBRC_SUCCESS) {
+            vdbtokenlist_append_token(*tokens, t);
+        } else {
+            vdbtokenlist_append_token(*errors, t);
+            result = VDBRC_ERROR;
+        }
+    }
+
+    return result;
+}
+
+enum VdbReturnCode vdblexer_read_number(struct VdbLexer* lexer, struct VdbToken* t) {
+    t->type = VDBT_INT;
+    t->lexeme = &lexer->src[lexer->cur];
+    t->len = 1;
    
     char c; 
-    while ((c = command[++(*cur)]) != ' ' && c != EOF && c != '\0' && is_numeric(c)) {
-        t.len++;
+    while ((c = lexer->src[++lexer->cur]) != ' ' && c != EOF && c != '\0' && is_numeric(c)) {
+        t->len++;
     }
 
-    return t;
+    return VDBRC_SUCCESS;
 }
 
-struct VdbToken vdblexer_read_string(char* command, int* cur) {
-    struct VdbToken t;
-    t.type = VDBT_STR;
-    t.lexeme = &command[*cur + 1]; //skip first "
-
-    t.len = 0;
+enum VdbReturnCode vdblexer_read_string(struct VdbLexer* lexer, struct VdbToken* t) {
+    t->type = VDBT_STR;
+    t->lexeme = &lexer->src[lexer->cur + 1]; //skip first "
+    t->len = 0;
    
     char c; 
-    while ((c = command[++(*cur)]) != '\"' && c != EOF && c != '\0') {
-        t.len++;
+    while ((c = lexer->src[++lexer->cur]) != '\"' && c != EOF && c != '\0') {
+        t->len++;
     }
 
     //go past final "
-    ++(*cur);
+    lexer->cur++;
 
-    return t;
+    return VDBRC_SUCCESS;
 }
 
-struct VdbToken vdblexer_read_word(char* command, int* cur) {
-    struct VdbToken t;
-    t.type = VDBT_IDENTIFIER;
-    t.lexeme = &command[*cur];
-
-    t.len = 1;
+enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t) {
+    t->type = VDBT_IDENTIFIER;
+    t->lexeme = &lexer->src[lexer->cur];
+    t->len = 1;
    
     char c; 
-    while ((c = command[++(*cur)]) != ' ' && c != EOF && c != '\0' && is_alpha_numeric(c)) {
-        t.len++;
+    while ((c = lexer->src[++lexer->cur]) != ' ' && c != EOF && c != '\0' && is_alpha_numeric(c)) {
+        t->len++;
     }
 
-    if (strncmp(t.lexeme, "exit", 4) == 0) {
-        t.type = VDBT_EXIT;
-    } else if (strncmp(t.lexeme, "open", 4) == 0) {
-        t.type = VDBT_OPEN;
-    } else if (strncmp(t.lexeme, "close", 5) == 0) {
-        t.type = VDBT_CLOSE;
-    } else if (strncmp(t.lexeme, "create", 6) == 0) {
-        t.type = VDBT_CREATE;
-    } else if (strncmp(t.lexeme, "drop", 4) == 0) {
-        t.type = VDBT_DROP;
-    } else if (strncmp(t.lexeme, "table", 5) == 0) {
-        t.type = VDBT_TABLE;
-    } else if (strncmp(t.lexeme, "string", 6) == 0) {
-        t.type = VDBT_TYPE_STR;
-    } else if (strncmp(t.lexeme, "int", 3) == 0) {
-        t.type = VDBT_TYPE_INT;
-    } else if (strncmp(t.lexeme, "bool", 4) == 0) {
-        t.type = VDBT_TYPE_BOOL;
-    } else if (strncmp(t.lexeme, "insert", 6) == 0) {
-        t.type = VDBT_INSERT;
-    } else if (strncmp(t.lexeme, "into", 4) == 0) {
-        t.type = VDBT_INTO;
-    } else if (strncmp(t.lexeme, "values", 6) == 0) {
-        t.type = VDBT_VALUES;
-    } else if (strncmp(t.lexeme, "true", 4) == 0) {
-        t.type = VDBT_TRUE;
-    } else if (strncmp(t.lexeme, "false", 5) == 0) {
-        t.type = VDBT_FALSE;
-    } else if (strncmp(t.lexeme, "update", 6) == 0) {
-        t.type = VDBT_UPDATE;
-    } else if (strncmp(t.lexeme, "delete", 6) == 0) {
-        t.type = VDBT_DELETE;
-    } else if (strncmp(t.lexeme, "select", 6) == 0) {
-        t.type = VDBT_SELECT;
-    } else if (strncmp(t.lexeme, "where", 5) == 0) {
-        t.type = VDBT_WHERE;
-    } else if (strncmp(t.lexeme, "set", 3) == 0) {
-        t.type = VDBT_SET;
-    } else if (strncmp(t.lexeme, "from", 4) == 0) {
-        t.type = VDBT_FROM;
-    } else if (strncmp(t.lexeme, "show", 4) == 0) {
-        t.type = VDBT_SHOW;
-    } else if (strncmp(t.lexeme, "databases", 9) == 0) {
-        t.type = VDBT_DATABASES;
-    } else if (strncmp(t.lexeme, "database", 8) == 0) {
-        t.type = VDBT_DATABASE;
-    } else if (strncmp(t.lexeme, "tables", 6) == 0) {
-        t.type = VDBT_TABLES;
-    } else if (strncmp(t.lexeme, "describe", 8) == 0) {
-        t.type = VDBT_DESCRIBE;
-    } else if (strncmp(t.lexeme, "connect", 7) == 0) {
-        t.type = VDBT_CONNECT;
+    if (strncmp(t->lexeme, "exit", 4) == 0) {
+        t->type = VDBT_EXIT;
+    } else if (strncmp(t->lexeme, "open", 4) == 0) {
+        t->type = VDBT_OPEN;
+    } else if (strncmp(t->lexeme, "close", 5) == 0) {
+        t->type = VDBT_CLOSE;
+    } else if (strncmp(t->lexeme, "create", 6) == 0) {
+        t->type = VDBT_CREATE;
+    } else if (strncmp(t->lexeme, "drop", 4) == 0) {
+        t->type = VDBT_DROP;
+    } else if (strncmp(t->lexeme, "table", 5) == 0) {
+        t->type = VDBT_TABLE;
+    } else if (strncmp(t->lexeme, "string", 6) == 0) {
+        t->type = VDBT_TYPE_STR;
+    } else if (strncmp(t->lexeme, "int", 3) == 0) {
+        t->type = VDBT_TYPE_INT;
+    } else if (strncmp(t->lexeme, "bool", 4) == 0) {
+        t->type = VDBT_TYPE_BOOL;
+    } else if (strncmp(t->lexeme, "insert", 6) == 0) {
+        t->type = VDBT_INSERT;
+    } else if (strncmp(t->lexeme, "into", 4) == 0) {
+        t->type = VDBT_INTO;
+    } else if (strncmp(t->lexeme, "values", 6) == 0) {
+        t->type = VDBT_VALUES;
+    } else if (strncmp(t->lexeme, "true", 4) == 0) {
+        t->type = VDBT_TRUE;
+    } else if (strncmp(t->lexeme, "false", 5) == 0) {
+        t->type = VDBT_FALSE;
+    } else if (strncmp(t->lexeme, "update", 6) == 0) {
+        t->type = VDBT_UPDATE;
+    } else if (strncmp(t->lexeme, "delete", 6) == 0) {
+        t->type = VDBT_DELETE;
+    } else if (strncmp(t->lexeme, "select", 6) == 0) {
+        t->type = VDBT_SELECT;
+    } else if (strncmp(t->lexeme, "where", 5) == 0) {
+        t->type = VDBT_WHERE;
+    } else if (strncmp(t->lexeme, "set", 3) == 0) {
+        t->type = VDBT_SET;
+    } else if (strncmp(t->lexeme, "from", 4) == 0) {
+        t->type = VDBT_FROM;
+    } else if (strncmp(t->lexeme, "show", 4) == 0) {
+        t->type = VDBT_SHOW;
+    } else if (strncmp(t->lexeme, "databases", 9) == 0) {
+        t->type = VDBT_DATABASES;
+    } else if (strncmp(t->lexeme, "database", 8) == 0) {
+        t->type = VDBT_DATABASE;
+    } else if (strncmp(t->lexeme, "tables", 6) == 0) {
+        t->type = VDBT_TABLES;
+    } else if (strncmp(t->lexeme, "describe", 8) == 0) {
+        t->type = VDBT_DESCRIBE;
+    } else if (strncmp(t->lexeme, "connect", 7) == 0) {
+        t->type = VDBT_CONNECT;
     }
 
-    return t;
+    return VDBRC_SUCCESS;
 }
 
-struct VdbToken vdblexer_read_token(char* command, int* cur) {
-    vdblexer_skip_whitespace(command, cur); 
+enum VdbReturnCode vdblexer_read_token(struct VdbLexer* lexer, struct VdbToken* t) {
+    vdblexer_skip_whitespace(lexer); 
 
-    char c = command[*cur];
+    char c = lexer->src[lexer->cur];
     switch (c) {
         case '(': {
-            struct VdbToken t;
-            t.type = VDBT_LPAREN;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_LPAREN;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case ')': {
-            struct VdbToken t;
-            t.type = VDBT_RPAREN;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_RPAREN;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case ',': {
-            struct VdbToken t;
-            t.type = VDBT_COMMA;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_COMMA;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case '=': {
-            struct VdbToken t;
-            t.type = VDBT_EQUALS;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_EQUALS;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case '<': {
-            struct VdbToken t;
-            t.lexeme = &command[(*cur)++];
-            if (command[*cur] == '=') {
-                t.type = VDBT_LESS_EQUALS;
-                (*cur)++;
-                t.len = 2;
+            t->lexeme = &lexer->src[lexer->cur++];
+            if (lexer->src[lexer->cur] == '=') {
+                t->type = VDBT_LESS_EQUALS;
+                lexer->cur++;
+                t->len = 2;
             } else {
-                t.type = VDBT_LESS;
-                t.len = 1;
+                t->type = VDBT_LESS;
+                t->len = 1;
             }
-            return t;
+            break;
         }
         case '>': {
-            struct VdbToken t;
-            t.type = VDBT_GREATER;
-            t.lexeme = &command[(*cur)++];
-            if (command[*cur] == '=') {
-                t.type = VDBT_GREATER_EQUALS;
-                (*cur)++;
-                t.len = 2;
+            t->type = VDBT_GREATER;
+            t->lexeme = &lexer->src[lexer->cur++];
+            if (lexer->src[lexer->cur] == '=') {
+                t->type = VDBT_GREATER_EQUALS;
+                lexer->cur++;
+                t->len = 2;
             } else {
-                t.type = VDBT_GREATER;
-                t.len = 1;
+                t->type = VDBT_GREATER;
+                t->len = 1;
             }
-            return t;
+            break;
         }
         case '+': {
-            struct VdbToken t;
-            t.type = VDBT_PLUS;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_PLUS;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case '-': {
-            struct VdbToken t;
-            t.type = VDBT_MINUS;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_MINUS;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case '*': {
-            struct VdbToken t;
-            t.type = VDBT_STAR;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_STAR;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case ';': {
-            struct VdbToken t;
-            t.type = VDBT_SEMICOLON;
-            t.lexeme = &command[(*cur)++];
-            t.len = 1;
-            return t;
+            t->type = VDBT_SEMICOLON;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
         }
         case '.':
         case '0':
@@ -316,10 +320,17 @@ struct VdbToken vdblexer_read_token(char* command, int* cur) {
         case '7':
         case '8':
         case '9':
-            return vdblexer_read_number(command, cur);
+            return vdblexer_read_number(lexer, t);
         case '\"':
-            return vdblexer_read_string(command, cur);
+            return vdblexer_read_string(lexer, t);
         default:
-            return vdblexer_read_word(command, cur);
+            if (is_alpha(c) || c == '_') {
+                return vdblexer_read_word(lexer, t);
+            } else {
+                vdblexer_read_until_whitespace(lexer, t);
+                return VDBRC_ERROR;
+            }
     }
+
+    return VDBRC_SUCCESS;
 }

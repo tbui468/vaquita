@@ -61,26 +61,38 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
+    add error checking to parser
+        this will be trickier since we need to exit early if error occurs
+        if error occurs, skip all tokens until past semicolon (or end of token list), and try to continue parsing
+        will NOT execute code if any lexing/parsing errors occur, but good to give user some error message
+
+    vdbparser_next_token will not check token type - when is this needed???
+
+        If an error is spotted, throw away the rest of the statement (until the semicolon)
+            How to do this?  Exiting current statement is easy, but how to exit current expression
+                when an error is encountered
+
     Include semicolon at end of each statement
+        Handle lexing/parsing errors
+            next_token(parser) - go to next token without error checking
+            consume_token(parser, type) - expect a certain type
+            peek_token(parser) - just look without going to next token
+
+            Give the user useful messages rather than segfaulting
+
 
     parse, print and execute these statements
-        VDBST_SHOW_DBS
-        VDBST_CREATE_DB
-        VDBST_SHOW_TABS
-        VDBST_DESCRIBE_TAB
-        VDBST_DROP_DB
-        VDBST_CONNECT
+        VDBST_SHOW_DBS - need to create function for this
+        VDBST_CREATE_DB - will need to split vdb_open into create/open versions
+        VDBST_SHOW_TABS - will need to create function for this
+        VDBST_DESCRIBE_TAB -create function for this
+        VDBST_DROP_DB - create function for this (just delete the directory)
+        VDBST_CONNECT - make this a stub for now
 
-    Rewrite SQL commands:
-        show databases;
-        create database school;  - will need to split vdb_open into create/open
-        show tables;
-        describe students;
-        drop database school;
-
-        include ; as statement terminator - makes it possible to do multi-line SQL
-
-    Implement remaining statements in vdb_execute
+    Implement execute for these:
+        update
+        delete
+        select <----this will require a fair bit of work
 
     Schema should use enum VdbTokenType for data types rather than enum VdbField
 
@@ -102,13 +114,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         > close school
             database school closed
             [what message?]
-
-    Handle lexing/parsing errors
-        next_token(parser) - go to next token without error checking
-        consume_token(parser, type) - expect a certain type
-        peek_token(parser) - just look without going to next token
-
-        Give the user useful messages rather than segfaulting
 
     Test making multiple trees - insert and fetch data from multiple trees (tables)
 

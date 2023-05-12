@@ -1,6 +1,11 @@
 #ifndef VDB_LEXER_H
 #define VDB_LEXER_H
 
+enum VdbReturnCode {
+    VDBRC_SUCCESS,
+    VDBRC_ERROR
+};
+
 enum VdbTokenType {
     VDBT_EXIT,
     VDBT_OPEN,
@@ -43,7 +48,7 @@ enum VdbTokenType {
     VDBT_TABLES,
     VDBT_DESCRIBE,
     VDBT_CONNECT,
-    VDBT_EOF
+    VDBT_INVALID
 };
 
 struct VdbToken {
@@ -58,6 +63,12 @@ struct VdbTokenList {
     int capacity;
 };
 
+struct VdbLexer {
+    char* src;
+    int cur;
+};
+
+//TODO: not all of these need to be public - make some static in .c file
 struct VdbTokenList* vdbtokenlist_init();
 void vdbtokenlist_free(struct VdbTokenList* tl);
 void vdbtokenlist_append_token(struct VdbTokenList* tl, struct VdbToken t);
@@ -67,11 +78,11 @@ bool is_alpha(char c);
 bool is_numeric(char c);
 bool is_alpha_numeric(char c);
 
-struct VdbTokenList* vdblexer_lex(char* command);
-void vdblexer_skip_whitespace(char* command, int* cur);
-struct VdbToken vdblexer_read_number(char* command, int* cur);
-struct VdbToken vdblexer_read_string(char* command, int* cur);
-struct VdbToken vdblexer_read_word(char* command, int* cur);
-struct VdbToken vdblexer_read_token(char* command, int* cur);
+enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct VdbTokenList** errors);
+void vdblexer_skip_whitespace(struct VdbLexer* lexer);
+enum VdbReturnCode vdblexer_read_number(struct VdbLexer* lexer, struct VdbToken* t);
+enum VdbReturnCode vdblexer_read_string(struct VdbLexer* lexer, struct VdbToken* t);
+enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t);
+enum VdbReturnCode vdblexer_read_token(struct VdbLexer* lexer, struct VdbToken* t);
 
 #endif //VDB_LEXER_H

@@ -12,7 +12,7 @@ struct VdbStmtList* vdbparser_parse(struct VdbTokenList* tl) {
     parser.tl = tl;
     parser.current = 0;
    
-    while (vdbparser_peek_token(&parser).type != VDBT_EOF) {
+    while (parser.current < tl->count) {
         vdbstmtlist_append_stmt(sl, vdbparser_parse_stmt(&parser));
     }
 
@@ -145,7 +145,9 @@ struct VdbToken vdbparser_peek_token(struct VdbParser* parser) {
 }
 
 struct VdbToken vdbparser_consume_token(struct VdbParser* parser) {
-    return parser->tl->tokens[parser->current++];
+    struct VdbToken token = parser->tl->tokens[parser->current++];
+    //should return error is token is unexpected
+    return token;
 }
 /*
 struct VdbExpr* vdbparser_parse_group(struct VdbParser* parser) {
@@ -337,6 +339,8 @@ struct VdbStmt vdbparser_parse_stmt(struct VdbParser* parser) {
             printf("not implemented yet\n");
             break;
     }
+
+    vdbparser_consume_token(parser); //semicolon
 
     return stmt;
 }

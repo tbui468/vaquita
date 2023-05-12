@@ -89,6 +89,8 @@ void run_cli() {
     ssize_t nread;
     VDBHANDLE h = NULL;
     char* db_name = NULL;
+    enum VdbReturnCode rc;
+
     while (true) {
         printf("vdb");
         if (h) {
@@ -100,16 +102,27 @@ void run_cli() {
         if (nread == -1)
             break;
         line[strlen(line) - 1] = '\0'; //get rid of newline
-        struct VdbTokenList* tl = vdblexer_lex(line);
-        //vdbtokenlist_print(tl);
-        struct VdbStmtList* sl = vdbparser_parse(tl);
+
+        struct VdbTokenList* tokens;
+        struct VdbTokenList* errors;
+
+        if ((rc = vdblexer_lex(line, &tokens, &errors)) == VDBRC_ERROR) {
+            printf("Unrecognized token(s):\n");
+            vdbtokenlist_print(errors);
+            vdbtokenlist_free(tokens);
+            vdbtokenlist_free(errors);
+            continue;
+        }
+        //printf("valid tokens\n");
+        //vdbtokenlist_print(tokens);
+        struct VdbStmtList* sl = vdbparser_parse(tokens);
         //struct VdbOpList* ol = vdb_generate_code(sl);
         //vdb_execute(ol);
         bool end = vdb_execute(sl, &h);
 
         vdbstmtlist_free(sl);
-        vdbtokenlist_free(tl);
-
+        vdbtokenlist_free(tokens);
+        vdbtokenlist_free(errors);
         if (end) {
             break;
         }

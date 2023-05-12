@@ -162,13 +162,13 @@ struct VdbToken vdbparser_consume_token(struct VdbParser* parser, enum VdbTokenT
     if (parser->current >= parser->tl->count) {
         token.type = VDBT_INVALID;
         token.len = 0;
-        token.lexeme = NULL;
+        token.lexeme = "";
     } else {
         token = parser->tl->tokens[parser->current++];
     }
 
     if (token.type != type) {
-        vdberrorlist_append_error(parser->errors, 1, "unexpected token");
+        vdberrorlist_append_error(parser->errors, 1, "unexpected token: %.*s", token.len, token.lexeme);
     }
 
     return token;

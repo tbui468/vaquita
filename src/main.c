@@ -106,7 +106,7 @@ void run_cli() {
         struct VdbErrorList* lex_errors;
 
         if (vdblexer_lex(line, &tokens, &lex_errors) == VDBRC_ERROR) {
-            for (int i = 0; i < lex_errors->count; i++) {
+            for (int i = 0; i < 1; i++) {
                 struct VdbError e = lex_errors->errors[i];
                 printf("error [%d]: %s\n", e.line, e.msg);
             }
@@ -119,7 +119,7 @@ void run_cli() {
         struct VdbErrorList* parse_errors;
 
         if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
-            for (int i = 0; i < parse_errors->count; i++) {
+            for (int i = 0; i < 1; i++) {
                 struct VdbError e = parse_errors->errors[i];
                 printf("error [%d]: %s\n", e.line, e.msg);
             }

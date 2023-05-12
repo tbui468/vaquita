@@ -61,9 +61,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    add error checking to parser
-        errors seems not very useful
-
     parse, print and execute these statements
         VDBST_SHOW_DBS - need to create function for this
         VDBST_CREATE_DB - will need to split vdb_open into create/open versions

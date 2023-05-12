@@ -118,19 +118,19 @@ enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct 
     *tokens = vdbtokenlist_init();
     *errors = vdberrorlist_init();
 
-    enum VdbReturnCode result = VDBRC_SUCCESS;
-
     while (lexer.cur < (int)strlen(lexer.src)) {
         struct VdbToken t;
         if (vdblexer_read_token(&lexer, &t) == VDBRC_SUCCESS) {
             vdbtokenlist_append_token(*tokens, t);
         } else {
             vdberrorlist_append_error(*errors, 1, "unrecognized token: %.*s", t.len, t.lexeme);
-            result = VDBRC_ERROR;
         }
     }
 
-    return result;
+    if ((*errors)->count > 0)
+        return VDBRC_ERROR;
+    else
+        return VDBRC_SUCCESS;
 }
 
 enum VdbReturnCode vdblexer_read_number(struct VdbLexer* lexer, struct VdbToken* t) {

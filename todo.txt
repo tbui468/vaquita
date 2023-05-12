@@ -65,6 +65,7 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         this will be trickier since we need to exit early if error occurs
         if error occurs, skip all tokens until past semicolon (or end of token list), and try to continue parsing
         will NOT execute code if any lexing/parsing errors occur, but good to give user some error message
+        only allow single line statements for now
 
     vdbparser_next_token will not check token type - when is this needed???
 
@@ -92,7 +93,7 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Implement execute for these:
         update
         delete
-        select <----this will require a fair bit of work
+        select <----this will require a fair bit of work - may need cursor abstraction here (mainly to go to next record in index)
 
     Schema should use enum VdbTokenType for data types rather than enum VdbField
 

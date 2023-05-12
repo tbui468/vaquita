@@ -89,7 +89,6 @@ void run_cli() {
     ssize_t nread;
     VDBHANDLE h = NULL;
     char* db_name = NULL;
-    enum VdbReturnCode rc;
 
     while (true) {
         printf("vdb");
@@ -104,28 +103,40 @@ void run_cli() {
         line[strlen(line) - 1] = '\0'; //get rid of newline
 
         struct VdbTokenList* tokens;
-        struct VdbTokenList* errors;
+        struct VdbErrorList* lex_errors;
 
-        if ((rc = vdblexer_lex(line, &tokens, &errors)) == VDBRC_ERROR) {
-            printf("Unrecognized token(s):\n");
-            vdbtokenlist_print(errors);
+        if (vdblexer_lex(line, &tokens, &lex_errors) == VDBRC_ERROR) {
+            for (int i = 0; i < lex_errors->count; i++) {
+                struct VdbError e = lex_errors->errors[i];
+                printf("error [%d]: %s\n", e.line, e.msg);
+            }
             vdbtokenlist_free(tokens);
-            vdbtokenlist_free(errors);
+            vdberrorlist_free(lex_errors);
             continue;
         }
-        //printf("valid tokens\n");
-        //vdbtokenlist_print(tokens);
-        struct VdbStmtList* sl = vdbparser_parse(tokens);
-        //struct VdbOpList* ol = vdb_generate_code(sl);
-        //vdb_execute(ol);
-        bool end = vdb_execute(sl, &h);
+       
+       /* 
+        struct VdbStmtList* stmts;
+        struct VdbErrorList* parse_errors;
 
-        vdbstmtlist_free(sl);
+        if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
+            vdbtokenlist_free(tokens);
+            vdberrorlist_free(lex_errors);
+            vdbstmtlist_free(stmts);
+            vdberrorlist_free(parse_errors);
+            continue;
+        }
+
+        bool end = vdb_execute(stmts, &h);
+
         vdbtokenlist_free(tokens);
-        vdbtokenlist_free(errors);
+        vdberrorlist_free(lex_errors);
+        vdbstmtlist_free(stmts);
+        vdberrorlist_free(parse_errors);
+
         if (end) {
             break;
-        }
+        }*/
     }
 
     free(line);

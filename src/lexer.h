@@ -1,10 +1,7 @@
 #ifndef VDB_LEXER_H
 #define VDB_LEXER_H
 
-enum VdbReturnCode {
-    VDBRC_SUCCESS,
-    VDBRC_ERROR
-};
+#include "error.h"
 
 enum VdbTokenType {
     VDBT_EXIT,
@@ -78,7 +75,7 @@ bool is_alpha(char c);
 bool is_numeric(char c);
 bool is_alpha_numeric(char c);
 
-enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct VdbTokenList** errors);
+enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct VdbErrorList** errors);
 void vdblexer_skip_whitespace(struct VdbLexer* lexer);
 enum VdbReturnCode vdblexer_read_number(struct VdbLexer* lexer, struct VdbToken* t);
 enum VdbReturnCode vdblexer_read_string(struct VdbLexer* lexer, struct VdbToken* t);

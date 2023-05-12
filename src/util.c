@@ -214,6 +214,14 @@ char* strdup_w(const char* s) {
     return res;
 }
 
+int vsnprintf_w(char* s, size_t size, const char* fmt, va_list ap) {
+    int res;
+    if ((res = vsnprintf(s, size, fmt, ap)) < 0)
+        err_quit("vsnprintf failed");
+
+    return res;
+}
+
 void read_u32(uint32_t* dst, uint8_t* buf, int* off) {
     *dst = *((uint32_t*)(buf + *off));
     *off += sizeof(uint32_t);

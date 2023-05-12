@@ -39,6 +39,7 @@ DIR* opendir_w(const char* name);
 int closedir_w(DIR* d);
 struct dirent* readdir_w(DIR* d);
 char* strdup_w(const char* s);
+int vsnprintf_w(char* s, size_t size, const char* fmt, va_list ap);
 
 //error handling
 void err_quit(const char* msg);

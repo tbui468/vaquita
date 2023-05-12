@@ -104,30 +104,28 @@ enum VdbReturnCode vdblexer_read_until_whitespace(struct VdbLexer* lexer, struct
     t->lexeme = &lexer->src[lexer->cur];
     t->len = 1;
     char c;
-    while ((c = lexer->src[lexer->cur]) != ' ' && c != '\n' && c != '\t') {
-        lexer->cur++;
+    while ((c = lexer->src[++lexer->cur]) != ' ' && c != '\n' && c != '\t' && c != ';') {
         t->len++;
     }
 
     return VDBRC_SUCCESS;
 }
 
-enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct VdbTokenList** errors) {
+enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct VdbErrorList** errors) {
     struct VdbLexer lexer;
     lexer.src = src;
     lexer.cur = 0;
     *tokens = vdbtokenlist_init();
-    *errors = vdbtokenlist_init();
+    *errors = vdberrorlist_init();
 
     enum VdbReturnCode result = VDBRC_SUCCESS;
 
     while (lexer.cur < (int)strlen(lexer.src)) {
         struct VdbToken t;
-        enum VdbReturnCode rc;
-        if ((rc = vdblexer_read_token(&lexer, &t)) == VDBRC_SUCCESS) {
+        if (vdblexer_read_token(&lexer, &t) == VDBRC_SUCCESS) {
             vdbtokenlist_append_token(*tokens, t);
         } else {
-            vdbtokenlist_append_token(*errors, t);
+            vdberrorlist_append_error(*errors, 1, "unrecognized token: %.*s", t.len, t.lexeme);
             result = VDBRC_ERROR;
         }
     }

@@ -9,6 +9,7 @@ set(Sources
     pager.c
     lexer.c
     parser.c
+    error.c
     )
 
 set(Headers
@@ -21,6 +22,7 @@ set(Headers
     pager.h
     lexer.h
     parser.h
+    error.h
     )
 
 add_executable(

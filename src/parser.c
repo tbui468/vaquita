@@ -268,6 +268,26 @@ void vdbparser_parse_value_tuple(struct VdbParser* parser, struct VdbTokenList* 
 
 enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt) {
     switch (vdbparser_next_token(parser).type) {
+        case VDBT_CONNECT: {
+            stmt->type = VDBST_CONNECT;
+            //TODO: How to read in port?  What kind of token will that be?
+            break;
+        }
+        case VDBT_SHOW: {
+            if (vdbparser_peek_token(parser).type == VDBT_TABLES) {
+                stmt->type = VDBST_SHOW_TABS;
+                vdbparser_consume_token(parser, VDBT_TABLES);
+            } else {
+                stmt->type = VDBST_SHOW_DBS;
+                vdbparser_consume_token(parser, VDBT_DATABASES);
+            }
+            break;
+        }
+        case VDBT_DESCRIBE: {
+            stmt->type = VDBST_DESCRIBE;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            break;
+        }
         case VDBT_OPEN: {
             stmt->type = VDBST_OPEN;
             stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
@@ -279,30 +299,42 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             break;
         }
         case VDBT_CREATE: {
-            stmt->type = VDBST_CREATE_TAB;
-            vdbparser_consume_token(parser, VDBT_TABLE);
-            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            stmt->as.create.attributes = vdbtokenlist_init();
-            stmt->as.create.types = vdbtokenlist_init();
+            if (vdbparser_peek_token(parser).type == VDBT_TABLE) {
+                stmt->type = VDBST_CREATE_TAB;
+                vdbparser_consume_token(parser, VDBT_TABLE);
+                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+                stmt->as.create.attributes = vdbtokenlist_init();
+                stmt->as.create.types = vdbtokenlist_init();
 
-            vdbparser_consume_token(parser, VDBT_LPAREN);
-            while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-                vdbtokenlist_append_token(stmt->as.create.attributes, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
-                vdbtokenlist_append_token(stmt->as.create.types, vdbparser_next_token(parser));
+                vdbparser_consume_token(parser, VDBT_LPAREN);
+                while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+                    vdbtokenlist_append_token(stmt->as.create.attributes, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+                    vdbtokenlist_append_token(stmt->as.create.types, vdbparser_next_token(parser));
 
-                if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-                    vdbparser_consume_token(parser, VDBT_COMMA);
-                } else {
-                    break;
+                    if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                        vdbparser_consume_token(parser, VDBT_COMMA);
+                    } else {
+                        break;
+                    }
                 }
+                vdbparser_consume_token(parser, VDBT_RPAREN);
+            } else {
+                stmt->type = VDBST_CREATE_DB;
+                vdbparser_consume_token(parser, VDBT_DATABASE);
+                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             }
-            vdbparser_consume_token(parser, VDBT_RPAREN);
             break;
         }
         case VDBT_DROP: {
-            stmt->type = VDBST_DROP_TAB;
-            vdbparser_consume_token(parser, VDBT_TABLE);
-            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            if (vdbparser_peek_token(parser).type == VDBT_TABLE) {
+                stmt->type = VDBST_DROP_TAB;
+                vdbparser_consume_token(parser, VDBT_TABLE);
+                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            } else {
+                stmt->type = VDBST_DROP_DB;
+                vdbparser_consume_token(parser, VDBT_DATABASE);
+                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            }
             break;
         }
         case VDBT_INSERT: {

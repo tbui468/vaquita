@@ -61,18 +61,23 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    parse, print and execute these statements
+    print execution plan for these
+        VDBST_SHOW_DBS
+        VDBST_CREATE_DB
+        VDBST_SHOW_TABS
+        VDBST_DESCRIBE_TAB
+        VDBST_DROP_DB
+        VDBST_CONNECT
+    execute
         VDBST_SHOW_DBS - need to create function for this
         VDBST_CREATE_DB - will need to split vdb_open into create/open versions
         VDBST_SHOW_TABS - will need to create function for this
         VDBST_DESCRIBE_TAB -create function for this
         VDBST_DROP_DB - create function for this (just delete the directory)
         VDBST_CONNECT - make this a stub for now
-
-    Implement execute for these:
-        update
-        delete
-        select <----this will require a fair bit of work - may need cursor abstraction here (mainly to go to next record in index)
+        VDBST_UPDATE
+        VDBST_DELETE
+        VDBSET_SELECT <-------will require a fair bit of work
 
     Schema should use enum VdbTokenType for data types rather than enum VdbField
 

@@ -110,11 +110,23 @@ enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count) {
         (*dbs)[*count][entry_len - ext_len] = '\0';
         (*count)++;
     }
+
+    closedir_w(d);
+
+    return VDBRC_SUCCESS;
 }
 
 
 enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count) {
-    //TODO: should be able to simply get all trees (which should be stored in struct Vdb)
+    struct Vdb* db = (struct Vdb*)h;
+    *count = db->trees->count;
+    *tabs = malloc_w(sizeof(char*) * (*count)); 
+    for (uint32_t i = 0; i < db->trees->count; i++) {
+        struct VdbTree* tree = db->trees->trees[i];
+        (*tabs)[i] = strdup_w(tree->name);
+    }
+
+    return VDBRC_SUCCESS;
 }
 
 bool vdb_close(VDBHANDLE h) {
@@ -188,6 +200,7 @@ bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
     char path[FILENAME_MAX];
     path[0] = '\0';
     strcat(path, db->name);
+    strcat(path, ".vdb");
     strcat(path, "/");
     strcat(path, name);
     strcat(path, ".vtb");

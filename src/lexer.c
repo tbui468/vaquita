@@ -182,6 +182,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_CREATE;
     } else if (strncmp(t->lexeme, "drop", 4) == 0) {
         t->type = VDBT_DROP;
+    } else if (strncmp(t->lexeme, "tables", 6) == 0) {
+        t->type = VDBT_TABLES;
     } else if (strncmp(t->lexeme, "table", 5) == 0) {
         t->type = VDBT_TABLE;
     } else if (strncmp(t->lexeme, "string", 6) == 0) {
@@ -218,8 +220,6 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_DATABASES;
     } else if (strncmp(t->lexeme, "database", 8) == 0) {
         t->type = VDBT_DATABASE;
-    } else if (strncmp(t->lexeme, "tables", 6) == 0) {
-        t->type = VDBT_TABLES;
     } else if (strncmp(t->lexeme, "describe", 8) == 0) {
         t->type = VDBT_DESCRIBE;
     } else if (strncmp(t->lexeme, "connect", 7) == 0) {

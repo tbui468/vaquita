@@ -170,7 +170,7 @@ void run_cli() {
             vdberrorlist_free(lex_errors);
             continue;
         }
-       
+//        vdbtokenlist_print(tokens);       
         struct VdbStmtList* stmts;
         struct VdbErrorList* parse_errors;
 

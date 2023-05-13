@@ -61,9 +61,18 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    vdb_show_dbs <-----------START HERE
-    vdb_show_tabs <------------THIS NEXT
-
+    case VDBST_DROP_DB: {
+        //should be able to just remove directory and all files
+        break;
+    }
+    case VDBST_DROP_TAB: {
+        remove file
+        break;
+    }
+    case VDBST_DESCRIBE: {
+        show schema
+        break;
+    }
     Finish TODOs inside of vdb_execute
         uncomment vdb_execute in cli loop and test
 

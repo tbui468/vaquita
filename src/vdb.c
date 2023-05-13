@@ -9,7 +9,7 @@
 #include "tree.h"
 
 
-VDBHANDLE vdb_open(const char* name) {
+VDBHANDLE vdb_open_db(const char* name) {
     struct Vdb* db = malloc_w(sizeof(struct Vdb));
     db->pager = vdb_pager_alloc();
     db->trees = vdb_treelist_init();
@@ -18,12 +18,13 @@ VDBHANDLE vdb_open(const char* name) {
     char dirname[FILENAME_MAX];
     dirname[0] = '\0';
     strcat(dirname, name);
+    strcat(dirname, ".vdb");
 
-    //open directory with all table files
+    //error if database doesn't exist
     DIR* d;
     if (!(d = opendir(dirname))) {
-        mkdir_w(dirname, 0777);
-        d = opendir_w(dirname);
+        vdb_close(db);
+        return NULL;
     } 
 
     //open all table files
@@ -58,6 +59,23 @@ VDBHANDLE vdb_open(const char* name) {
     
     return (VDBHANDLE)db;
 }
+
+enum VdbReturnCode vdb_create_db(const char* name) {
+    char dirname[FILENAME_MAX];
+    dirname[0] = '\0';
+    strcat(dirname, name);
+    strcat(dirname, ".vdb");
+
+    DIR* d;
+    if (!(d = opendir(dirname))) {
+        mkdir_w(dirname, 0777);
+    } else {
+        return VDBRC_ERROR;
+    } 
+
+    return VDBRC_SUCCESS;
+}
+
 
 bool vdb_close(VDBHANDLE h) {
     struct Vdb* db = (struct Vdb*)h;

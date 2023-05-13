@@ -27,7 +27,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_CREATE_DB: {
-                //TODO
+                int len = stmt->target.len;
+                char db_name[len + 1];
+                memcpy(db_name, stmt->target.lexeme, len);
+                db_name[len] = '\0';
+                if (vdb_create_db(db_name) == VDBRC_SUCCESS) {
+                    printf("created database %s\n", db_name);
+                } else {
+                    printf("failed to create database %s\n", db_name);
+                }
                 break;
             }
             case VDBST_CREATE_TAB: {
@@ -60,7 +68,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 char db_name[len + 1];
                 memcpy(db_name, stmt->target.lexeme, len);
                 db_name[len] = '\0';
-                if ((*h = vdb_open(db_name))) {
+                if ((*h = vdb_open_db(db_name))) {
                     printf("opened database %s\n", db_name);
                 } else {
                     printf("failed to open database %s\n", db_name);
@@ -157,7 +165,7 @@ void run_cli() {
             vdberrorlist_free(parse_errors);
             continue;
         }
-/*
+
         bool end = vdb_execute(stmts, &h);
 
         vdbtokenlist_free(tokens);
@@ -167,7 +175,7 @@ void run_cli() {
 
         if (end) {
             break;
-        }*/
+        }
     }
 
     free(line);

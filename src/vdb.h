@@ -8,6 +8,7 @@
 #include "record.h"
 #include "pager.h"
 #include "tree.h"
+#include "error.h"
 
 typedef void* VDBHANDLE;
 
@@ -17,7 +18,8 @@ struct Vdb {
     struct VdbTreeList* trees;
 };
 
-VDBHANDLE vdb_open(const char* name);
+VDBHANDLE vdb_open_db(const char* name);
+enum VdbReturnCode vdb_create_db(const char* name);
 bool vdb_close(VDBHANDLE h);
 char* vdb_dbname(VDBHANDLE h);
 

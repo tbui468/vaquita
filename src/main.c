@@ -8,15 +8,52 @@
 #include "lexer.h"
 #include "parser.h"
 
-
 //TODO: need an generator that converst the stmtlist to bytecode
 //Should go in vm.c
 bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
     for (int i = 0; i < sl->count; i++) {
         struct VdbStmt* stmt = &sl->stmts[i];
         switch (stmt->type) {
-            case VDBST_EXIT: {
-                return true;
+            case VDBST_CONNECT: {
+                //TODO
+                break;
+            }
+            case VDBST_SHOW_DBS: {
+                //TODO
+                break;
+            }
+            case VDBST_SHOW_TABS: {
+                //TODO
+                break;
+            }
+            case VDBST_CREATE_DB: {
+                //TODO
+                break;
+            }
+            case VDBST_CREATE_TAB: {
+                int count = stmt->as.create.attributes->count;
+                struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types);
+
+                int len = stmt->target.len;
+                char table_name[len + 1];
+                memcpy(table_name, stmt->target.lexeme, len);
+                table_name[len] = '\0';
+                if (vdb_create_table(*h, table_name, schema)) {
+                    printf("Created table %s\n", table_name);
+                } else {
+                    printf("Failed to create table %s\n", table_name);
+                }
+
+                vdb_free_schema(schema);
+                break;
+            }
+            case VDBST_DROP_DB: {
+                //TODO
+                break;
+            }
+            case VDBST_DROP_TAB: {
+                //TODO
+                break;
             }
             case VDBST_OPEN: {
                 int len = stmt->target.len;
@@ -43,37 +80,28 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 }
                 break;
             }
-            case VDBST_CREATE_TAB: {
-                int count = stmt->as.create.attributes->count;
-                struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types);
-
-                int len = stmt->target.len;
-                char table_name[len + 1];
-                memcpy(table_name, stmt->target.lexeme, len);
-                table_name[len] = '\0';
-                if (vdb_create_table(*h, table_name, schema)) {
-                    printf("Created table %s\n", table_name);
-                } else {
-                    printf("Failed to create table %s\n", table_name);
-                }
-
-                vdb_free_schema(schema);
-                break;
-            }
-            case VDBST_DROP_TAB: {
+            case VDBST_DESCRIBE: {
+                //TODO
                 break;
             }
             case VDBST_INSERT: {
+                //TODO
                 break;
             }
             case VDBST_UPDATE: {
+                //TODO
                 break;
             }
             case VDBST_DELETE: {
+                //TODO
                 break;
             }
             case VDBST_SELECT: {
+                //TODO
                 break;
+            }
+            case VDBST_EXIT: {
+                return true;
             }
             default:
                 break;

@@ -274,32 +274,21 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             break;
         }
         case VDBT_SHOW: {
-            if (vdbparser_peek_token(parser).type == VDBT_TABLES) {
-                stmt->type = VDBST_SHOW_TABS;
-                vdbparser_consume_token(parser, VDBT_TABLES);
-            } else {
+            if (vdbparser_peek_token(parser).type == VDBT_DATABASES) {
                 stmt->type = VDBST_SHOW_DBS;
                 vdbparser_consume_token(parser, VDBT_DATABASES);
+            } else {
+                stmt->type = VDBST_SHOW_TABS;
+                vdbparser_consume_token(parser, VDBT_TABLES);
             }
             break;
         }
-        case VDBT_DESCRIBE: {
-            stmt->type = VDBST_DESCRIBE;
-            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            break;
-        }
-        case VDBT_OPEN: {
-            stmt->type = VDBST_OPEN;
-            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            break;
-        }
-        case VDBT_CLOSE: {
-            stmt->type = VDBST_CLOSE;
-            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            break;
-        }
         case VDBT_CREATE: {
-            if (vdbparser_peek_token(parser).type == VDBT_TABLE) {
+            if (vdbparser_peek_token(parser).type == VDBT_DATABASE) {
+                stmt->type = VDBST_CREATE_DB;
+                vdbparser_consume_token(parser, VDBT_DATABASE);
+                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            } else {
                 stmt->type = VDBST_CREATE_TAB;
                 vdbparser_consume_token(parser, VDBT_TABLE);
                 stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
@@ -318,23 +307,34 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                     }
                 }
                 vdbparser_consume_token(parser, VDBT_RPAREN);
-            } else {
-                stmt->type = VDBST_CREATE_DB;
-                vdbparser_consume_token(parser, VDBT_DATABASE);
-                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             }
             break;
         }
         case VDBT_DROP: {
-            if (vdbparser_peek_token(parser).type == VDBT_TABLE) {
-                stmt->type = VDBST_DROP_TAB;
-                vdbparser_consume_token(parser, VDBT_TABLE);
-                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            } else {
+            if (vdbparser_peek_token(parser).type == VDBT_DATABASE) {
                 stmt->type = VDBST_DROP_DB;
                 vdbparser_consume_token(parser, VDBT_DATABASE);
                 stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            } else {
+                stmt->type = VDBST_DROP_TAB;
+                vdbparser_consume_token(parser, VDBT_TABLE);
+                stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             }
+            break;
+        }
+        case VDBT_OPEN: {
+            stmt->type = VDBST_OPEN;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            break;
+        }
+        case VDBT_CLOSE: {
+            stmt->type = VDBST_CLOSE;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            break;
+        }
+        case VDBT_DESCRIBE: {
+            stmt->type = VDBST_DESCRIBE;
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
             break;
         }
         case VDBT_INSERT: {
@@ -440,24 +440,16 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             printf("<connect>\n");
             break;
         }
-        case VDBST_EXIT: {
-            printf("<exit>\n");
+        case VDBST_SHOW_DBS: {
+            printf("<show database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
-        case VDBST_OPEN: {
-            printf("<open database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
-            break;
-        }
-        case VDBST_CLOSE: {
-            printf("<close database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+        case VDBST_SHOW_TABS: {
+            printf("<show table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_CREATE_DB: {
             printf("<create database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
-            break;
-        }
-        case VDBST_DROP_DB: {
-            printf("<drop database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_CREATE_TAB: {
@@ -470,16 +462,20 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             }
             break;
         }
+        case VDBST_DROP_DB: {
+            printf("<drop database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+            break;
+        }
         case VDBST_DROP_TAB: {
             printf("<drop table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
-        case VDBST_SHOW_DBS: {
-            printf("<show database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+        case VDBST_OPEN: {
+            printf("<open database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
-        case VDBST_SHOW_TABS: {
-            printf("<show table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+        case VDBST_CLOSE: {
+            printf("<close database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_DESCRIBE: {
@@ -546,6 +542,10 @@ void vdbstmt_print(struct VdbStmt* stmt) {
                 vdbexpr_print(stmt->as.select.selection);
                 printf("\n");
             }
+            break;
+        }
+        case VDBST_EXIT: {
+            printf("<exit>\n");
             break;
         }
         default:

@@ -61,51 +61,43 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    execute
-        VDBST_SHOW_DBS - need to create function for this
-        VDBST_CREATE_DB - will need to split vdb_open into create/open versions
-        VDBST_SHOW_TABS - will need to create function for this
-        VDBST_DESCRIBE_TAB -create function for this
-        VDBST_DROP_DB - create function for this (just delete the directory)
-        VDBST_CONNECT - make this a stub for now
-        VDBST_UPDATE
-        VDBST_DELETE
-        VDBSET_SELECT <-------will require a fair bit of work
-
-    Find planets/moons/solar system database to use as sample data
+    Finish TODOs inside of vdb_execute
+        uncomment vdb_execute in cli loop and test
 
     Schema should use enum VdbTokenType for data types rather than enum VdbField
 
-    Good chance to add VdbData types rather than using c-types
+    Use VdbData types rather than c-types
         add in NULL type
         add in float type
+        along with string, int and boolean types already implemented
 
-    https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
-        use data here in sample database
+    Use sample data to make sure SQL kinda works
+        https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
+            use data here in sample database
 
-        create table planets (name string, 
-                              mass float,
-                              diameter int, 
-                              density int, 
-                              gravity float, 
-                              escape_velocity float, 
-                              rotation_period float, 
-                              length_of_day float, 
-                              distance_from_sun float, 
-                              perihelion float, 
-                              orbital_period float, 
-                              orbital_velocity float, 
-                              orbital_inclination float, 
-                              orbital_eccentricity float, 
-                              obliquity_of_orbit float, 
-                              mean_temperature int, 
-                              surface_pressure float, 
-                              number_of_moons int, 
-                              ring_system bool, 
-                              global_magnetic_field bool);
+            create table planets (name string, 
+                                  mass float,
+                                  diameter int, 
+                                  density int, 
+                                  gravity float, 
+                                  escape_velocity float, 
+                                  rotation_period float, 
+                                  length_of_day float, 
+                                  distance_from_sun float, 
+                                  perihelion float, 
+                                  orbital_period float, 
+                                  orbital_velocity float, 
+                                  orbital_inclination float, 
+                                  orbital_eccentricity float, 
+                                  obliquity_of_orbit float, 
+                                  mean_temperature int, 
+                                  surface_pressure float, 
+                                  number_of_moons int, 
+                                  ring_system bool, 
+                                  global_magnetic_field bool); <----some of these will be NULL
 
-        write SQL script to make database solar_system
-        tables planets, moons, dwarf_planets
+            write SQL script to make database solar_system
+            tables planets, moons, dwarf_planets
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school

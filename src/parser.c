@@ -436,6 +436,10 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
 
 void vdbstmt_print(struct VdbStmt* stmt) {
     switch (stmt->type) {
+        case VDBST_CONNECT: {
+            printf("<connect>\n");
+            break;
+        }
         case VDBST_EXIT: {
             printf("<exit>\n");
             break;
@@ -446,6 +450,14 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         }
         case VDBST_CLOSE: {
             printf("<close database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+            break;
+        }
+        case VDBST_CREATE_DB: {
+            printf("<create database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+            break;
+        }
+        case VDBST_DROP_DB: {
+            printf("<drop database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_CREATE_TAB: {
@@ -460,6 +472,18 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         }
         case VDBST_DROP_TAB: {
             printf("<drop table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+            break;
+        }
+        case VDBST_SHOW_DBS: {
+            printf("<show database [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+            break;
+        }
+        case VDBST_SHOW_TABS: {
+            printf("<show table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
+            break;
+        }
+        case VDBST_DESCRIBE: {
+            printf("<describe table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             break;
         }
         case VDBST_INSERT: {

@@ -61,13 +61,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    print execution plan for these
-        VDBST_SHOW_DBS
-        VDBST_CREATE_DB
-        VDBST_SHOW_TABS
-        VDBST_DESCRIBE_TAB
-        VDBST_DROP_DB
-        VDBST_CONNECT
     execute
         VDBST_SHOW_DBS - need to create function for this
         VDBST_CREATE_DB - will need to split vdb_open into create/open versions
@@ -79,10 +72,40 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         VDBST_DELETE
         VDBSET_SELECT <-------will require a fair bit of work
 
+    Find planets/moons/solar system database to use as sample data
+
     Schema should use enum VdbTokenType for data types rather than enum VdbField
 
     Good chance to add VdbData types rather than using c-types
-        mainly this will allow NULL type
+        add in NULL type
+        add in float type
+
+    https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
+        use data here in sample database
+
+        create table planets (name string, 
+                              mass float,
+                              diameter int, 
+                              density int, 
+                              gravity float, 
+                              escape_velocity float, 
+                              rotation_period float, 
+                              length_of_day float, 
+                              distance_from_sun float, 
+                              perihelion float, 
+                              orbital_period float, 
+                              orbital_velocity float, 
+                              orbital_inclination float, 
+                              orbital_eccentricity float, 
+                              obliquity_of_orbit float, 
+                              mean_temperature int, 
+                              surface_pressure float, 
+                              number_of_moons int, 
+                              ring_system bool, 
+                              global_magnetic_field bool);
+
+        write SQL script to make database solar_system
+        tables planets, moons, dwarf_planets
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school

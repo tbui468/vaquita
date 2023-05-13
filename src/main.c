@@ -19,11 +19,31 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_SHOW_DBS: {
-                //TODO
+                int count;
+                char** dbs;
+                if (vdb_show_dbs(&dbs, &count) == VDBRC_SUCCESS) {
+                    for (int i = 0; i < count; i++) {
+                        printf("%s\n", dbs[i]);
+                        free(dbs[i]);
+                    }
+                    free(dbs);
+                } else {
+                    printf("execution error: cannot show databases\n");
+                }
                 break;
             }
             case VDBST_SHOW_TABS: {
-                //TODO
+                int count;
+                char** tabs;
+                if (vdb_show_tabs(*h, &tabs, &count) == VDBRC_SUCCESS) {
+                    for (int i = 0; i < count; i++) {
+                        printf("%s\n", tabs[i]);
+                        free(tabs[i]);
+                    }
+                    free(tabs);
+                } else {
+                    printf("execution error: cannot show tables\n");
+                }
                 break;
             }
             case VDBST_CREATE_DB: {

@@ -61,6 +61,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
+    vdb_show_dbs <-----------START HERE
+    vdb_show_tabs <------------THIS NEXT
+
     Finish TODOs inside of vdb_execute
         uncomment vdb_execute in cli loop and test
 

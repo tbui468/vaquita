@@ -20,6 +20,10 @@ struct Vdb {
 
 VDBHANDLE vdb_open_db(const char* name);
 enum VdbReturnCode vdb_create_db(const char* name);
+
+enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count);
+enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count);
+
 bool vdb_close(VDBHANDLE h);
 char* vdb_dbname(VDBHANDLE h);
 

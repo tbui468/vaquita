@@ -70,12 +70,52 @@ enum VdbReturnCode vdb_create_db(const char* name) {
     if (!(d = opendir(dirname))) {
         mkdir_w(dirname, 0777);
     } else {
+        closedir_w(d);
         return VDBRC_ERROR;
     } 
 
     return VDBRC_SUCCESS;
 }
 
+enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count) {
+    DIR* d;
+    if (!(d = opendir("./"))) {
+        return VDBRC_ERROR;
+    } 
+
+    int capacity = 8;
+    *count = 0;
+    *dbs = malloc_w(sizeof(char*) * capacity); 
+
+
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        int entry_len = strlen(ent->d_name);
+        const char* ext = ".vdb";
+        int ext_len = strlen(ext);
+
+        if (entry_len <= ext_len)
+            continue;
+
+        if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
+            continue;
+
+        if (*count + 1 > capacity) {
+            capacity *= 2;
+            *dbs = realloc_w(*dbs, sizeof(char*) * capacity);
+        }
+
+        (*dbs)[*count] = malloc_w(sizeof(char) * (entry_len - ext_len + 1));
+        memcpy((*dbs)[*count], ent->d_name, entry_len - ext_len);
+        (*dbs)[*count][entry_len - ext_len] = '\0';
+        (*count)++;
+    }
+}
+
+
+enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count) {
+    //TODO: should be able to simply get all trees (which should be stored in struct Vdb)
+}
 
 bool vdb_close(VDBHANDLE h) {
     struct Vdb* db = (struct Vdb*)h;

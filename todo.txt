@@ -61,8 +61,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    enum VdbReturnCode vdb_drop_db(const char* name) <-------START HERE
-
     case VDBST_DESCRIBE: {
         teachers:
             id: int

@@ -213,9 +213,35 @@ bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
 }
 
 enum VdbReturnCode vdb_drop_db(const char* name) {
-    //TODO:
-        //should be able to just remove directory and all files
-        //rmdir only works if directory is empty
+    char dirname[FILENAME_MAX];
+    dirname[0] = '\0';
+    strcat(dirname, name);
+    strcat(dirname, ".vdb");
+
+    DIR* d;
+    if (!(d = opendir(dirname))) {
+        return VDBRC_ERROR;
+    }
+
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        if (strncmp(ent->d_name, ".", 1) == 0 || strncmp(ent->d_name, "..", 2) == 0)
+            continue;
+
+        char path[FILENAME_MAX];
+        path[0] = '\0';
+        strcat(path, dirname);
+        strcat(path, "/");
+        strcat(path, ent->d_name);
+
+        remove_w(path);
+    }
+
+    closedir_w(d);
+
+    rmdir_w(dirname);
+
+    return VDBRC_SUCCESS;
 }
 
 enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {

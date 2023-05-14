@@ -129,6 +129,49 @@ enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count) {
     return VDBRC_SUCCESS;
 }
 
+/*
+struct VdbSchema {
+    enum VdbField* fields;
+    char** names;
+    uint32_t count;
+};*/
+
+enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** attributes, char*** types, int* count) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    *count = schema->count;
+    *attributes = malloc_w(sizeof(char*) * (*count));
+    *types = malloc_w(sizeof(char*) * (*count));
+
+    for (int i = 0; i < *count; i++) {
+        (*attributes)[i] = strdup_w(schema->names[i]);
+        switch (schema->fields[i]) {
+            case VDBF_INT:
+                (*types)[i] = malloc_w(sizeof(char) * 4);
+                memcpy((*types)[i], "int", 3);
+                (*types)[i][3] = '\0';
+                break;
+            case VDBF_STR:
+                (*types)[i] = malloc_w(sizeof(char) * 7);
+                memcpy((*types)[i], "string", 6);
+                (*types)[i][6] = '\0';
+                break;
+            case VDBF_BOOL:
+                (*types)[i] = malloc_w(sizeof(char) * 5);
+                memcpy((*types)[i], "bool", 4);
+                (*types)[i][4] = '\0';
+                break;
+        }
+    }
+
+    vdb_schema_free(schema);
+
+    return VDBRC_SUCCESS;
+}
+
 bool vdb_close(VDBHANDLE h) {
     struct Vdb* db = (struct Vdb*)h;
     vdb_treelist_free(db->trees);

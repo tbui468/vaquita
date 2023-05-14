@@ -26,6 +26,8 @@ enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count);
 bool vdb_close(VDBHANDLE h);
 char* vdb_dbname(VDBHANDLE h);
 
+enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** attributes, char*** types, int* count);
+
 enum VdbReturnCode vdb_drop_db(const char* name);
 
 struct VdbSchema* vdb_alloc_schema(int count, ...);

@@ -61,18 +61,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    case VDBST_DESCRIBE: {
-        teachers:
-            id: int
-            age: int
-            name: string
-        break;
-    }
 
-    case VDBST_INSERT: {
-        //TODO
-        break;
-    }
+    case VDBST_INSERT: <-----------START HERE
+
     case VDBST_UPDATE: {
         //TODO
         break;

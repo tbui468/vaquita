@@ -128,7 +128,26 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_DESCRIBE: {
-                //TODO
+                int count;
+                char** attributes;
+                char** types;
+                int len = stmt->target.len;
+                char table_name[len + 1];
+                memcpy(table_name, stmt->target.lexeme, len);
+                table_name[len] = '\0';
+                if (vdb_describe_table(*h, table_name, &attributes, &types, &count) == VDBRC_SUCCESS) {
+                    printf("%s:\n", table_name);
+                    for (int i = 0; i < count; i++) {
+                        printf("\t%s: %s\n", attributes[i], types[i]);
+                        free(attributes[i]);
+                        free(types[i]);
+                    }
+
+                    free(attributes);
+                    free(types);
+                } else {
+                    printf("failed to describe table %s\n", table_name);
+                }
                 break;
             }
             case VDBST_INSERT: {

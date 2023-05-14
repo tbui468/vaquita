@@ -212,7 +212,13 @@ bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema) {
     return true;
 }
 
-bool vdb_drop_table(VDBHANDLE h, const char* name) {
+enum VdbReturnCode vdb_drop_db(const char* name) {
+    //TODO:
+        //should be able to just remove directory and all files
+        //rmdir only works if directory is empty
+}
+
+enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_remove_tree(db->trees, name);
 
@@ -220,7 +226,7 @@ bool vdb_drop_table(VDBHANDLE h, const char* name) {
         char path[FILENAME_MAX];
         path[0] = '\0';
         strcat(path, db->name);
-        strcat(path, "/");
+        strcat(path, ".vdb/");
         strcat(path, tree->name);
         strcat(path, ".vtb");
 
@@ -230,10 +236,10 @@ bool vdb_drop_table(VDBHANDLE h, const char* name) {
 
         remove_w(path);
 
-        return true;
+        return VDBRC_SUCCESS;
     }
 
-    return false;
+    return VDBRC_ERROR;
 }
 
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {

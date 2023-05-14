@@ -16,14 +16,16 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
         switch (stmt->type) {
             case VDBST_CONNECT: {
                 //TODO
+                //should return a connection handle
                 break;
             }
             case VDBST_SHOW_DBS: {
                 int count;
                 char** dbs;
                 if (vdb_show_dbs(&dbs, &count) == VDBRC_SUCCESS) {
+                    printf("databases:\n");
                     for (int i = 0; i < count; i++) {
-                        printf("%s\n", dbs[i]);
+                        printf("\t%s\n", dbs[i]);
                         free(dbs[i]);
                     }
                     free(dbs);
@@ -36,8 +38,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 int count;
                 char** tabs;
                 if (vdb_show_tabs(*h, &tabs, &count) == VDBRC_SUCCESS) {
+                    printf("tables:\n");
                     for (int i = 0; i < count; i++) {
-                        printf("%s\n", tabs[i]);
+                        printf("\t%s\n", tabs[i]);
                         free(tabs[i]);
                     }
                     free(tabs);
@@ -67,20 +70,36 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 memcpy(table_name, stmt->target.lexeme, len);
                 table_name[len] = '\0';
                 if (vdb_create_table(*h, table_name, schema)) {
-                    printf("Created table %s\n", table_name);
+                    printf("created table %s\n", table_name);
                 } else {
-                    printf("Failed to create table %s\n", table_name);
+                    printf("failed to create table %s\n", table_name);
                 }
 
                 vdb_free_schema(schema);
                 break;
             }
             case VDBST_DROP_DB: {
-                //TODO
+                int len = stmt->target.len;
+                char db_name[len + 1];
+                memcpy(db_name, stmt->target.lexeme, len);
+                db_name[len] = '\0';
+                if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
+                    printf("dropped database %s\n", db_name);
+                } else {
+                    printf("failed to drop database %s\n", db_name);
+                }
                 break;
             }
             case VDBST_DROP_TAB: {
-                //TODO
+                int len = stmt->target.len;
+                char table_name[len + 1];
+                memcpy(table_name, stmt->target.lexeme, len);
+                table_name[len] = '\0';
+                if (vdb_drop_table(*h, table_name) == VDBRC_SUCCESS) {
+                    printf("dropped table %s\n", table_name);
+                } else {
+                    printf("failed to drop table %s\n", table_name);
+                }
                 break;
             }
             case VDBST_OPEN: {

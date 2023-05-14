@@ -179,6 +179,13 @@ int remove_w(const char* pathname) {
     return res;
 }
 
+int rmdir_w(const char* pathname) {
+    int res;
+    if ((res = rmdir(pathname)) == -1)
+        err_quit("rmdir failed");
+    return res;
+}
+
 int mkdir_w(const char* pathname, int mode) {
     int res;
     if ((res = mkdir(pathname, mode)) == -1)

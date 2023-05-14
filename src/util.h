@@ -34,6 +34,7 @@ void* calloc_w(size_t count, size_t size);
 void* malloc_w(size_t size);
 void* realloc_w(void* ptr, size_t size);
 int remove_w(const char* pathname);
+int rmdir_w(const char* pathname);
 int mkdir_w(const char* pathname, int mode);
 DIR* opendir_w(const char* name);
 int closedir_w(DIR* d);

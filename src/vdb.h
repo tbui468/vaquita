@@ -23,15 +23,16 @@ enum VdbReturnCode vdb_create_db(const char* name);
 
 enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count);
 enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count);
-
 bool vdb_close(VDBHANDLE h);
 char* vdb_dbname(VDBHANDLE h);
+
+enum VdbReturnCode vdb_drop_db(const char* name);
 
 struct VdbSchema* vdb_alloc_schema(int count, ...);
 void vdb_free_schema(struct VdbSchema* schema);
 
 bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema);
-bool vdb_drop_table(VDBHANDLE h, const char* name);
+enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name);
 
 void vdb_insert_record(VDBHANDLE h, const char* name, ...);
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key);

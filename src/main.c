@@ -151,7 +151,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_INSERT: {
-                //TODO
+                int len = stmt->target.len;
+                char table_name[len + 1];
+                memcpy(table_name, stmt->target.lexeme, len);
+                table_name[len] = '\0';
+
+                vdb_insert_record(*h, table_name, "Mars");
+
                 break;
             }
             case VDBST_UPDATE: {
@@ -163,11 +169,24 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_SELECT: {
-                //TODO
+                int len = stmt->target.len;
+                char table_name[len + 1];
+                memcpy(table_name, stmt->target.lexeme, len);
+                table_name[len] = '\0';
+                struct VdbRecord* r = vdb_fetch_record(*h, table_name, 1);
+                if (r) {
+                    printf("key %d: %.*s\n", r->key, r->data[0].as.Str->len, r->data[0].as.Str->start);
+                    vdb_record_free(r);
+                }
                 break;
             }
             case VDBST_EXIT: {
-                return true;
+                if (*h) {
+                    printf("close database %s before exiting\n", vdb_dbname(*h));
+                    return false;
+                } else {
+                    return true;
+                }
             }
             default:
                 break;
@@ -182,13 +201,11 @@ void run_cli() {
     size_t len = 0;
     ssize_t nread;
     VDBHANDLE h = NULL;
-    char* db_name = NULL;
 
     while (true) {
         printf("vdb");
         if (h) {
-            db_name = vdb_dbname(h);
-            printf(":%s", db_name);
+            printf(":%s", vdb_dbname(h));
         }
         printf(" > ");
         nread = getline(&line, &len, stdin);

@@ -188,14 +188,14 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_TABLE;
     } else if (strncmp(t->lexeme, "string", 6) == 0) {
         t->type = VDBT_TYPE_STR;
+    } else if (strncmp(t->lexeme, "into", 4) == 0) {
+        t->type = VDBT_INTO;
     } else if (strncmp(t->lexeme, "int", 3) == 0) {
         t->type = VDBT_TYPE_INT;
     } else if (strncmp(t->lexeme, "bool", 4) == 0) {
         t->type = VDBT_TYPE_BOOL;
     } else if (strncmp(t->lexeme, "insert", 6) == 0) {
         t->type = VDBT_INSERT;
-    } else if (strncmp(t->lexeme, "into", 4) == 0) {
-        t->type = VDBT_INTO;
     } else if (strncmp(t->lexeme, "values", 6) == 0) {
         t->type = VDBT_VALUES;
     } else if (strncmp(t->lexeme, "true", 4) == 0) {

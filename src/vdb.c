@@ -324,7 +324,6 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     vdb_schema_free(schema);
 
     va_end(args);
-
     vdb_tree_insert_record(tree, rec);
     vdb_record_free(rec);
 }

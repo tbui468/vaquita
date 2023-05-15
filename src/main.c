@@ -8,6 +8,13 @@
 #include "lexer.h"
 #include "parser.h"
 
+char* to_string(struct VdbToken t) {
+    static char s[FILENAME_MAX];
+    memcpy(s, t.lexeme, t.len);
+    s[t.len] = '\0';
+    return s;
+}
+
 //TODO: need an generator that converst the stmtlist to bytecode
 //Should go in vm.c
 bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
@@ -50,10 +57,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_CREATE_DB: {
-                int len = stmt->target.len;
-                char db_name[len + 1];
-                memcpy(db_name, stmt->target.lexeme, len);
-                db_name[len] = '\0';
+                char* db_name = to_string(stmt->target);
                 if (vdb_create_db(db_name) == VDBRC_SUCCESS) {
                     printf("created database %s\n", db_name);
                 } else {
@@ -65,10 +69,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 int count = stmt->as.create.attributes->count;
                 struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types);
 
-                int len = stmt->target.len;
-                char table_name[len + 1];
-                memcpy(table_name, stmt->target.lexeme, len);
-                table_name[len] = '\0';
+                char* table_name = to_string(stmt->target);
                 if (vdb_create_table(*h, table_name, schema)) {
                     printf("created table %s\n", table_name);
                 } else {
@@ -79,10 +80,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_DROP_DB: {
-                int len = stmt->target.len;
-                char db_name[len + 1];
-                memcpy(db_name, stmt->target.lexeme, len);
-                db_name[len] = '\0';
+                char* db_name = to_string(stmt->target);
                 if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
                     printf("dropped database %s\n", db_name);
                 } else {
@@ -91,10 +89,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_DROP_TAB: {
-                int len = stmt->target.len;
-                char table_name[len + 1];
-                memcpy(table_name, stmt->target.lexeme, len);
-                table_name[len] = '\0';
+                char* table_name = to_string(stmt->target);
                 if (vdb_drop_table(*h, table_name) == VDBRC_SUCCESS) {
                     printf("dropped table %s\n", table_name);
                 } else {
@@ -103,10 +98,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_OPEN: {
-                int len = stmt->target.len;
-                char db_name[len + 1];
-                memcpy(db_name, stmt->target.lexeme, len);
-                db_name[len] = '\0';
+                char* db_name = to_string(stmt->target);
                 if ((*h = vdb_open_db(db_name))) {
                     printf("opened database %s\n", db_name);
                 } else {
@@ -115,10 +107,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_CLOSE: {
-                int len = stmt->target.len;
-                char db_name[len + 1];
-                memcpy(db_name, stmt->target.lexeme, len);
-                db_name[len] = '\0';
+                char* db_name = to_string(stmt->target);
                 if (vdb_close(*h)) {
                     printf("closed database %s\n", db_name);
                     *h = NULL;
@@ -131,10 +120,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 int count;
                 char** attributes;
                 char** types;
-                int len = stmt->target.len;
-                char table_name[len + 1];
-                memcpy(table_name, stmt->target.lexeme, len);
-                table_name[len] = '\0';
+                char* table_name = to_string(stmt->target);
                 if (vdb_describe_table(*h, table_name, &attributes, &types, &count) == VDBRC_SUCCESS) {
                     printf("%s:\n", table_name);
                     for (int i = 0; i < count; i++) {
@@ -151,11 +137,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_INSERT: {
-                int len = stmt->target.len;
-                char table_name[len + 1];
-                memcpy(table_name, stmt->target.lexeme, len);
-                table_name[len] = '\0';
-
+                char* table_name = to_string(stmt->target);
                 vdb_insert_record(*h, table_name, "Mars");
                 printf("inserted 1 record(s) into %s\n", table_name);
 
@@ -170,10 +152,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_SELECT: {
-                int len = stmt->target.len;
-                char table_name[len + 1];
-                memcpy(table_name, stmt->target.lexeme, len);
-                table_name[len] = '\0';
+                char* table_name = to_string(stmt->target);
                 struct VdbRecord* r = vdb_fetch_record(*h, table_name, 1);
                 if (r) {
                     printf("key %d: %.*s\n", r->key, r->data[0].as.Str->len, r->data[0].as.Str->start);

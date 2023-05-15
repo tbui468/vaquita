@@ -63,7 +63,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 *******************************TODO**************************************************
     replace VdbField with VdbTokenType
         definitely shou
-    make VDBT_TYPE_NULL token type
     run full test (use code main, just comment out cli_fun for now)
 
     Making program take in a script will make testing faster (rather than manually entering SQL each time)

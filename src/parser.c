@@ -310,6 +310,19 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             }
             break;
         }
+        case VDBT_IF: {
+            vdbparser_consume_token(parser, VDBT_EXISTS);
+            vdbparser_consume_token(parser, VDBT_DROP);
+            if (vdbparser_peek_token(parser).type == VDBT_DATABASE) {
+                stmt->type = VDBST_IF_EXISTS_DROP_DB;
+                vdbparser_consume_token(parser, VDBT_DATABASE);
+            } else {
+                stmt->type = VDBST_IF_EXISTS_DROP_TAB;
+                vdbparser_consume_token(parser, VDBT_TABLE);
+            }
+            stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+            break;
+        }
         case VDBT_DROP: {
             if (vdbparser_peek_token(parser).type == VDBT_DATABASE) {
                 stmt->type = VDBST_DROP_DB;

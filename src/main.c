@@ -79,6 +79,54 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 vdb_free_schema(schema);
                 break;
             }
+            case VDBST_IF_EXISTS_DROP_DB: {
+                int count;
+                char** dbs;
+                bool found = false;
+                char* db_name = to_string(stmt->target);
+                if (vdb_show_dbs(&dbs, &count) == VDBRC_SUCCESS) {
+                    for (int i = 0; i < count; i++) {
+                        if (strncmp(dbs[i], db_name, strlen(db_name)) == 0) {
+                            found = true;
+                        }
+                        free(dbs[i]);
+                    }
+                    free(dbs);
+
+                    if (found) {
+                        if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
+                            printf("dropped database %s\n", db_name);
+                        } else {
+                            printf("failed to drop database %s\n", db_name);
+                        }
+                    }
+                }
+                break;
+            }
+            case VDBST_IF_EXISTS_DROP_TAB: {
+                int count;
+                char** tabs;
+                bool found = false;
+                char* tab_name = to_string(stmt->target);
+                if (vdb_show_tabs(*h, &tabs, &count) == VDBRC_SUCCESS) {
+                    for (int i = 0; i < count; i++) {
+                        if (strncmp(tabs[i], tab_name, strlen(tab_name)) == 0) {
+                            found = true;
+                        }
+                        free(tabs[i]);
+                    }
+                    free(tabs);
+
+                    if (found) {
+                        if (vdb_drop_table(*h, tab_name) == VDBRC_SUCCESS) {
+                            printf("dropped table %s\n", tab_name);
+                        } else {
+                            printf("failed to drop table %s\n", tab_name);
+                        }
+                    }
+                }
+                break;
+            }
             case VDBST_DROP_DB: {
                 char* db_name = to_string(stmt->target);
                 if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {

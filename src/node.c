@@ -165,6 +165,9 @@ struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSche
                 rec->data[i].as.Bool = *((bool*)(buf + data_off));
                 data_off += sizeof(bool);
                 break;
+            default:
+                assert(false && "invalid data type");
+                break;
         }
     }
 

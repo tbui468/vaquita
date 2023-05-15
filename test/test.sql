@@ -1,3 +1,4 @@
+if exists drop database sol;
 create database sol;
 open sol;
 create table planets (name string);

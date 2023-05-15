@@ -59,39 +59,18 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    Have scripts drop database to reset state each time tests run:
-        make VDBT_IF token type
-        make VDBT_EXISTS token type
+    Add more types:
+        VDBT_TYPE_NULL
+        VDBT_TYPE_FLOAT
+        VDBT_TYPE_BLOB (varlen)
 
-        parse:
-            struct {
-                struct VdbStmt action; //eg, drop table, drop database
-            } ifexists;
-
-    case VDBST_INSERT: <-----------START HERE
-        need to fill non specified fields with 'null', and also rearrange attributes/values to fit schema
-        but this requires rewriting code to use struct VdbValue
-
-        Need an algorithm to rearrange attributes to fit schema attributes (naive, but fine for now)
-            iterate through schema fields:
-                check if any attribute name matches
-                    if so, put corresponding value there
-                    if not, put in null
-
-        How about this: just have ALL insert statements insert the same thing (name string)
-            get VdbValue working
-            then return to the problem of getting VDBST_INSERT working correctly
-            to test, just have SELECT get first record and print that out for now
-
-            insert into [table] (name) values ("Mars");
-                1 record(s) inserted into planets
-            select * from [table];
-                id: 1, name: Mars
-
-        Really, it's just the schema that needs to change!!!
-            make VDBT_NULL
-            integrate that into schema system
-            replace VdbField with VdbToken so that we can just pass tokens 
+    case VDBST_INSERT:
+        vdb_insert_record(h, struct VdbTokenList* attributes, struct VdbTokenList* values) {
+            get schema
+            for each record:
+                allocate_record
+                insert record
+        }
         
 
     case VDBST_UPDATE: {

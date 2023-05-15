@@ -7,14 +7,8 @@
 
 #include "token.h"
 
-enum VdbField {
-    VDBF_INT,
-    VDBF_STR,
-    VDBF_BOOL
-};
-
 struct VdbSchema {
-    enum VdbField* fields;
+    enum VdbTokenType* types;
     char** names;
     uint32_t count;
 };
@@ -25,7 +19,7 @@ struct VdbString {
 };
 
 struct VdbDatum {
-    enum VdbField type;
+    enum VdbTokenType type;
     union {
         uint64_t Int;
         struct VdbString* Str;

@@ -11,6 +11,9 @@
         eviction policy for pager - integration of neural networks
         into legacy code
 
+    check out nandgame for website on how to create processor from scratch
+        then try to do it using verilog
+
     Use Yahoo or some other database standard metric to focus on core features
 
     cstack.github.io for short guide to basics of SQL implementation (not complete)
@@ -18,12 +21,7 @@
     Read Edward Sciore's book on implementing a relational database
         Chapter 4: Memory Management (PDF 92)
 
-    Use SDL and Vulkan to visualize SQL + b-tree (2d first, and then 3d)
-        visualize how b-tree grows and nodes split as new entries are added
-        visualize how tree is traversed as data is queried
-        use ipc (?) to have two programs talk to each other:
-            use vdb REPL to modify database
-            run visualization program to read vdb data to visualize it
+    Use SDL and Vulkan to visualize stars/planets/moons in galaxy
 
     sqlite documentation has great explanation of how bytecode works
 
@@ -61,10 +59,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    replace VdbField with VdbTokenType
-        definitely shou
-    run full test (use code main, just comment out cli_fun for now)
-
     Making program take in a script will make testing faster (rather than manually entering SQL each time)
         make VDBT_IF token type
         make VDBT_EXISTS token type

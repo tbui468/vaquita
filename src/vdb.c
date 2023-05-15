@@ -148,18 +148,18 @@ enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** att
 
     for (int i = 0; i < *count; i++) {
         (*attributes)[i] = strdup_w(schema->names[i]);
-        switch (schema->fields[i]) {
-            case VDBF_INT:
+        switch (schema->types[i]) {
+            case VDBT_TYPE_INT:
                 (*types)[i] = malloc_w(sizeof(char) * 4);
                 memcpy((*types)[i], "int", 3);
                 (*types)[i][3] = '\0';
                 break;
-            case VDBF_STR:
+            case VDBT_TYPE_STR:
                 (*types)[i] = malloc_w(sizeof(char) * 7);
                 memcpy((*types)[i], "string", 6);
                 (*types)[i][6] = '\0';
                 break;
-            case VDBF_BOOL:
+            case VDBT_TYPE_BOOL:
                 (*types)[i] = malloc_w(sizeof(char) * 5);
                 memcpy((*types)[i], "bool", 4);
                 (*types)[i][4] = '\0';

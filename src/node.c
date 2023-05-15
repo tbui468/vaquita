@@ -148,20 +148,20 @@ struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSche
     rec->data = malloc_w(sizeof(struct VdbDatum) * rec->count);
 
     for (uint32_t i = 0; i < schema->count; i++) {
-        enum VdbField f = schema->fields[i];
-        rec->data[i].type = f;
-        switch (f) {
-            case VDBF_INT:
+        enum VdbTokenType type = schema->types[i];
+        rec->data[i].type = type;
+        switch (type) {
+            case VDBT_TYPE_INT:
                 rec->data[i].as.Int = *((uint64_t*)(buf + data_off));
                 data_off += sizeof(uint64_t);
                 break;
-            case VDBF_STR:
+            case VDBT_TYPE_STR:
                 rec->data[i].block_idx = *((uint32_t*)(buf + data_off));
                 data_off += sizeof(uint32_t);
                 rec->data[i].idxcell_idx = *((uint32_t*)(buf + data_off));
                 data_off += sizeof(uint32_t);
                 break;
-            case VDBF_BOOL:
+            case VDBT_TYPE_BOOL:
                 rec->data[i].as.Bool = *((bool*)(buf + data_off));
                 data_off += sizeof(bool);
                 break;
@@ -176,7 +176,7 @@ struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t idx) {
     
 
     struct VdbDatum d;
-    d.type = VDBF_STR;
+    d.type = VDBT_TYPE_STR;
     d.block_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 0));
     d.idxcell_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 1));
 
@@ -273,7 +273,7 @@ struct VdbDatum vdbdata_read_datum(uint8_t* buf, uint32_t idxcell_idx) {
 
     struct VdbDatum d;
 
-    d.type = VDBF_STR;
+    d.type = VDBT_TYPE_STR;
     d.as.Str = malloc_w(sizeof(struct VdbString));
     d.block_idx = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0));
     d.idxcell_idx = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 1));

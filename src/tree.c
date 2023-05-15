@@ -284,7 +284,7 @@ static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, s
     uint32_t data_block_idx = vdbtree_leaf_read_data_block(tree, idx);
 
     for (uint32_t i = 0; i < rec->count; i++) {
-        if (rec->data[i].type != VDBF_STR)
+        if (rec->data[i].type != VDBT_TYPE_STR)
             continue;
 
         //must have enough free space to fit idxcell and at least 1 character
@@ -366,7 +366,7 @@ static struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t
 
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
-        if (d->type != VDBF_STR)
+        if (d->type != VDBT_TYPE_STR)
             continue;
 
         uint32_t block_idx = d->block_idx;
@@ -594,7 +594,7 @@ struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key) {
 void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum d = rec->data[i]; 
-        if (d.type != VDBF_STR)
+        if (d.type != VDBT_TYPE_STR)
             continue;
        
         uint32_t block_idx = d.block_idx;

@@ -7,11 +7,11 @@
 struct VdbSchema* vdb_schema_alloc(int count, va_list args) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     schema->count = count;
-    schema->fields = malloc_w(sizeof(enum VdbField) * count);
+    schema->types = malloc_w(sizeof(enum VdbTokenType) * count);
     schema->names = malloc_w(sizeof(char*) * count);
 
     for (int i = 0; i < count; i++) {
-        schema->fields[i] = va_arg(args, int);
+        schema->types[i] = va_arg(args, int);
         schema->names[i] = strdup_w(va_arg(args, const char*));
     }
 
@@ -21,25 +21,11 @@ struct VdbSchema* vdb_schema_alloc(int count, va_list args) {
 struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     schema->count = count;
-    schema->fields = malloc_w(sizeof(enum VdbField) * count);
+    schema->types = malloc_w(sizeof(enum VdbTokenType) * count);
     schema->names = malloc_w(sizeof(char*) * count);
 
     for (int i = 0; i < count; i++) {
-        //TODO: schema should use enum VdbTokenTypes directly instead of converting
-        switch (types->tokens[i].type) {
-            case VDBT_TYPE_STR:
-                schema->fields[i] = VDBF_STR;
-                break;
-            case VDBT_TYPE_INT:
-                schema->fields[i] = VDBF_INT;
-                break;
-            case VDBT_TYPE_BOOL:
-                schema->fields[i] = VDBF_BOOL;
-                break;
-            default:
-                break;
-        }
-
+        schema->types[i] = types->tokens[i].type;
         int len = attributes->tokens[i].len;
         schema->names[i] = malloc_w(len + 1);
         memcpy(schema->names[i], attributes->tokens[i].lexeme, len);
@@ -54,17 +40,17 @@ void vdb_schema_free(struct VdbSchema* schema) {
         free(schema->names[i]);
     }
     free(schema->names);
-    free(schema->fields);
+    free(schema->types);
     free(schema);
 }
 
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {
     struct VdbSchema* s = malloc_w(sizeof(struct VdbSchema));
     s->count = schema->count;
-    s->fields = malloc_w(sizeof(enum VdbField) * s->count);
+    s->types = malloc_w(sizeof(enum VdbTokenType) * s->count);
     s->names = malloc_w(sizeof(char*) * s->count);
 
-    memcpy(s->fields, schema->fields, sizeof(enum VdbField) * s->count);
+    memcpy(s->types, schema->types, sizeof(enum VdbTokenType) * s->count);
 
     for (uint32_t i = 0; i < s->count; i++) {
         s->names[i] = strdup_w(schema->names[i]);
@@ -76,7 +62,7 @@ struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {
 void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off) {
     write_u32(buf, schema->count, off);
     for (uint32_t i = 0; i < schema->count; i++) {
-        enum VdbField f = schema->fields[i];
+        enum VdbTokenType f = schema->types[i];
         write_u32(buf, f, off);
         uint32_t len = strlen(schema->names[i]);
         write_u32(buf, len, off);
@@ -88,12 +74,12 @@ void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off) {
 struct VdbSchema* vdb_schema_deserialize(uint8_t* buf, int* off) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     read_u32(&schema->count, buf, off);
-    schema->fields = malloc_w(sizeof(enum VdbField) * schema->count);
+    schema->types = malloc_w(sizeof(enum VdbTokenType) * schema->count);
     schema->names = malloc_w(sizeof(char*) * schema->count);
     for (uint32_t i = 0; i < schema->count; i++) {
         uint32_t type;
         read_u32(&type, buf, off);
-        schema->fields[i] = type;
+        schema->types[i] = type;
         uint32_t len;
         read_u32(&len, buf, off);
         schema->names[i] = malloc_w(sizeof(char) * len + 1);

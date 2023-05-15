@@ -157,6 +157,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 table_name[len] = '\0';
 
                 vdb_insert_record(*h, table_name, "Mars");
+                printf("inserted 1 record(s) into %s\n", table_name);
 
                 break;
             }

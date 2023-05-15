@@ -10,6 +10,7 @@ set(Sources
     lexer.c
     parser.c
     error.c
+    token.c
     )
 
 set(Headers
@@ -23,6 +24,7 @@ set(Headers
     lexer.h
     parser.h
     error.h
+    token.h
     )
 
 add_executable(

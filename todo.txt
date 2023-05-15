@@ -61,17 +61,19 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    insert does not update database until database is closed - clear this is a major bug
-        insert should NOT require closing of database/exit for it to update
-        are inserts not flushing until database is closed?
-
-        This does not initialize file:
-            create table planets (name string);
-            exit;
+    replace VdbField with VdbTokenType
+        definitely shou
+    make VDBT_TYPE_NULL token type
+    run full test (use code main, just comment out cli_fun for now)
 
     Making program take in a script will make testing faster (rather than manually entering SQL each time)
-        will need to reset databases:
-            if exists drop database solar_system;
+        make VDBT_IF token type
+        make VDBT_EXISTS token type
+
+        parse:
+            struct {
+                struct VdbStmt action; //eg, drop table, drop database
+            } ifexists;
 
     case VDBST_INSERT: <-----------START HERE
         need to fill non specified fields with 'null', and also rearrange attributes/values to fit schema

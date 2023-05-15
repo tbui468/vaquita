@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 
-#include "lexer.h"
+#include "token.h"
 
 enum VdbField {
     VDBF_INT,

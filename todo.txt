@@ -59,7 +59,7 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    Making program take in a script will make testing faster (rather than manually entering SQL each time)
+    Have scripts drop database to reset state each time tests run:
         make VDBT_IF token type
         make VDBT_EXISTS token type
 

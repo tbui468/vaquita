@@ -236,11 +236,66 @@ void run_cli() {
     free(line);
 }
 
-int main(int argc, char** argv) {
-    argc = argc;
-    argv = argv; //TODO: should be the port value dbms allows connections on
+void run_script(const char* path) {
+    FILE* f = fopen_w(path, "r");
+    char* line = NULL;
+    size_t len = 0;
+    ssize_t nread;
+    VDBHANDLE h = NULL;
 
-    run_cli();
+    while ((nread = getline(&line, &len, f)) > 0) {
+        line[strlen(line) - 1] = '\0';
+
+        struct VdbTokenList* tokens;
+        struct VdbErrorList* lex_errors;
+
+        if (vdblexer_lex(line, &tokens, &lex_errors) == VDBRC_ERROR) {
+            for (int i = 0; i < 1; i++) {
+                struct VdbError e = lex_errors->errors[i];
+                printf("error [%d]: %s\n", e.line, e.msg);
+            }
+            vdbtokenlist_free(tokens);
+            vdberrorlist_free(lex_errors);
+            continue;
+        }
+
+        struct VdbStmtList* stmts;
+        struct VdbErrorList* parse_errors;
+
+        if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
+            for (int i = 0; i < 1; i++) {
+                struct VdbError e = parse_errors->errors[i];
+                printf("error [%d]: %s\n", e.line, e.msg);
+            }
+            vdbtokenlist_free(tokens);
+            vdberrorlist_free(lex_errors);
+            vdbstmtlist_free(stmts);
+            vdberrorlist_free(parse_errors);
+            continue;
+        }
+
+        bool end = vdb_execute(stmts, &h);
+
+        vdbtokenlist_free(tokens);
+        vdberrorlist_free(lex_errors);
+        vdbstmtlist_free(stmts);
+        vdberrorlist_free(parse_errors);
+
+        if (end) {
+            break;
+        }
+    }
+
+    free(line);
+    fclose_w(f);
+}
+
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        run_script(argv[1]);
+    } else {
+        run_cli();
+    }
 
     /*
     VDBHANDLE h;

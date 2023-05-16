@@ -313,6 +313,21 @@ enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
     return VDBRC_ERROR;
 }
 
+enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbTokenList* values) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree); printf("read schema\n");
+    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
+    struct VdbRecord* rec = vdbrecord_alloc(key, schema, attrs, values);printf("alloced record\n");
+    vdb_schema_free(schema);
+
+    vdb_tree_insert_record(tree, rec); printf("inserted record\n");
+    vdb_record_free(rec);
+
+    return VDBRC_SUCCESS;
+}
+
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);

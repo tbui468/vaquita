@@ -350,7 +350,7 @@ int main(int argc, char** argv) {
     vdb_create_db("andromeda");
     h = vdb_open_db("andromeda");
 
-    struct VdbSchema* schema = vdb_alloc_schema(3, VDBT_TYPE_INT, "age", VDBT_TYPE_STR, "name", VDBT_TYPE_BOOL, "graduated");
+    struct VdbSchema* schema = vdb_alloc_schema(3, VDBT_TYPE_INT, "age", VDBT_TYPE_STR, "name", VDBT_TYPE_BOOL, "grad");
 
     vdb_create_table(h, "planets", schema);
 
@@ -361,16 +361,42 @@ int main(int argc, char** argv) {
     word[99] = '\0';
 
     printf("table created\n");
-    
+
+/*    
     const char* words[] = {word, "dogs", "turtles"};
     for (int i = 1; i <= 200; i++) {
         vdb_insert_record(h, "planets", i * 2, words[i % 3], i % 2 == 0);
     }
+*/
+    struct VdbTokenList* attrs = vdbtokenlist_init();
+    struct VdbToken age_attr = {VDBT_IDENTIFIER, "age", 3};
+    struct VdbToken name_attr = {VDBT_IDENTIFIER, "name", 4};
+    struct VdbToken grad_attr = {VDBT_IDENTIFIER, "grad", 4};
+    vdbtokenlist_append_token(attrs, name_attr);
+    vdbtokenlist_append_token(attrs, grad_attr);
+    vdbtokenlist_append_token(attrs, age_attr);
+    struct VdbTokenList* values = vdbtokenlist_init();
+    struct VdbToken age_value = {VDBT_INT, "9", 1};
+    struct VdbToken name_value = {VDBT_STR, "Neptune", 7};
+    struct VdbToken grad_value = {VDBT_TRUE, "true", 4};
+    vdbtokenlist_append_token(values, name_value);
+    vdbtokenlist_append_token(values, grad_value);
+    vdbtokenlist_append_token(values, age_value);
+    vdb_insert_new(h, "planets", attrs, values);
+
+    struct VdbTokenList* values2 = vdbtokenlist_init();
+    struct VdbToken age_value2 = {VDBT_INT, "88", 2};
+    struct VdbToken name_value2 = {VDBT_STR, "Mars", 4};
+    struct VdbToken grad_value2 = {VDBT_TRUE, "false", 5};
+    vdbtokenlist_append_token(values2, name_value2);
+    vdbtokenlist_append_token(values2, grad_value2);
+    vdbtokenlist_append_token(values2, age_value2);
+    vdb_insert_new(h, "planets", attrs, values2);
 
     //vdb_debug_print_tree(h, "planets");
-    vdb_delete_record(h, "planets", 1);
+    //vdb_delete_record(h, "planets", 1);
     //vdb_update_record(h, "planets", 99, 99, "cats", false);
-    vdb_delete_record(h, "planets", 200);
+    //vdb_delete_record(h, "planets", 200);
     printf("records inserted\n");
 
     int keys[] = {0, 1, 2, 99, 198, 199, 200, 201};
@@ -378,7 +404,11 @@ int main(int argc, char** argv) {
     for (int i = 0; i < 8; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "planets", keys[i]);
         if (r) {
-            printf("key %d: %ld, %.*s, %d\n", r->key, r->data[0].as.Int, r->data[1].as.Str->len, r->data[1].as.Str->start, r->data[2].as.Bool);
+            printf("key %d: ", r->key);
+            if (!r->data[0].is_null) printf("%ld, ", r->data[0].as.Int); else printf("null, ");
+            if (!r->data[1].is_null)printf("%.*s, ", r->data[1].as.Str->len, r->data[1].as.Str->start); else printf("null, ");
+            if (!r->data[2].is_null)printf("%d", r->data[2].as.Bool); else printf("null");
+            printf("\n");
             vdb_record_free(r);
         } else {
             printf("not found!\n");

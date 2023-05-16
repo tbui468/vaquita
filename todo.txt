@@ -60,12 +60,7 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
 *******************************TODO**************************************************
     case VDBST_INSERT:
-        vdb_insert_record(h, struct VdbTokenList* attributes, struct VdbTokenList* values) {
-            get schema
-            for each record:
-                allocate_record
-                insert record
-        }
+        integrate new record allocation and insert functions into vdb_execute for insertion
         
     case VDBST_SELECT: {
         //TODO

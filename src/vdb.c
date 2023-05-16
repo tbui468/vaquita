@@ -164,6 +164,8 @@ enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** att
                 memcpy((*types)[i], "bool", 4);
                 (*types)[i][4] = '\0';
                 break;
+            default:
+                break;
         }
     }
 
@@ -324,6 +326,7 @@ void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     vdb_schema_free(schema);
 
     va_end(args);
+
     vdb_tree_insert_record(tree, rec);
     vdb_record_free(rec);
 }

@@ -59,11 +59,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    Add more types:
-        VDBT_TYPE_NULL
-        VDBT_TYPE_FLOAT
-        VDBT_TYPE_BLOB (varlen)
-
+    Add a bool right before each data field called is_null:
+        write test code to make sure everything works
+        
     case VDBST_INSERT:
         vdb_insert_record(h, struct VdbTokenList* attributes, struct VdbTokenList* values) {
             get schema
@@ -87,6 +85,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     }
 
     need checks to prevent table manipulation/creation/dropping when database not open - segfaulting now
+
+    need to return error if table doesn't exist - segfaulting now
 
     Finish TODOs inside of vdb_execute
         uncomment vdb_execute in cli loop and test

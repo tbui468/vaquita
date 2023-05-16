@@ -27,7 +27,7 @@ struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, st
     for (int i = 0; i < count; i++) {
         schema->types[i] = types->tokens[i].type;
         int len = attributes->tokens[i].len;
-        schema->names[i] = malloc_w(len + 1);
+        schema->names[i] = malloc_w(sizeof(char) * (len + 1));
         memcpy(schema->names[i], attributes->tokens[i].lexeme, len);
         schema->names[i][len] = '\0';
     }

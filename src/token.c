@@ -37,7 +37,7 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
             case VDBT_DROP: printf("VDBT_DROP\n"); break;
             case VDBT_TABLE: printf("VDBT_TABLE\n"); break;
             case VDBT_IDENTIFIER: printf("VDBT_IDENTIFIER: %.*s\n", t.len, t.lexeme); break;
-            case VDBT_STR: printf("VDBT_TYPE_STR: %.*s\n", t.len, t.lexeme); break;
+            case VDBT_STR: printf("VDBT_STR: %.*s\n", t.len, t.lexeme); break;
             case VDBT_INT: printf("VDBT_INT: %.*s\n", t.len, t.lexeme); break;
             case VDBT_TYPE_STR: printf("VDBT_TYPE_STR\n"); break;
             case VDBT_TYPE_INT: printf("VDBT_TYPE_INT\n"); break;
@@ -48,7 +48,7 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
             case VDBT_INSERT: printf("VDBT_INSERT\n"); break;
             case VDBT_INTO: printf("VDBT_INTO\n"); break;
             case VDBT_VALUES: printf("VDBT_VALUES\n"); break;
-            case VDBT_TRUE: printf("VDBT_TRUE\n"); break;
+            case VDBT_TRUE: printf("VDBT_TRUE: %.*s\n", t.len, t.lexeme); break;
             case VDBT_FALSE: printf("VDBT_FALSE\n"); break;
             case VDBT_EQUALS: printf("VDBT_EQUALS\n"); break;
             case VDBT_LESS: printf("VDBT_LESS\n"); break;

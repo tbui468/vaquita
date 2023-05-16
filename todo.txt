@@ -59,8 +59,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    case VDBST_INSERT:
-        integrate new record allocation and insert functions into vdb_execute for insertion
+    add more test cases
+        use python to automate testing
         
     case VDBST_SELECT: {
         //TODO

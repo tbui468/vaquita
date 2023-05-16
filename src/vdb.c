@@ -317,12 +317,12 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree); printf("read schema\n");
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
-    struct VdbRecord* rec = vdbrecord_alloc(key, schema, attrs, values);printf("alloced record\n");
+    struct VdbRecord* rec = vdbrecord_alloc(key, schema, attrs, values);
     vdb_schema_free(schema);
 
-    vdb_tree_insert_record(tree, rec); printf("inserted record\n");
+    vdb_tree_insert_record(tree, rec);
     vdb_record_free(rec);
 
     return VDBRC_SUCCESS;

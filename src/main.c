@@ -186,9 +186,17 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_INSERT: {
                 char* table_name = to_string(stmt->target);
-                vdb_insert_record(*h, table_name, "Mars");
-                printf("inserted 1 record(s) into %s\n", table_name);
-
+                int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
+                for (int i = 0; i < rec_count; i++) {
+                    struct VdbTokenList* tl = vdbtokenlist_init();
+                    int off = i * stmt->as.insert.attributes->count;
+                    for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
+                        vdbtokenlist_append_token(tl, stmt->as.insert.values->tokens[j]);
+                    }
+                    vdb_insert_new(*h, table_name, stmt->as.insert.attributes, tl);
+                    vdbtokenlist_free(tl);
+                }
+                printf("inserted %d record(s) into %s\n", rec_count, table_name);
                 break;
             }
             case VDBST_UPDATE: {
@@ -253,7 +261,7 @@ void run_cli() {
             vdberrorlist_free(lex_errors);
             continue;
         }
-//        vdbtokenlist_print(tokens);       
+
         struct VdbStmtList* stmts;
         struct VdbErrorList* parse_errors;
 
@@ -339,13 +347,13 @@ void run_script(const char* path) {
 }
 
 int main(int argc, char** argv) {
-    /*
     if (argc > 1) {
         run_script(argv[1]);
     } else {
         run_cli();
-    }*/
+    }
 
+    /*
     VDBHANDLE h;
     vdb_create_db("andromeda");
     h = vdb_open_db("andromeda");
@@ -362,12 +370,6 @@ int main(int argc, char** argv) {
 
     printf("table created\n");
 
-/*    
-    const char* words[] = {word, "dogs", "turtles"};
-    for (int i = 1; i <= 200; i++) {
-        vdb_insert_record(h, "planets", i * 2, words[i % 3], i % 2 == 0);
-    }
-*/
     struct VdbTokenList* attrs = vdbtokenlist_init();
     struct VdbToken age_attr = {VDBT_IDENTIFIER, "age", 3};
     struct VdbToken name_attr = {VDBT_IDENTIFIER, "name", 4};
@@ -415,7 +417,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    vdb_close(h);
+    vdb_close(h);*/
 
     return 0;
 }

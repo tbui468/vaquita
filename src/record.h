@@ -11,7 +11,7 @@ struct VdbRecord {
     uint32_t key;
 };
 
-struct VdbRecordList {
+struct VdbRecordSet {
     struct VdbRecord** records;
     uint32_t count;
     uint32_t capacity;
@@ -29,10 +29,8 @@ uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec);
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec);
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
 
-struct VdbRecordList* vdb_recordlist_alloc();
-void vdb_recordlist_append_record(struct VdbRecordList* rl, struct VdbRecord* rec);
-struct VdbRecord* vdb_recordlist_get_record(struct VdbRecordList* rl, uint32_t key);
-void vdb_recordlist_remove_record(struct VdbRecordList* rl, uint32_t key);
-void vdb_recordlist_free(struct VdbRecordList* rl);
+struct VdbRecordSet* vdbrecordset_init();
+void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);
+void vdbrecordset_free(struct VdbRecordSet* rs);
 
 #endif //VDB_RECORD_H

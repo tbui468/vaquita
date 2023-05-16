@@ -102,6 +102,7 @@ struct VdbExpr* vdbexpr_init_literal(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_identifier(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_unary(struct VdbToken op, struct VdbExpr* right);
 struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, struct VdbExpr* right);
+bool vdbexpr_eval(struct VdbExpr* expr);
 
 void vdbexpr_print(struct VdbExpr* expr);
 void vdbexpr_free(struct VdbExpr* expr);

@@ -209,11 +209,34 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_SELECT: {
                 char* table_name = to_string(stmt->target);
-                struct VdbRecord* r = vdb_fetch_record(*h, table_name, 1);
-                if (r) {
-                    printf("key %d: %.*s\n", r->key, r->data[0].as.Str->len, r->data[0].as.Str->start);
-                    vdb_record_free(r);
+                struct VdbRecordSet* rs = vdbrecordset_init();
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //key to start at this key
+
+                while (true) {
+                    if (vdbexpr_eval(stmt->as.select.selection)) {
+                        vdbrecordset_append_record(rs, vdbcursor_read_record(cursor));
+                    }
+                    if (vdbcursor_on_final_record(cursor))
+                        break;
+
+                    vdbcursor_increment(cursor);
                 }
+
+                for (int i = 0; i < rs->count; i++) {
+                    struct VdbRecord* r = rs->records[i];
+                    printf("key %d: ", r->key);
+                    if (!r->data[0].is_null)printf("%.*s, ", r->data[0].as.Str->len, r->data[0].as.Str->start); else printf("null, ");
+                    if (!r->data[1].is_null) printf("%ld, ", r->data[1].as.Int); else printf("null, ");
+                    if (!r->data[2].is_null)printf("%d", r->data[2].as.Bool); else printf("null");
+                    printf("\n");
+                }
+
+                vdbcursor_free(cursor);
+                vdbrecordset_free(rs);
+
+                //TODO: apply projections to record set
+                //TODO: print out record set here
+
                 break;
             }
             case VDBST_EXIT: {
@@ -353,7 +376,7 @@ int main(int argc, char** argv) {
         run_cli();
     }
 
-    /*
+   /* 
     VDBHANDLE h;
     vdb_create_db("andromeda");
     h = vdb_open_db("andromeda");
@@ -385,6 +408,8 @@ int main(int argc, char** argv) {
     vdbtokenlist_append_token(values, grad_value);
     vdbtokenlist_append_token(values, age_value);
     vdb_insert_new(h, "planets", attrs, values);
+    vdb_insert_new(h, "planets", attrs, values);
+    vdb_insert_new(h, "planets", attrs, values);
 
     struct VdbTokenList* values2 = vdbtokenlist_init();
     struct VdbToken age_value2 = {VDBT_INT, "88", 2};
@@ -394,6 +419,8 @@ int main(int argc, char** argv) {
     vdbtokenlist_append_token(values2, grad_value2);
     vdbtokenlist_append_token(values2, age_value2);
     vdb_insert_new(h, "planets", attrs, values2);
+    vdb_insert_new(h, "planets", attrs, values2);
+    vdb_insert_new(h, "planets", attrs, values2);
 
     //vdb_debug_print_tree(h, "planets");
     //vdb_delete_record(h, "planets", 1);
@@ -401,7 +428,7 @@ int main(int argc, char** argv) {
     //vdb_delete_record(h, "planets", 200);
     printf("records inserted\n");
 
-    int keys[] = {0, 1, 2, 99, 198, 199, 200, 201};
+    int keys[] = {0, 1, 2, 3, 4, 5, 6, 7};
 
     for (int i = 0; i < 8; i++) {
         struct VdbRecord* r = vdb_fetch_record(h, "planets", keys[i]);

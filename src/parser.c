@@ -85,6 +85,12 @@ struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, st
     return expr;
 }
 
+bool vdbexpr_eval(struct VdbExpr* expr) {
+    expr = expr; //just to silence warnings for now
+    //TODO: walk expression tree to evaluate actual result here
+    return true;
+}
+
 void vdbexpr_free(struct VdbExpr* expr) {
     switch (expr->type) {
         case VDBET_UNARY:

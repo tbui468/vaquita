@@ -386,3 +386,50 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     vdbtree_print(tree);
 }
 
+struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key) {
+    struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
+    cursor->db = (struct Vdb*)h;
+    cursor->table_name = strdup_w(table_name);
+
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, table_name);
+    uint32_t root_idx = vdbtree_meta_read_root(tree);
+    cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, key);
+    cursor->cur_rec_idx = 0;
+    while (vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) != key) {
+        cursor->cur_rec_idx++;
+    }
+
+    return cursor;
+}
+
+void vdbcursor_free(struct VdbCursor* cursor) {
+    free(cursor->table_name);
+    free(cursor);
+}
+
+void vdbcursor_increment(struct VdbCursor* cursor) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    uint32_t key = vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+
+    if (cursor->cur_rec_idx + 1 >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
+        uint32_t root_idx = vdbtree_meta_read_root(tree);
+        cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, key + 1);
+        cursor->cur_rec_idx = 0;
+        while (vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) != key + 1) {
+            cursor->cur_rec_idx++;
+        }
+    } else {
+        cursor->cur_rec_idx += 1;
+    }
+}
+
+bool vdbcursor_on_final_record(struct VdbCursor* cursor) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    uint32_t highest_key = vdbtree_meta_read_primary_key_counter(tree);
+    return vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) == highest_key;
+}
+
+struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    return vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+}

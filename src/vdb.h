@@ -18,6 +18,13 @@ struct Vdb {
     struct VdbTreeList* trees;
 };
 
+struct VdbCursor {
+    struct Vdb* db;
+    char* table_name;
+    uint32_t cur_node_idx;
+    uint32_t cur_rec_idx;
+};
+
 VDBHANDLE vdb_open_db(const char* name);
 enum VdbReturnCode vdb_create_db(const char* name);
 
@@ -44,5 +51,10 @@ bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key);
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...);
 void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 
+struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key);
+void vdbcursor_free(struct VdbCursor* cursor);
+bool vdbcursor_on_final_record(struct VdbCursor* cursor);
+struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor);
+void vdbcursor_increment(struct VdbCursor* cursor);
 
 #endif //VDB_H

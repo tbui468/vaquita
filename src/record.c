@@ -220,59 +220,31 @@ bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     return false;
 }
 
-struct VdbRecordList* vdb_recordlist_alloc() {
-    struct VdbRecordList* rl = malloc_w(sizeof(struct VdbRecordList));
-    rl->count = 0;
-    rl->capacity = 8; 
-    rl->records = malloc_w(sizeof(struct VdbRecord*) * rl->capacity);
-    return rl;
+
+struct VdbRecordSet* vdbrecordset_init() {
+    struct VdbRecordSet* rs = malloc_w(sizeof(struct VdbRecordSet));
+    rs->count = 0;
+    rs->capacity = 8; 
+    rs->records = malloc_w(sizeof(struct VdbRecord*) * rs->capacity);
+    return rs;
 }
 
-void vdb_recordlist_append_record(struct VdbRecordList* rl, struct VdbRecord* rec) {
-    if (rl->count == rl->capacity) {
-        rl->capacity *= 2;
-        rl->records = realloc_w(rl->records, sizeof(struct VdbRecord*) * rl->capacity);
+void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec) {
+    if (rs->count == rs->capacity) {
+        rs->capacity *= 2;
+        rs->records = realloc_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
     }
 
-    rl->records[rl->count++] = rec;
+    rs->records[rs->count++] = rec;
 }
 
-struct VdbRecord* vdb_recordlist_get_record(struct VdbRecordList* rl, uint32_t key) {
-    struct VdbRecord* rec;
-    uint32_t i;
-    for (i = 0; i < rl->count; i++) {
-        rec = rl->records[i];
-        if (rec->key == key)
-            return rec;
-    }
-
-    return NULL;
-}
-
-void vdb_recordlist_remove_record(struct VdbRecordList* rl, uint32_t key) {
-    struct VdbRecord* rec = NULL;
-    uint32_t i;
-    for (i = 0; i < rl->count; i++) {
-        rec = rl->records[i];
-        if (rec->key == key)
-            break;
-    }
-
-    if (rec) {
-        for (uint32_t j = i + 1; j < rl->count; j++) {
-            rl->records[j - 1] = rl->records[j];
-        }
-        rl->count--;
-        vdb_record_free(rec);
-    }
-}
-
-void vdb_recordlist_free(struct VdbRecordList* rl) {
-    for (uint32_t i = 0; i < rl->count; i++) {
-        struct VdbRecord* rec = rl->records[i];
+void vdbrecordset_free(struct VdbRecordSet* rs) {
+    for (uint32_t i = 0; i < rs->count; i++) {
+        struct VdbRecord* rec = rs->records[i];
         vdb_record_free(rec);
     }
 
-    free(rl->records);
-    free(rl);
+    free(rs->records);
+    free(rs);
 }
+

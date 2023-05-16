@@ -59,23 +59,57 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    add more test cases
-        use python to automate testing
-        
+    struct VdbCursor abstraction requires a massive rewrite of tree interface
+        Comment out select statements - get insert statements working with new cursor abstraction
+
+        to insert:
+            struct VdbCursor* cursor = vdbcursor_init_end(h, table_name);
+            vdbcursor_write_record(cursor, struct VdbTokenList* attrs, struct VdbTokenList* values);
+
+        to update
+            struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
+            initialize a cursor at key
+            write record there
+
+        to delete
+            initialize a cursor at key
+            delete record there
+
+        to select
+            struct VdbCursor* cursor = vdbcursor_init_begin(h, table_name);
+            initialize a cursor at key = 1
+            until cursor is at end:
+                read record if condition is met
+                increment cursor
+
     case VDBST_SELECT: {
-        //TODO
-        break;
-    }
+        use tree-walk intereter for now:
+            evaluate left (should push result onto stack)
+            evaluate right (should push result onto stack)
+            pop right
+            pop left
+            push left op right
+            pop result
+        
+            if result == True:
+                add that record to set
 
-    case VDBST_UPDATE: {
-        //TODO
-        break;
-    }
-    case VDBST_DELETE: {
-        //TODO
-        break;
-    }
+    VDBST_INSERT should use cursor abstraction
+        struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbtree_read_primary_key());
+        while (rec_written < records_to_write) {
+            vdbcursor_write_record(cursor, record);
+            vdbcursor_increment(cursor);
+            rec_written += 1;
+        }
 
+    case VDBST_UPDATE:
+        need the vm to evaluate selection expression
+    case VDBST_DELETE:
+        need the vm to evaluate selection expression
+
+    add more test cases
+        use python to automate running of program with test scripts
+        
     need checks to prevent table manipulation/creation/dropping when database not open - segfaulting now
 
     need to return error if table doesn't exist when insert/select/update/delete - segfaulting now

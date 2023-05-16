@@ -13,11 +13,13 @@ struct VdbSchema {
     uint32_t count;
 };
 
+//TODO: should be part of record.h
 struct VdbString {
     char* start;
     uint32_t len;
 };
 
+//TODO: should be part of record.h
 struct VdbDatum {
     enum VdbTokenType type;
     bool is_null;

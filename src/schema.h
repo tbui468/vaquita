@@ -20,6 +20,7 @@ struct VdbString {
 
 struct VdbDatum {
     enum VdbTokenType type;
+    bool is_null;
     union {
         uint64_t Int;
         struct VdbString* Str;

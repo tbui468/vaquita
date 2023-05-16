@@ -14,6 +14,7 @@ struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_li
 
     for (uint32_t i = 0; i < rec->count; i++) {
         rec->data[i].type = schema->types[i];
+        rec->data[i].is_null = false;
         switch (schema->types[i]) {
             case VDBT_TYPE_INT:
                 rec->data[i].as.Int = va_arg(args, uint64_t);
@@ -61,6 +62,7 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
         r->data[i].type = d->type;
+        r->data[i].is_null = d->is_null;
         switch (d->type) {
             case VDBT_TYPE_INT:
                 r->data[i].as.Int = d->as.Int;
@@ -90,6 +92,7 @@ uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec) {
     size += sizeof(uint32_t); //key
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
+        size += sizeof(bool); //is_null flag
         switch (d->type) {
             case VDBT_TYPE_INT:
                 size += sizeof(uint64_t);
@@ -115,6 +118,8 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
 
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
+        *((bool*)(buf + off)) = d->is_null;
+        off += sizeof(bool);
         switch (d->type) {
             case VDBT_TYPE_INT:
                 *((uint64_t*)(buf + off)) = d->as.Int;

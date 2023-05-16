@@ -59,9 +59,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    Add a bool right before each data field called is_null:
-        write test code to make sure everything works
-        
     case VDBST_INSERT:
         vdb_insert_record(h, struct VdbTokenList* attributes, struct VdbTokenList* values) {
             get schema
@@ -70,6 +67,10 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
                 insert record
         }
         
+    case VDBST_SELECT: {
+        //TODO
+        break;
+    }
 
     case VDBST_UPDATE: {
         //TODO
@@ -79,28 +80,10 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         //TODO
         break;
     }
-    case VDBST_SELECT: {
-        //TODO
-        break;
-    }
 
     need checks to prevent table manipulation/creation/dropping when database not open - segfaulting now
 
-    need to return error if table doesn't exist - segfaulting now
-
-    Finish TODOs inside of vdb_execute
-        uncomment vdb_execute in cli loop and test
-
-    Schema should use enum VdbTokenType for data types rather than enum VdbField
-
-    Use VdbData types rather than c-types
-        add in NULL type
-        add in float type
-        along with string, int and boolean types already implemented
-
-    Allow script to be read as optional argument rather than opening repl
-        ./vdb -script my_script.sql
-        ./vdb
+    need to return error if table doesn't exist when insert/select/update/delete - segfaulting now
 
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html

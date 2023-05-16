@@ -369,7 +369,7 @@ int main(int argc, char** argv) {
 
     //vdb_debug_print_tree(h, "planets");
     vdb_delete_record(h, "planets", 1);
-    vdb_update_record(h, "planets", 99, 99, "cats", false);
+    //vdb_update_record(h, "planets", 99, 99, "cats", false);
     vdb_delete_record(h, "planets", 200);
     printf("records inserted\n");
 

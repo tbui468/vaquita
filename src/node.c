@@ -150,6 +150,8 @@ struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSche
     for (uint32_t i = 0; i < schema->count; i++) {
         enum VdbTokenType type = schema->types[i];
         rec->data[i].type = type;
+        rec->data[i].is_null = *((bool*)(buf + data_off));
+        data_off += sizeof(bool);
         switch (type) {
             case VDBT_TYPE_INT:
                 rec->data[i].as.Int = *((uint64_t*)(buf + data_off));

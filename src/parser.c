@@ -91,10 +91,63 @@ struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, st
     return expr;
 }
 
-bool vdbexpr_eval(struct VdbExpr* expr) {
-    expr = expr; //just to silence warnings for now
-    //TODO: walk expression tree to evaluate actual result here
-    return true;
+static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
+    if (!expr) {
+        struct VdbDatum d;
+        d.type = VDBT_TYPE_BOOL;
+        d.as.Bool = true;
+        return d;
+    }
+
+    switch (expr->type) {
+        case VDBET_BINARY: {
+            struct VdbDatum left = vdbexpr_do_eval(expr->as.binary.left, rec, schema);
+            struct VdbDatum right = vdbexpr_do_eval(expr->as.binary.right, rec, schema);
+            //assume op is = for now
+            struct VdbDatum d;
+            d.type = VDBT_TYPE_BOOL;
+            switch (expr->as.binary.op.type) {
+                case VDBT_EQUALS:
+                    d.as.Bool = left.as.Int == right.as.Int;
+                    break;
+                case VDBT_LESS:
+                    d.as.Bool = left.as.Int < right.as.Int;
+                    break;
+                case VDBT_GREATER:
+                    d.as.Bool = left.as.Int > right.as.Int;
+                    break;
+            }
+            return d;
+        }
+        case VDBET_UNARY: {
+            //TODO:
+            break;
+        }
+        case VDBET_IDENTIFIER: {
+            struct VdbDatum d;
+            d.type = VDBT_TYPE_INT;
+            //TODO: get key from record for now (should really grab from attributes)
+            //Should be grabbing value from correct attribute
+            d.as.Int = rec->key;
+            return d;
+        }
+        case VDBET_LITERAL: {
+            struct VdbDatum d;
+            d.type = VDBT_TYPE_INT;
+            //TODO: assuming literal is integer for now
+            //could be int, true, false, string
+            int len = expr->as.literal.token.len;
+            char s[len + 1];
+            memcpy(s, expr->as.literal.token.lexeme, len);
+            s[len] = '\0';
+            d.as.Int = strtoll(s, NULL, 10);
+            return d;
+        }
+    }
+}
+
+bool vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
+    return vdbexpr_do_eval(expr, rec, schema).as.Bool;
 }
 
 void vdbexpr_free(struct VdbExpr* expr) {

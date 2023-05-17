@@ -13,5 +13,6 @@ insert into asteroids (material) values ("iron"), ("nickel");
 select * from asteroids;
 select id, name, material from asteroids;
 select name, id from planets;
+select mass, name, id, atmosphere from planets where id < 5;
 close sol;
 exit;

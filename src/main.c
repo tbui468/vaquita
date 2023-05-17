@@ -222,9 +222,14 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
 
                 while (true) {
-                    if (vdbexpr_eval(stmt->as.select.selection)) {
-                        vdbrecordset_append_record(rs, vdbcursor_read_record(cursor, stmt->as.select.projection));
+                    struct VdbRecord* rec = vdbcursor_read_record(cursor);
+                    if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
+                        vdbcursor_apply_projection(cursor, rec, stmt->as.select.projection);
+                        vdbrecordset_append_record(rs, rec);
+                    } else {
+                        vdb_record_free(rec);
                     }
+
                     if (vdbcursor_on_final_record(cursor))
                         break;
 

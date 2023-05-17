@@ -59,9 +59,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    selection
-        vdbexpr_eval <----this needs to be implemented. Currently just returning 'true' regardless of what expression is
-        just walk through all records and do a tree-walk evaluation for now
+    static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema)
+        <-------Fill this function out
 
     VDBT_TYPE_FLOAT
     VDBT_FLOAT

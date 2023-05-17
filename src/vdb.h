@@ -9,6 +9,8 @@
 #include "pager.h"
 #include "tree.h"
 #include "error.h"
+#include "parser.h"
+
 
 typedef void* VDBHANDLE;
 
@@ -54,7 +56,10 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key);
 void vdbcursor_free(struct VdbCursor* cursor);
 bool vdbcursor_on_final_record(struct VdbCursor* cursor);
-struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor, struct VdbTokenList* projection);
+struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor);
 void vdbcursor_increment(struct VdbCursor* cursor);
+
+bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection);
+void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbTokenList* projection);
 
 #endif //VDB_H

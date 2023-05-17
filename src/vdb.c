@@ -440,11 +440,25 @@ bool vdbcursor_on_final_record(struct VdbCursor* cursor) {
     return vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) == highest_key;
 }
 
-struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor, struct VdbTokenList* projection) {
+struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
+    return rec;
+}
+
+
+bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    bool result = vdbexpr_eval(selection, rec, schema);
+    vdb_schema_free(schema);
+    return result;
+}
+
+void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbTokenList* projection) {
     if (projection->tokens[0].type != VDBT_STAR) {
+        struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
         struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
         struct VdbDatum* data = malloc_w(sizeof(struct VdbDatum) * projection->count);
@@ -463,6 +477,5 @@ struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor, struct VdbToke
 
         vdb_schema_free(schema);
     }
-
-    return rec;
 }
+

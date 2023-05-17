@@ -59,12 +59,18 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    struct VdbCursor abstraction requires a massive rewrite of tree interface
-        Comment out select statements - get insert statements working with new cursor abstraction
+        to select
+            RecordSet should NOT include id by default in results
+                select name from planets;
+                    Mars
+                    Pluto
+                select id, name from planets;
+                    1, Mars
+                    2, Pluto
 
-        to insert:
-            struct VdbCursor* cursor = vdbcursor_init_end(h, table_name);
-            vdbcursor_write_record(cursor, struct VdbTokenList* attrs, struct VdbTokenList* values);
+            selection
+                vdbexpr_eval <----this needs to be implemented
+                just walk through all records and evaluate for now
 
         to update
             struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
@@ -72,40 +78,12 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
             write record there
 
         to delete
+            make sure increment skips deleted records
             initialize a cursor at key
             delete record there
 
-        to select
-            struct VdbCursor* cursor = vdbcursor_init_begin(h, table_name);
-            initialize a cursor at key = 1
-            until cursor is at end:
-                read record if condition is met
-                increment cursor
-
-    case VDBST_SELECT: {
-        use tree-walk intereter for now:
-            evaluate left (should push result onto stack)
-            evaluate right (should push result onto stack)
-            pop right
-            pop left
-            push left op right
-            pop result
-        
-            if result == True:
-                add that record to set
-
-    VDBST_INSERT should use cursor abstraction
-        struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbtree_read_primary_key());
-        while (rec_written < records_to_write) {
-            vdbcursor_write_record(cursor, record);
-            vdbcursor_increment(cursor);
-            rec_written += 1;
-        }
-
-    case VDBST_UPDATE:
-        need the vm to evaluate selection expression
-    case VDBST_DELETE:
-        need the vm to evaluate selection expression
+    VDBT_TYPE_FLOAT
+    VDBT_FLOAT
 
     add more test cases
         use python to automate running of program with test scripts

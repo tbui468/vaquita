@@ -54,7 +54,7 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key);
 void vdbcursor_free(struct VdbCursor* cursor);
 bool vdbcursor_on_final_record(struct VdbCursor* cursor);
-struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor);
+struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor, struct VdbTokenList* projection);
 void vdbcursor_increment(struct VdbCursor* cursor);
 
 #endif //VDB_H

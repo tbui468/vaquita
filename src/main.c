@@ -210,11 +210,11 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_SELECT: {
                 char* table_name = to_string(stmt->target);
                 struct VdbRecordSet* rs = vdbrecordset_init();
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //key to start at this key
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
 
                 while (true) {
                     if (vdbexpr_eval(stmt->as.select.selection)) {
-                        vdbrecordset_append_record(rs, vdbcursor_read_record(cursor));
+                        vdbrecordset_append_record(rs, vdbcursor_read_record(cursor, stmt->as.select.projection));
                     }
                     if (vdbcursor_on_final_record(cursor))
                         break;
@@ -222,20 +222,39 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     vdbcursor_increment(cursor);
                 }
 
-                for (int i = 0; i < rs->count; i++) {
+                //TODO: apply projections to record set - also need to reorder data
+
+                for (uint32_t i = 0; i < rs->count; i++) {
                     struct VdbRecord* r = rs->records[i];
-                    printf("key %d: ", r->key);
-                    if (!r->data[0].is_null)printf("%.*s, ", r->data[0].as.Str->len, r->data[0].as.Str->start); else printf("null, ");
-                    if (!r->data[1].is_null) printf("%ld, ", r->data[1].as.Int); else printf("null, ");
-                    if (!r->data[2].is_null)printf("%d", r->data[2].as.Bool); else printf("null");
+                    printf("%d, ", r->key);
+                    for (uint32_t j = 0; j < r->count; j++) {
+                        if (r->data[j].is_null) {
+                            printf("null, ");
+                            continue;
+                        }
+                        switch (r->data[j].type) {
+                            case VDBT_TYPE_STR:
+                                printf("%.*s, ", r->data[j].as.Str->len, r->data[j].as.Str->start); 
+                                break;
+                            case VDBT_TYPE_INT:
+                                printf("%ld, ", r->data[j].as.Int);
+                                break;
+                            case VDBT_TYPE_BOOL:
+                                if (r->data[j].as.Bool) {
+                                    printf("true, ");
+                                } else {
+                                    printf("false, ");
+                                }
+                                break;
+                             default:
+                                break;
+                        }
+                    }
                     printf("\n");
                 }
 
                 vdbcursor_free(cursor);
                 vdbrecordset_free(rs);
-
-                //TODO: apply projections to record set
-                //TODO: print out record set here
 
                 break;
             }

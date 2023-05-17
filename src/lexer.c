@@ -157,6 +157,12 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_IF;
     } else if (strncmp(t->lexeme, "exists", 6) == 0) {
         t->type = VDBT_EXISTS;
+    } else if (strncmp(t->lexeme, "not", 3) == 0) {
+        t->type = VDBT_NOT;
+    } else if (strncmp(t->lexeme, "and", 3) == 0) {
+        t->type = VDBT_AND;
+    } else if (strncmp(t->lexeme, "or", 2) == 0) {
+        t->type = VDBT_OR;
     }
 
     return VDBRC_SUCCESS;
@@ -197,6 +203,10 @@ enum VdbReturnCode vdblexer_read_token(struct VdbLexer* lexer, struct VdbToken* 
                 t->type = VDBT_LESS_EQUALS;
                 lexer->cur++;
                 t->len = 2;
+            } else if (lexer->src[lexer->cur] == '>') {
+                t->type = VDBT_NOT_EQUALS;
+                lexer->cur++;
+                t->len = 2;
             } else {
                 t->type = VDBT_LESS;
                 t->len = 1;
@@ -230,6 +240,12 @@ enum VdbReturnCode vdblexer_read_token(struct VdbLexer* lexer, struct VdbToken* 
         }
         case '*': {
             t->type = VDBT_STAR;
+            t->lexeme = &lexer->src[lexer->cur++];
+            t->len = 1;
+            break;
+        }
+        case '/': {
+            t->type = VDBT_SLASH;
             t->lexeme = &lexer->src[lexer->cur++];
             t->len = 1;
             break;

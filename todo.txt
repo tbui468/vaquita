@@ -59,9 +59,14 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) <----FINISH THIS GUY
+        Fill out parser.  See comments in parser.c <----------------START HERE
+            <>
         evaluate all unary (VDBT_MINUS and VDBT_NOT)
         evaluate more binary logical expressions (VDBT_AND and VDBT_OR)
+        parse groups (using parenthese as delimiters for groups)
+
+        Should use parser to parse assignment (using 'set' keyword)
+        Should use parser to parse tuples (sequence in parenthesese, separated by commas)
 
     VDBT_TYPE_FLOAT
     VDBT_FLOAT

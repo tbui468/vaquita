@@ -7,6 +7,9 @@
 #include "parser.h"
 #include "util.h"
 
+
+struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser);
+
 void vdbparser_validate_attribute_name(struct VdbParser* parser, struct VdbToken t) {
     if (strncmp(t.lexeme, "id", 2) == 0)
         vdberrorlist_append_error(parser->errors, 1, "'id' cannot be used as attribute name");
@@ -389,10 +392,7 @@ struct VdbToken vdbparser_next_token(struct VdbParser* parser) {
     return token;
 }
 
-/*
-struct VdbExpr* vdbparser_parse_group(struct VdbParser* parser) {
-}*/
-struct VdbExpr* vdbparser_parse_literal(struct VdbParser* parser) {
+struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
     switch (vdbparser_peek_token(parser).type) {
         case VDBT_INT:
         case VDBT_STR:
@@ -401,43 +401,57 @@ struct VdbExpr* vdbparser_parse_literal(struct VdbParser* parser) {
             return vdbexpr_init_literal(vdbparser_next_token(parser));
         case VDBT_IDENTIFIER:
             return vdbexpr_init_identifier(vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+        case VDBT_LPAREN:
+            vdbparser_consume_token(parser, VDBT_LPAREN);
+            struct VdbExpr* expr = vdbparser_parse_expr(parser);
+            vdbparser_consume_token(parser, VDBT_RPAREN);
+            return expr;
         default:
             return NULL;
     }
 }
 /*
 struct VdbExpr* vdbparser_parse_unary(struct VdbParser* parser) {
+    just negative numbers for now
 }
-struct VdbExpr* vdbparser_parse_mul_div(struct VdbParser* parser) {
+struct VdbExpr* vdbparser_parse_factor(struct VdbParser* parser) {
 }
-struct VdbExpr* vdbparser_parse_add_sub(struct VdbParser* parser) {
+struct VdbExpr* vdbparser_parse_term(struct VdbParser* parser) {
 }*/
 struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser) {
-    struct VdbExpr* left = vdbparser_parse_literal(parser);
+    struct VdbExpr* left = vdbparser_parse_primary(parser);
     while (vdbparser_peek_token(parser).type == VDBT_LESS ||
            vdbparser_peek_token(parser).type == VDBT_GREATER ||
            vdbparser_peek_token(parser).type == VDBT_LESS_EQUALS ||
            vdbparser_peek_token(parser).type == VDBT_GREATER_EQUALS) {
         struct VdbToken op = vdbparser_next_token(parser);
-        left = vdbexpr_init_binary(op, left, vdbparser_parse_literal(parser));
+        left = vdbexpr_init_binary(op, left, vdbparser_parse_primary(parser));
     }
 
     return left;
 }
 struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser) {
     struct VdbExpr* left = vdbparser_parse_relational(parser);
-    while (vdbparser_peek_token(parser).type == VDBT_EQUALS) {
-        struct VdbToken equal = vdbparser_consume_token(parser, VDBT_EQUALS);
+    while (vdbparser_peek_token(parser).type == VDBT_EQUALS || vdbparser_peek_token(parser).type == VDBT_NOT_EQUALS) {
+        struct VdbToken equal = vdbparser_next_token(parser);
         left = vdbexpr_init_binary(equal, left, vdbparser_parse_relational(parser));
     }
 
     return left;
 }
 /*
+struct VdbExpr* vdbparser_parse_not(struct VdbParser* parser) {
+}
 struct VdbExpr* vdbparser_parse_and(struct VdbParser* parser) {
 }
 struct VdbExpr* vdbparser_parse_or(struct VdbParser* parser) {
-}*/
+}
+struct VdbExpr* vdbparser_parse_assignment(struct VdbParser* parser) {
+}
+struct VdbExpr* vdbparser_parse_sequence(struct VdbParser* parser) {
+    //commas
+}
+*/
 struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser) {
     return vdbparser_parse_equality(parser);
 }

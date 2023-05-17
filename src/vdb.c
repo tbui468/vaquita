@@ -319,6 +319,16 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
+
+    struct VdbToken value_token;
+    value_token.type = VDBT_INT;
+    //TODO: need a better way to convert number to string
+    char s[64];
+    sprintf(s, "%d", key);
+    value_token.lexeme = s;
+    value_token.len = strlen(s);
+    vdbtokenlist_append_token(values, value_token);
+
     struct VdbRecord* rec = vdbrecord_alloc(key, schema, attrs, values);
     vdb_schema_free(schema);
 

@@ -59,25 +59,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    checking for invalid attribute names ('id') should happen during parsing, NOT execution of statement
-
-
-    to select
-        RecordSet should NOT include id by default in results
-            select name from planets;
-                Mars
-                Pluto
-            select id, name from planets;
-                1, Mars
-                2, Pluto
-
-
-        add an extra attribute 'id' to each schema / record for now
-            should remove unnecessary key in nodes later
-
-        selection
-            vdbexpr_eval <----this needs to be implemented. Currently just returning 'true' regardless of what expression is
-            just walk through all records and do a tree-walk evaluation for now
+    selection
+        vdbexpr_eval <----this needs to be implemented. Currently just returning 'true' regardless of what expression is
+        just walk through all records and do a tree-walk evaluation for now
 
     VDBT_TYPE_FLOAT
     VDBT_FLOAT

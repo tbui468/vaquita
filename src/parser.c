@@ -309,6 +309,18 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 stmt->as.create.attributes = vdbtokenlist_init();
                 stmt->as.create.types = vdbtokenlist_init();
 
+                struct VdbToken attr_token;
+                attr_token.type = VDBT_IDENTIFIER;
+                attr_token.lexeme = "id";
+                attr_token.len = 2;
+                vdbtokenlist_append_token(stmt->as.create.attributes, attr_token);
+
+                struct VdbToken type_token;
+                type_token.type = VDBT_TYPE_INT;
+                type_token.lexeme = "int";
+                type_token.len = 3;
+                vdbtokenlist_append_token(stmt->as.create.types, type_token);
+
                 vdbparser_consume_token(parser, VDBT_LPAREN);
                 while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
                     struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);

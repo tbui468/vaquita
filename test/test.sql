@@ -12,5 +12,6 @@ insert into asteroids (name, mass, material) values ("d242", 100, "ice"), ("c242
 insert into asteroids (material) values ("iron"), ("nickel");
 select * from asteroids;
 select id, name, material from asteroids;
+select name, id from planets;
 close sol;
 exit;

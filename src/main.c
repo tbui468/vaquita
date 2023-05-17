@@ -188,10 +188,18 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_INSERT: {
                 char* table_name = to_string(stmt->target);
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
+                int attr_count_without_id = stmt->as.insert.attributes->count;
+
+                struct VdbToken attr_token;
+                attr_token.type = VDBT_IDENTIFIER;
+                attr_token.lexeme = "id";
+                attr_token.len = 2;
+                vdbtokenlist_append_token(stmt->as.insert.attributes, attr_token);
+
                 for (int i = 0; i < rec_count; i++) {
                     struct VdbTokenList* tl = vdbtokenlist_init();
-                    int off = i * stmt->as.insert.attributes->count;
-                    for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
+                    int off = i * attr_count_without_id;
+                    for (int j = off; j < off + attr_count_without_id; j++) {
                         vdbtokenlist_append_token(tl, stmt->as.insert.values->tokens[j]);
                     }
                     vdb_insert_new(*h, table_name, stmt->as.insert.attributes, tl);

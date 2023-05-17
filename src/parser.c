@@ -1,9 +1,15 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "parser.h"
 #include "util.h"
+
+void vdbparser_validate_attribute_name(struct VdbParser* parser, struct VdbToken t) {
+    if (strncmp(t.lexeme, "id", 2) == 0)
+        vdberrorlist_append_error(parser->errors, 1, "'id' cannot be used as attribute name");
+}
 
 enum VdbReturnCode vdbparser_parse(struct VdbTokenList* tokens, struct VdbStmtList** stmts, struct VdbErrorList** errors) {
     *stmts = vdbstmtlist_init();
@@ -249,7 +255,9 @@ struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser) {
 void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {
     vdbparser_consume_token(parser, VDBT_LPAREN);
     while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-        vdbtokenlist_append_token(tl, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+        struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+        vdbparser_validate_attribute_name(parser, t);
+        vdbtokenlist_append_token(tl, t);
         if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
             vdbparser_consume_token(parser, VDBT_COMMA);
         } else {
@@ -303,7 +311,9 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
 
                 vdbparser_consume_token(parser, VDBT_LPAREN);
                 while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-                    vdbtokenlist_append_token(stmt->as.create.attributes, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+                    struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+                    vdbparser_validate_attribute_name(parser, t);
+                    vdbtokenlist_append_token(stmt->as.create.attributes, t);
                     vdbtokenlist_append_token(stmt->as.create.types, vdbparser_next_token(parser));
 
                     if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
@@ -387,7 +397,9 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             stmt->as.update.values = vdbtokenlist_init();
 
             while (true) {
-                vdbtokenlist_append_token(stmt->as.update.attributes, vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+                struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
+                vdbparser_validate_attribute_name(parser, t);
+                vdbtokenlist_append_token(stmt->as.update.attributes, t);
                 vdbparser_consume_token(parser, VDBT_EQUALS);
                 vdbtokenlist_append_token(stmt->as.update.values, vdbparser_next_token(parser));
 

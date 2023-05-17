@@ -59,6 +59,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
+    checking for invalid attribute names ('id') should happen during parsing, NOT execution of statement
+
+
     to select
         RecordSet should NOT include id by default in results
             select name from planets;

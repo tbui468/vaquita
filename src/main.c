@@ -15,18 +15,6 @@ char* to_string(struct VdbToken t) {
     return s;
 }
 
-bool invalid_attribute_name(struct VdbTokenList* tl) {
-    //check that 'id' is not used as attribute - this is used internally by database as primary key
-    for (int i = 0; i < tl->count; i++) {
-        struct VdbToken t = tl->tokens[i];
-        if (t.type == VDBT_IDENTIFIER && (strncmp(t.lexeme, "id", 2) == 0)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 //TODO: need an generator that converst the stmtlist to bytecode
 //Should go in vm.c
 bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
@@ -79,11 +67,6 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_CREATE_TAB: {
                 int count = stmt->as.create.attributes->count;
-
-                if (invalid_attribute_name(stmt->as.create.attributes)) {
-                    printf("'id' is not allowed as an attribute name\n");
-                    break;
-                }
 
                 struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types);
 
@@ -203,11 +186,6 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_INSERT: {
-                if (invalid_attribute_name(stmt->as.insert.attributes)) {
-                    printf("cannot manually set auto-incremented 'id' attribute\n");
-                    break;
-                }
-
                 char* table_name = to_string(stmt->target);
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
                 for (int i = 0; i < rec_count; i++) {
@@ -223,10 +201,6 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_UPDATE: {
-                if (invalid_attribute_name(stmt->as.update.attributes)) {
-                    printf("cannot manually set auto-incremented 'id' attribute\n");
-                    break;
-                }
                 //TODO
                 break;
             }

@@ -11,6 +11,6 @@ create table asteroids (name string, mass int, material string);
 insert into asteroids (name, mass, material) values ("d242", 100, "ice"), ("c242", 99, "rock");
 insert into asteroids (material) values ("iron"), ("nickel");
 select * from asteroids;
-select name, material from asteroids;
+select id, name, material from asteroids;
 close sol;
 exit;

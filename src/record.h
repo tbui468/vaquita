@@ -21,7 +21,6 @@ struct VdbRecordSet {
 //record
 //[next|size|data (first is key)....]
 
-struct VdbRecord* vdb_record_alloc(uint32_t key, struct VdbSchema* schema, va_list args);
 struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct VdbTokenList* attrs, struct VdbTokenList* values);
 void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);

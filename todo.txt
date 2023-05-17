@@ -59,38 +59,26 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-        to select
-            RecordSet should NOT include id by default in results
-                select name from planets;
-                    Mars
-                    Pluto
-                select id, name from planets;
-                    1, Mars
-                    2, Pluto
+    to select
+        RecordSet should NOT include id by default in results
+            select name from planets;
+                Mars
+                Pluto
+            select id, name from planets;
+                1, Mars
+                2, Pluto
 
-            selection
-                vdbexpr_eval <----this needs to be implemented
-                just walk through all records and evaluate for now
+        Need new token type:
+            VDBT_ID
 
-        to update
-            struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
-            initialize a cursor at key
-            write record there
+        id should be an attribute in the schema directly
 
-        to delete
-            make sure increment skips deleted records
-            initialize a cursor at key
-            delete record there
+        selection
+            vdbexpr_eval <----this needs to be implemented. Currently just returning 'true' regardless of what expression is
+            just walk through all records and do a tree-walk evaluation for now
 
     VDBT_TYPE_FLOAT
     VDBT_FLOAT
-
-    add more test cases
-        use python to automate running of program with test scripts
-        
-    need checks to prevent table manipulation/creation/dropping when database not open - segfaulting now
-
-    need to return error if table doesn't exist when insert/select/update/delete - segfaulting now
 
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
@@ -119,6 +107,24 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
             write SQL script to make database solar_system
             tables planets, moons, dwarf_planets
+
+
+    to update
+        struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
+        initialize a cursor at key
+        write record there
+
+    to delete
+        make sure increment skips deleted records
+        initialize a cursor at key
+        delete record there
+
+    add more test cases
+        use python to automate running of program with test scripts
+        
+    need checks to prevent table manipulation/creation/dropping when database not open - segfaulting now
+
+    need to return error if table doesn't exist when insert/select/update/delete - segfaulting now
 
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school

@@ -226,7 +226,6 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 
                 for (uint32_t i = 0; i < rs->count; i++) {
                     struct VdbRecord* r = rs->records[i];
-                    printf("%d, ", r->key);
                     for (uint32_t j = 0; j < r->count; j++) {
                         switch (r->data[j].type) {
                             case VDBT_TYPE_STR:

@@ -47,7 +47,8 @@ enum VdbTokenType {
     VDBT_CONNECT,
     VDBT_INVALID,
     VDBT_IF,
-    VDBT_EXISTS
+    VDBT_EXISTS,
+    VDBT_ID
 };
 
 struct VdbToken {

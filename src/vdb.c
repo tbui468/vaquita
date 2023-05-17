@@ -328,6 +328,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     return VDBRC_SUCCESS;
 }
 
+/*
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
@@ -377,7 +378,7 @@ bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
     vdb_record_free(rec);
 
     return result;
-}
+}*/
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;

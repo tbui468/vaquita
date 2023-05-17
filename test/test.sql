@@ -1,18 +1,20 @@
 if exists drop database sol;
 create database sol;
 open sol;
+
 create table planets (name string, mass int, atmosphere bool);
 describe planets;
 insert into planets (name, mass, atmosphere) values ("Neptune", 20, false), ("Mars", 10, true), ("Venus", 20, false), ("Earth", 10, true);
 insert into planets (name, mass, atmosphere) values ("Mercury", 5, true), ("Jupiter", 100, true), ("Saturn", 323, false);
-select * from planets;
 select mass, name from planets;
+
 create table asteroids (name string, mass int, material string);
 insert into asteroids (name, mass, material) values ("d242", 100, "ice"), ("c242", 99, "rock");
 insert into asteroids (material) values ("iron"), ("nickel");
-select * from asteroids;
 select id, name, material from asteroids;
 select name, id from planets;
-select mass, name, id, atmosphere from planets where id < 5;
+describe asteroids;
+select name from asteroids where material = "iron";
+
 close sol;
 exit;

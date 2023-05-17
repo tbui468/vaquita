@@ -59,8 +59,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema)
-        <-------Fill this function out
+    static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) <----FINISH THIS GUY
+        evaluate all unary (VDBT_MINUS and VDBT_NOT)
+        evaluate more binary logical expressions (VDBT_AND and VDBT_OR)
 
     VDBT_TYPE_FLOAT
     VDBT_FLOAT
@@ -126,16 +127,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         > close school
             database school closed
             [what message?]
-
-    Test making multiple trees - insert and fetch data from multiple trees (tables)
-
-    Vdb Data Types - need this to allow NULL to be a value (specifically, represent the absence of a value)
-
-    Cursor abstraction - would this be helpful as the intermediary between vdb.c and tree.c?
-        will we need to know which attribute to index by? (primary key should be default)
-        vdbcursor_to_end()
-        vdbcursor_to(key)
-        vdbcurosr_next()
 
     pager eviction policy
         make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it

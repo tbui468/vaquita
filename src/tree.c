@@ -392,6 +392,14 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
 
     }
 
+    //set type to null if necessary
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbDatum* d = &rec->data[i];
+        if (d->is_null) {
+            d->type = VDBT_TYPE_NULL;
+        }
+    }
+
     vdb_pager_unpin_page(page);
     return rec;
 }

@@ -228,10 +228,6 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     struct VdbRecord* r = rs->records[i];
                     printf("%d, ", r->key);
                     for (uint32_t j = 0; j < r->count; j++) {
-                        if (r->data[j].is_null) {
-                            printf("null, ");
-                            continue;
-                        }
                         switch (r->data[j].type) {
                             case VDBT_TYPE_STR:
                                 printf("%.*s, ", r->data[j].as.Str->len, r->data[j].as.Str->start); 
@@ -245,6 +241,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                                 } else {
                                     printf("false, ");
                                 }
+                                break;
+                             case VDBT_TYPE_NULL:
+                                printf("null, ");
                                 break;
                              default:
                                 break;

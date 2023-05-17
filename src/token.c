@@ -42,6 +42,7 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
             case VDBT_TYPE_STR: printf("VDBT_TYPE_STR\n"); break;
             case VDBT_TYPE_INT: printf("VDBT_TYPE_INT\n"); break;
             case VDBT_TYPE_BOOL: printf("VDBT_TYPE_BOOL\n"); break;
+            case VDBT_TYPE_NULL: printf("VDBT_TYPE_NULL\n"); break;
             case VDBT_LPAREN: printf("VDBT_LPAREN\n"); break;
             case VDBT_RPAREN: printf("VDBT_RPAREN\n"); break;
             case VDBT_COMMA: printf("VDBT_COMMA\n"); break;
@@ -75,8 +76,6 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
             case VDBT_NULL: printf("VDBT_NULL\n"); break;
             case VDBT_IF: printf("VDBT_IF\n"); break;
             case VDBT_EXISTS: printf("VDBT_EXISTS\n"); break;
-            case VDBT_TYPE_NULL: printf("VDBT_TYPE_NULL\n"); break;
-            case VDBT_ID: printf("VDBT_ID\n"); break;
             default: printf("not implemented\n"); break;
         }
     }

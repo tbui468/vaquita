@@ -155,8 +155,6 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_NULL;
     } else if (strncmp(t->lexeme, "if", 2) == 0) {
         t->type = VDBT_IF;
-    } else if (strncmp(t->lexeme, "id", 2) == 0) {
-        t->type = VDBT_ID;
     } else if (strncmp(t->lexeme, "exists", 6) == 0) {
         t->type = VDBT_EXISTS;
     }

@@ -68,10 +68,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
                 1, Mars
                 2, Pluto
 
-        Need new token type:
-            VDBT_ID
 
-        id should be an attribute in the schema directly
+        add an extra attribute 'id' to each schema / record for now
+            should remove unnecessary key in nodes later
 
         selection
             vdbexpr_eval <----this needs to be implemented. Currently just returning 'true' regardless of what expression is

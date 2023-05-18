@@ -59,16 +59,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    Fill out parser.  See comments in parser.c <----------------START HERE
-            <>
-        evaluate all unary (VDBT_MINUS and VDBT_NOT)
-        evaluate more binary logical expressions (VDBT_AND and VDBT_OR)
-        parse groups (using parenthese as delimiters for groups)
-
-    Fill out tree-walk interpreter
-        VDBT_NOT and VDBT_MINUS in unary expressions
-        VDBT_AND and VDBT_OR in binary expressions 
-
     VDBT_TYPE_FLOAT
     VDBT_FLOAT
 
@@ -99,6 +89,10 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
             write SQL script to make database solar_system
             tables planets, moons, dwarf_planets
+
+    Does struct VdbDatum really need to store struct VdbString as a pointer?
+        couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
+        this would simplify our code a lot and minimize the chances of a memory leak
 
     Rewrite parser to parse expressions instead of bespoke tuple parsing functions:
         Should use parser to parse assignment (using 'set' keyword)

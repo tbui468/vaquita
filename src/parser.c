@@ -53,13 +53,18 @@ void vdbexpr_print(struct VdbExpr* expr) {
             printf("[%.*s]", expr->as.identifier.token.len, expr->as.identifier.token.lexeme);
             break;
         case VDBET_UNARY:
-            printf("%.*s", expr->as.unary.op.len, expr->as.unary.op.lexeme);
+            printf("(%.*s", expr->as.unary.op.len, expr->as.unary.op.lexeme);
+            printf(" ");
             vdbexpr_print(expr->as.unary.right);
+            printf(")");
             break;
         case VDBET_BINARY:
+            printf("(%.*s", expr->as.binary.op.len, expr->as.binary.op.lexeme);
+            printf(" ");
             vdbexpr_print(expr->as.binary.left);
-            printf(" %.*s ", expr->as.binary.op.len, expr->as.binary.op.lexeme);
+            printf(" ");
             vdbexpr_print(expr->as.binary.right);
+            printf(")");
             break;
     }
 }
@@ -99,16 +104,14 @@ static bool vdbexpr_eval_binary_bools(enum VdbTokenType op, struct VdbDatum* lef
     switch (op) {
         case VDBT_EQUALS:
             return left->as.Bool == right->as.Bool;
-        case VDBT_LESS:
-            return left->as.Bool < right->as.Bool;
-        case VDBT_LESS_EQUALS:
-            return left->as.Bool <= right->as.Bool;
-        case VDBT_GREATER:
-            return left->as.Bool > right->as.Bool;
-        case VDBT_GREATER_EQUALS:
-            return left->as.Bool >= right->as.Bool;
+        case VDBT_NOT_EQUALS:
+            return left->as.Bool != right->as.Bool;
+        case VDBT_AND:
+            return left->as.Bool && right->as.Bool;
+        case VDBT_OR:
+            return left->as.Bool || right->as.Bool;
         default:
-            assert(false && "invalid binary operator");
+            assert(false && "invalid binary operator for booleans");
             break;
     }
     //should never reach this
@@ -119,6 +122,8 @@ static bool vdbexpr_eval_binary_ints(enum VdbTokenType op, struct VdbDatum* left
     switch (op) {
         case VDBT_EQUALS:
             return left->as.Int == right->as.Int;
+        case VDBT_NOT_EQUALS:
+            return left->as.Int != right->as.Int;
         case VDBT_LESS:
             return left->as.Int < right->as.Int;
         case VDBT_LESS_EQUALS:
@@ -128,7 +133,7 @@ static bool vdbexpr_eval_binary_ints(enum VdbTokenType op, struct VdbDatum* left
         case VDBT_GREATER_EQUALS:
             return left->as.Int >= right->as.Int;
         default:
-            assert(false && "invalid binary operator");
+            assert(false && "invalid binary operator for integers");
             break;
     }
     //should never reach this
@@ -140,6 +145,9 @@ static bool vdbexpr_eval_binary_strings(enum VdbTokenType op, struct VdbDatum* l
     switch (op) {
         case VDBT_EQUALS:
             result = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) == 0;
+            break;
+        case VDBT_NOT_EQUALS:
+            result = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) != 0;
             break;
         case VDBT_LESS:
             result = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) < 0;
@@ -154,7 +162,7 @@ static bool vdbexpr_eval_binary_strings(enum VdbTokenType op, struct VdbDatum* l
             result = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) >= 0;
             break;
         default:
-            assert(false && "invalid binary operator");
+            assert(false && "invalid binary operator for strings");
             break;
     }
     
@@ -227,18 +235,359 @@ struct VdbDatum vdbexpr_eval_literal(struct VdbToken token) {
     return d;
 }
 
-static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
-    if (!expr) {
-        struct VdbDatum d;
-        d.type = VDBT_TYPE_BOOL;
-        d.as.Bool = true;
-        return d;
+static struct VdbDatum vdbexpr_eval_binary_equals(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
     }
 
+    if (left->type != right->type) {
+        assert(false && "comparing different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    d.type = VDBT_TYPE_BOOL;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) == 0;
+            break;
+        case VDBT_TYPE_INT:
+            d.as.Bool = left->as.Int == right->as.Int;
+            break;
+        case VDBT_TYPE_BOOL:
+            d.as.Bool = left->as.Bool == right->as.Bool;
+            break;
+        default:
+            assert(false && "data type not supported");
+            break;
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_not_equals(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "comparing different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    d.type = VDBT_TYPE_BOOL;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) != 0;
+            break;
+        case VDBT_TYPE_INT:
+            d.as.Bool = left->as.Int != right->as.Int;
+            break;
+        case VDBT_TYPE_BOOL:
+            d.as.Bool = left->as.Bool != right->as.Bool;
+            break;
+        default:
+            assert(false && "data type not supported");
+            break;
+    }
+
+    return d;
+}
+static struct VdbDatum vdbexpr_eval_binary_less(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "comparing different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    d.type = VDBT_TYPE_BOOL;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) < 0;
+            break;
+        case VDBT_TYPE_INT:
+            d.as.Bool = left->as.Int < right->as.Int;
+            break;
+        default:
+            assert(false && "data type not supported");
+            break;
+    }
+
+    return d;
+}
+static struct VdbDatum vdbexpr_eval_binary_less_equals(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "comparing different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    d.type = VDBT_TYPE_BOOL;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) <= 0;
+            break;
+        case VDBT_TYPE_INT:
+            d.as.Bool = left->as.Int <= right->as.Int;
+            break;
+        default:
+            assert(false && "data type not supported");
+            break;
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_greater(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "comparing different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    d.type = VDBT_TYPE_BOOL;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) > 0;
+            break;
+        case VDBT_TYPE_INT:
+            d.as.Bool = left->as.Int > right->as.Int;
+            break;
+        default:
+            assert(false && "data type not supported");
+            break;
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_greater_equals(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "comparing different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    d.type = VDBT_TYPE_BOOL;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) >= 0;
+            break;
+        case VDBT_TYPE_INT:
+            d.as.Bool = left->as.Int >= right->as.Int;
+            break;
+        default:
+            assert(false && "data type not supported");
+            break;
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_and(struct VdbDatum* left, struct VdbDatum* right) {
+    struct VdbDatum d;
+    d.type = VDBT_TYPE_BOOL;
+    if (left->is_null && right->is_null) {
+        d.is_null = true;
+    } else if (left->is_null && right->type == VDBT_TYPE_BOOL) {
+        if (right->as.Bool) {
+            d.is_null = true;
+        } else {
+            d.is_null = false;
+            d.as.Bool = false;
+        }
+    } else if (left->type == VDBT_TYPE_BOOL && right->is_null) {
+        if (left->as.Bool) {
+            d.is_null = true;
+        } else {
+            d.is_null = false;
+            d.as.Bool = false;
+        }
+    } else if (left->type == VDBT_TYPE_BOOL && right->type == VDBT_TYPE_BOOL) {
+        d.is_null = false;
+        d.as.Bool = left->as.Bool && right->as.Bool;
+    } else {
+        assert(false && "data types not supported for 'and' operator");
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_or(struct VdbDatum* left, struct VdbDatum* right) {
+    struct VdbDatum d;
+    d.type = VDBT_TYPE_BOOL;
+    if (left->is_null && right->is_null) {
+        d.is_null = true;
+    } else if (left->is_null && right->type == VDBT_TYPE_BOOL) {
+        if (right->as.Bool) {
+            d.is_null = false;
+            d.as.Bool = true;
+        } else {
+            d.is_null = true;
+        }
+    } else if (left->type == VDBT_TYPE_BOOL && right->is_null) {
+        if (left->as.Bool) {
+            d.is_null = false;
+            d.as.Bool = true;
+        } else {
+            d.is_null = true;
+        }
+    } else if (left->type == VDBT_TYPE_BOOL && right->type == VDBT_TYPE_BOOL) {
+        d.is_null = false;
+        d.as.Bool = left->as.Bool || right->as.Bool;
+    } else {
+        assert(false && "data types not supported for 'and' operator");
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_plus(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "adding different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    switch (left->type) {
+        case VDBT_TYPE_STR:
+            d.type = VDBT_TYPE_STR;
+            d.as.Str = malloc_w(sizeof(struct VdbString));
+            int len = left->as.Str->len + right->as.Str->len;
+            d.as.Str->len = len;
+            d.as.Str->start = malloc_w(sizeof(char) * (len + 1));
+            memcpy(d.as.Str->start, left->as.Str->start, left->as.Str->len);
+            memcpy(d.as.Str->start + left->as.Str->len, right->as.Str->start, right->as.Str->len);
+            d.as.Str->start[len] = '\0';
+            break;
+        case VDBT_TYPE_INT:
+            d.type = VDBT_TYPE_INT;
+            d.as.Int = left->as.Int + right->as.Int;
+            break;
+        default:
+            assert(false && "addition with this data type not supported");
+            break;
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_eval_binary_minus(struct VdbDatum* left, struct VdbDatum* right) {
+    if (left->is_null || right->is_null) {
+        struct VdbDatum d = *left;
+        d.is_null = true;
+        return d; 
+    }
+
+    if (left->type != right->type) {
+        assert(false && "adding different types not implemented");
+    }
+
+    struct VdbDatum d;
+    d.is_null = false;
+    switch (left->type) {
+        case VDBT_TYPE_INT:
+            d.type = VDBT_TYPE_INT;
+            d.as.Int = left->as.Int - right->as.Int;
+            break;
+        default:
+            assert(false && "addition with this data type not supported");
+            break;
+    }
+
+    return d;
+}
+
+static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
     switch (expr->type) {
         case VDBET_BINARY: {
             struct VdbDatum left = vdbexpr_do_eval(expr->as.binary.left, rec, schema);
             struct VdbDatum right = vdbexpr_do_eval(expr->as.binary.right, rec, schema);
+
+            struct VdbDatum d;
+            switch (expr->as.binary.op.type) {
+                case VDBT_EQUALS:
+                    d = vdbexpr_eval_binary_equals(&left, &right);
+                    break;
+                case VDBT_NOT_EQUALS:
+                    d = vdbexpr_eval_binary_not_equals(&left, &right);
+                    break;
+                case VDBT_LESS:
+                    d = vdbexpr_eval_binary_less(&left, &right);
+                    break;
+                case VDBT_LESS_EQUALS:
+                    d = vdbexpr_eval_binary_less_equals(&left, &right);
+                    break;
+                case VDBT_GREATER:
+                    d = vdbexpr_eval_binary_greater(&left, &right);
+                    break;
+                case VDBT_GREATER_EQUALS:
+                    d = vdbexpr_eval_binary_greater_equals(&left, &right);
+                    break;
+                case VDBT_AND:
+                    d = vdbexpr_eval_binary_and(&left, &right);
+                    break;
+                case VDBT_OR:
+                    d = vdbexpr_eval_binary_or(&left, &right);
+                    break;
+                case VDBT_PLUS:
+                    d = vdbexpr_eval_binary_plus(&left, &right);
+                    break;
+                case VDBT_MINUS:
+                    d = vdbexpr_eval_binary_minus(&left, &right);
+                    break;
+                default:
+                    assert(false && "invalid binary operator");
+                    break;
+            }
+
+            if (left.type == VDBT_TYPE_STR) {
+                free(left.as.Str->start);
+                free(left.as.Str);
+            }
+
+            if (right.type == VDBT_TYPE_STR) {
+                free(right.as.Str->start);
+                free(right.as.Str);
+            }
+
+            return d;
+            /*
 
             if (left.is_null || right.is_null) {
                 break;
@@ -248,6 +597,7 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
 
             struct VdbDatum d;
             d.type = VDBT_TYPE_BOOL;
+            d.is_null = false;
             switch (left.type) {
                 case VDBT_TYPE_BOOL:
                     d.as.Bool = vdbexpr_eval_binary_bools(expr->as.binary.op.type, &left, &right);
@@ -262,11 +612,30 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
                     assert(false && "unsupported type for binary operation");
                     break;
             }
-            return d;
+            return d;*/
         }
         case VDBET_UNARY: {
-            //TODO: negative numbers and 'not' operator (for negation)
-            break;
+            struct VdbDatum right = vdbexpr_do_eval(expr->as.unary.right, rec, schema);
+
+            if (right.is_null) {
+                assert(false && "unary operator on null not implemented");
+            }
+
+            struct VdbDatum d;
+            switch (expr->as.unary.op.type) {
+                case VDBT_NOT:
+                    d = right;
+                    d.as.Bool = !d.as.Bool;
+                    break;
+                case VDBT_MINUS:
+                    d = right;
+                    d.as.Int = -d.as.Int;
+                    break;
+                default:
+                    assert(false && "unsupported type for unary operation");
+                    break;
+            }
+            return d;
         }
         case VDBET_IDENTIFIER: {
             return vdbexpr_eval_identifier(expr->as.identifier.token, rec, schema);
@@ -274,19 +643,22 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
         case VDBET_LITERAL: {
             return vdbexpr_eval_literal(expr->as.literal.token);
         }
-        default:
+        default: {
             assert(false && "invalid expression type");
-            break;
+            //just to silence warnings - should never reach this path
+            struct VdbDatum d;
+            d.type = VDBT_TYPE_BOOL;
+            d.as.Bool = false;
+            return d;
+        }
     }
-
-    //just to silence warnings - should never reach this path
-    struct VdbDatum d;
-    d.type = VDBT_TYPE_BOOL;
-    d.as.Bool = false;
-    return d;
 }
 
 bool vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
+    if (!expr) {
+        return true;
+    }
+
     return vdbexpr_do_eval(expr, rec, schema).as.Bool;
 }
 
@@ -412,8 +784,8 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
 }
 struct VdbExpr* vdbparser_parse_unary(struct VdbParser* parser) {
     if (vdbparser_peek_token(parser).type == VDBT_MINUS) {
-        struct VdbToken not = vdbparser_next_token(parser);
-        return vdbexpr_init_unary(not, vdbparser_parse_unary(parser));
+        struct VdbToken op = vdbparser_next_token(parser);
+        return vdbexpr_init_unary(op, vdbparser_parse_unary(parser));
     } else {
         return vdbparser_parse_primary(parser);
     }

@@ -4,7 +4,7 @@ open sol;
 
 create table planets (name string, mass int, atmosphere bool);
 describe planets;
-insert into planets (name, mass, atmosphere) values ("Neptune", 20, false), ("Mars", 10, true), ("Venus", 20, false), ("Earth", 10, true);
+insert into planets (name, mass, atmosphere) values ("Neptune", 20, false), ("Mars", 10, true), ("Venus", 10, false), ("Earth", 10, true);
 insert into planets (name, mass, atmosphere) values ("Mercury", 5, true), ("Jupiter", 100, true), ("Saturn", 323, false);
 select mass, name from planets;
 
@@ -14,7 +14,7 @@ insert into asteroids (material) values ("iron"), ("nickel");
 select id, name, material from asteroids;
 select name, id from planets;
 describe asteroids;
-select name from asteroids where material = "iron";
+select name from planets where not mass = 10 and name = "Jupiter";
 
 close sol;
 exit;

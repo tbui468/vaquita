@@ -2,10 +2,13 @@ if exists drop database sol;
 create database sol;
 open sol;
 
-create table planets (name string, mass int, atmosphere bool);
-insert into planets (name, mass, atmosphere) values ("Neptune", 20, false), ("Mars", 10, true), ("Venus", 10, false), ("Earth", 10, true);
-insert into planets (name, mass, atmosphere) values ("Mercury", 5, true), ("Jupiter", 100, true), ("Saturn", 323, false);
-select id, name from planets where mass < 10 or mass > 200;
+create table planets (name string, gravity float, mass int, atmosphere bool);
+describe planets;
+insert into planets (name, gravity, mass, atmosphere) values ("Mars", 1.232, 2324, true), ("Earth", 1.0, 232, true);
+insert into planets (name, gravity) values ("Saturn", 22.42), ("Jupiter", 24.232);
+select * from planets;
+
+drop table planets;
 
 close sol;
 exit;

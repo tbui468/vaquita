@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "vdb.h"
 #include "schema.h"
@@ -159,12 +160,18 @@ enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** att
                 memcpy((*types)[i], "string", 6);
                 (*types)[i][6] = '\0';
                 break;
+            case VDBT_TYPE_FLOAT:
+                (*types)[i] = malloc_w(sizeof(char) * 6);
+                memcpy((*types)[i], "float", 5);
+                (*types)[i][5] = '\0';
+                break;
             case VDBT_TYPE_BOOL:
                 (*types)[i] = malloc_w(sizeof(char) * 5);
                 memcpy((*types)[i], "bool", 4);
                 (*types)[i][4] = '\0';
                 break;
             default:
+                assert(false && "invalid schema data type");
                 break;
         }
     }

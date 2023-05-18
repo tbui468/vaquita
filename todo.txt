@@ -59,9 +59,6 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-    VDBT_TYPE_FLOAT
-    VDBT_FLOAT
-
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
             use data here in sample database
@@ -89,6 +86,8 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
             write SQL script to make database solar_system
             tables planets, moons, dwarf_planets
+
+    Remove key field in record and in node- this is now a regular attribute in records now
 
     Does struct VdbDatum really need to store struct VdbString as a pointer?
         couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
@@ -163,13 +162,13 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     Custom keys
         Unique or not?
         Have to rewrite tree to split/merge based on where inserted (since it will not be in order anymore)
-************************Execution Engine**********************
 
-    Execution engine
-        selection WHERE
-        projection SELECT 
+    views
 
-        See SQL-92 for the standard to quality as 'supporting SQL'
+    unique constraint
 
-        Foreign keys
+    not null constraint
 
+    group by
+
+    joins

@@ -157,6 +157,10 @@ struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSche
                 rec->data[i].as.Int = *((uint64_t*)(buf + data_off));
                 data_off += sizeof(uint64_t);
                 break;
+            case VDBT_TYPE_FLOAT:
+                rec->data[i].as.Float = *((double*)(buf + data_off));
+                data_off += sizeof(double);
+                break;
             case VDBT_TYPE_STR:
                 rec->data[i].block_idx = *((uint32_t*)(buf + data_off));
                 data_off += sizeof(uint32_t);

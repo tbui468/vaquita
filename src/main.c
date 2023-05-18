@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "vdb.h"
 #include "util.h"
@@ -248,6 +249,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                             case VDBT_TYPE_INT:
                                 printf("%ld, ", r->data[j].as.Int);
                                 break;
+                            case VDBT_TYPE_FLOAT:
+                                printf("%f, ", r->data[j].as.Float);
+                                break;
                             case VDBT_TYPE_BOOL:
                                 if (r->data[j].as.Bool) {
                                     printf("true, ");
@@ -259,6 +263,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                                 printf("null, ");
                                 break;
                              default:
+                                assert(false && "token is not valid data type");
                                 break;
                         }
                     }

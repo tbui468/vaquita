@@ -5,6 +5,7 @@ enum VdbTokenType {
     VDBT_TYPE_STR,
     VDBT_TYPE_INT,
     VDBT_TYPE_BOOL,
+    VDBT_TYPE_FLOAT,
     VDBT_TYPE_NULL, //used for returned record sets only
     VDBT_NULL,
     VDBT_EXIT,
@@ -19,6 +20,7 @@ enum VdbTokenType {
     VDBT_IDENTIFIER,
     VDBT_STR,
     VDBT_INT,
+    VDBT_FLOAT,
     VDBT_TRUE,
     VDBT_FALSE,
     VDBT_LPAREN,

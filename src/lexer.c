@@ -61,14 +61,22 @@ enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct 
 }
 
 enum VdbReturnCode vdblexer_read_number(struct VdbLexer* lexer, struct VdbToken* t) {
-    t->type = VDBT_INT;
     t->lexeme = &lexer->src[lexer->cur];
     t->len = 1;
+
+    bool is_decimal = *(t->lexeme) == '.';
    
     char c; 
-    while ((c = lexer->src[++lexer->cur]) != ' ' && c != EOF && c != '\0' && is_numeric(c)) {
+    while ((c = lexer->src[++lexer->cur]) != ' ' && c != EOF && c != '\0' && (is_numeric(c) || c == '.')) {
+        if (lexer->src[lexer->cur] == '.')
+            is_decimal = true;
         t->len++;
     }
+
+    if (is_decimal)
+        t->type = VDBT_FLOAT;
+    else
+        t->type = VDBT_INT;
 
     return VDBRC_SUCCESS;
 }
@@ -119,6 +127,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_INTO;
     } else if (strncmp(t->lexeme, "int", 3) == 0) {
         t->type = VDBT_TYPE_INT;
+    } else if (strncmp(t->lexeme, "float", 5) == 0) {
+        t->type = VDBT_TYPE_FLOAT;
     } else if (strncmp(t->lexeme, "bool", 4) == 0) {
         t->type = VDBT_TYPE_BOOL;
     } else if (strncmp(t->lexeme, "insert", 6) == 0) {

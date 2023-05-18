@@ -27,6 +27,7 @@ struct VdbDatum {
         uint64_t Int;
         struct VdbString* Str;
         bool Bool;
+        double Float;
     } as;
     uint32_t block_idx;
     uint32_t idxcell_idx;

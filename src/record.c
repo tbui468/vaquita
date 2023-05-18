@@ -28,6 +28,13 @@ struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct
                     rec->data[i].as.Int = strtoll(n, NULL, 10);
                     break;
                 }
+                case VDBT_TYPE_FLOAT: {
+                    char n[values->tokens[j].len + 1];
+                    memcpy(n, values->tokens[j].lexeme, values->tokens[j].len);
+                    n[values->tokens[j].len] = '\0';
+                    rec->data[i].as.Float = strtod(n, NULL);
+                    break;
+                }
                 case VDBT_TYPE_STR: {
                     int len = values->tokens[j].len;
                     rec->data[i].as.Str = malloc_w(sizeof(struct VdbString));
@@ -133,6 +140,9 @@ uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec) {
             case VDBT_TYPE_INT:
                 size += sizeof(uint64_t);
                 break;
+            case VDBT_TYPE_FLOAT:
+                size += sizeof(double);
+                break;
             case VDBT_TYPE_STR:
                 size += sizeof(uint32_t) * 2;
                 break;
@@ -160,6 +170,10 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
             case VDBT_TYPE_INT:
                 *((uint64_t*)(buf + off)) = d->as.Int;
                 off += sizeof(uint64_t);
+                break;
+            case VDBT_TYPE_FLOAT:
+                *((double*)(buf + off)) = d->as.Float;
+                off += sizeof(double);
                 break;
             case VDBT_TYPE_STR: {
                 write_u32(buf, d->block_idx, &off);

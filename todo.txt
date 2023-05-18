@@ -59,7 +59,7 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         vdb > exit;
 
 *******************************TODO**************************************************
-        Fill out parser.  See comments in parser.c <----------------START HERE
+    Fill out parser.  See comments in parser.c <----------------START HERE
             <>
         evaluate all unary (VDBT_MINUS and VDBT_NOT)
         evaluate more binary logical expressions (VDBT_AND and VDBT_OR)
@@ -99,6 +99,16 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
             write SQL script to make database solar_system
             tables planets, moons, dwarf_planets
 
+    cursor abstraction:
+        cursors are created when starting a new transaction, and destroyed when transaction ends (commit or not)
+        a cursor is associated with a table AND an ordering (eg, by which column the records are indexed)
+        a cursor has a closed and open state:
+            <open stmt> opens a cursor
+            <close stmt>, <commit stmt>, or <rollback stmt> closes cursor
+        cursor may be before first record or one past the last record
+        fetch - moves cursor to next record and returns that record
+        delete - deletes record pointed to by cursor - moves cursor to next record after deletion
+        update - updates records pointed to by cursor
 
     to update
         struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);

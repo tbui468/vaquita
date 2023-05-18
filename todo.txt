@@ -65,8 +65,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
         evaluate more binary logical expressions (VDBT_AND and VDBT_OR)
         parse groups (using parenthese as delimiters for groups)
 
-        Should use parser to parse assignment (using 'set' keyword)
-        Should use parser to parse tuples (sequence in parenthesese, separated by commas)
+    Fill out tree-walk interpreter
+        VDBT_NOT and VDBT_MINUS in unary expressions
+        VDBT_AND and VDBT_OR in binary expressions 
 
     VDBT_TYPE_FLOAT
     VDBT_FLOAT
@@ -99,6 +100,10 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
             write SQL script to make database solar_system
             tables planets, moons, dwarf_planets
 
+    Rewrite parser to parse expressions instead of bespoke tuple parsing functions:
+        Should use parser to parse assignment (using 'set' keyword)
+        Should use parser to parse tuples (sequence in parenthesese, separated by commas)
+
     cursor abstraction:
         cursors are created when starting a new transaction, and destroyed when transaction ends (commit or not)
         a cursor is associated with a table AND an ordering (eg, by which column the records are indexed)
@@ -127,6 +132,21 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
 
     need to return error if table doesn't exist when insert/select/update/delete - segfaulting now
 
+    pager eviction policy
+        make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
+        Or just manually limit number of pages allowed to hold at a time
+        Use O_DIRECT to bypass OS pager
+
+    Concurrency - need to get read/write locks on file
+        pager can take care of this
+
+    Transactions - need a way of rolling back changes if transaction fails
+        need a way to track undos (a stack???)
+
+    Logging - database should never be in inconsistent state if system fails
+        sqlite uses a write-ahead log
+
+
     Connect cli and the database tree to get useful data - play with MariaDB or MySQL to see how they print outputs
         > open school
             database school opened
@@ -143,24 +163,12 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
             database school closed
             [what message?]
 
-    pager eviction policy
-        make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
-        Or just manually limit number of pages allowed to hold at a time
-        Use O_DIRECT to bypass OS pager
-
     Foreign keys to connect two or more tables
         joins will be needed here
 
     Custom keys
         Unique or not?
         Have to rewrite tree to split/merge based on where inserted (since it will not be in order anymore)
-
-    Concurrency - need to get read/write locks on file
-
-    Transactions - need a way of rolling back changes if transaction fails
-
-    Logging - database should never be in inconsistent state if system fails
-
 ************************Execution Engine**********************
 
     Execution engine

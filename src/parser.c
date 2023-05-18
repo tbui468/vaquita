@@ -410,22 +410,43 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
             return NULL;
     }
 }
-/*
 struct VdbExpr* vdbparser_parse_unary(struct VdbParser* parser) {
-    just negative numbers for now
+    if (vdbparser_peek_token(parser).type == VDBT_MINUS) {
+        struct VdbToken not = vdbparser_next_token(parser);
+        return vdbexpr_init_unary(not, vdbparser_parse_unary(parser));
+    } else {
+        return vdbparser_parse_primary(parser);
+    }
 }
+
 struct VdbExpr* vdbparser_parse_factor(struct VdbParser* parser) {
+    struct VdbExpr* left = vdbparser_parse_unary(parser);
+    while (vdbparser_peek_token(parser).type == VDBT_STAR || vdbparser_peek_token(parser).type == VDBT_SLASH) {
+        struct VdbToken op = vdbparser_next_token(parser);
+        left = vdbexpr_init_binary(op, left, vdbparser_parse_unary(parser));
+    }
+
+    return left;
 }
+
 struct VdbExpr* vdbparser_parse_term(struct VdbParser* parser) {
-}*/
+    struct VdbExpr* left = vdbparser_parse_factor(parser);
+    while (vdbparser_peek_token(parser).type == VDBT_PLUS || vdbparser_peek_token(parser).type == VDBT_MINUS) {
+        struct VdbToken op = vdbparser_next_token(parser);
+        left = vdbexpr_init_binary(op, left, vdbparser_parse_factor(parser));
+    }
+
+    return left;
+}
+
 struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser) {
-    struct VdbExpr* left = vdbparser_parse_primary(parser);
+    struct VdbExpr* left = vdbparser_parse_term(parser);
     while (vdbparser_peek_token(parser).type == VDBT_LESS ||
            vdbparser_peek_token(parser).type == VDBT_GREATER ||
            vdbparser_peek_token(parser).type == VDBT_LESS_EQUALS ||
            vdbparser_peek_token(parser).type == VDBT_GREATER_EQUALS) {
         struct VdbToken op = vdbparser_next_token(parser);
-        left = vdbexpr_init_binary(op, left, vdbparser_parse_primary(parser));
+        left = vdbexpr_init_binary(op, left, vdbparser_parse_term(parser));
     }
 
     return left;
@@ -439,13 +460,33 @@ struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser) {
 
     return left;
 }
-/*
 struct VdbExpr* vdbparser_parse_not(struct VdbParser* parser) {
+    if (vdbparser_peek_token(parser).type == VDBT_NOT) {
+        struct VdbToken not = vdbparser_next_token(parser);
+        return vdbexpr_init_unary(not, vdbparser_parse_not(parser));
+    } else {
+        return vdbparser_parse_equality(parser);
+    }
 }
 struct VdbExpr* vdbparser_parse_and(struct VdbParser* parser) {
+    struct VdbExpr* left = vdbparser_parse_not(parser);
+    while (vdbparser_peek_token(parser).type == VDBT_AND) {
+        struct VdbToken and = vdbparser_next_token(parser);
+        left = vdbexpr_init_binary(and, left, vdbparser_parse_not(parser));
+    }
+
+    return left;
 }
 struct VdbExpr* vdbparser_parse_or(struct VdbParser* parser) {
+    struct VdbExpr* left = vdbparser_parse_and(parser);
+    while (vdbparser_peek_token(parser).type == VDBT_OR) {
+        struct VdbToken or = vdbparser_next_token(parser);
+        left = vdbexpr_init_binary(or, left, vdbparser_parse_and(parser));
+    }
+
+    return left;
 }
+/*
 struct VdbExpr* vdbparser_parse_assignment(struct VdbParser* parser) {
 }
 struct VdbExpr* vdbparser_parse_sequence(struct VdbParser* parser) {
@@ -453,7 +494,7 @@ struct VdbExpr* vdbparser_parse_sequence(struct VdbParser* parser) {
 }
 */
 struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser) {
-    return vdbparser_parse_equality(parser);
+    return vdbparser_parse_or(parser);
 }
 
 void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {

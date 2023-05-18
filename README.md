@@ -1,24 +1,24 @@
-# VaquitaSQL - a SQL-92 Implementation
+# VaquitaSQL - an SQL-92 Implementation
 
 ## Basic Usage
 ### Building
-git clone https://github.com/tbui468/vaquita.git
-cd vaquita
-mkdir build
-cd build
-cmake ..
-cmake --build .
+git clone https://github.com/tbui468/vaquita.git\
+cd vaquita\
+mkdir build\
+cd build\
+cmake ..\
+cmake --build .\
 
 ### CLI
-> create database pets;
-> open pets;
-> create table cats (name string, age, int, loud bool);
-> insert into cats (name, age, loud) values ("Mittens", 2, true), ("Saki", 3, false);
-> select name, age from cats where id = 1;
-> close pets;
-> exit;
+\> create database pets;\
+\> open pets;\
+\> create table cats (name string, age, int, loud bool);\
+\> insert into cats (name, age, loud) values ("Mittens", 2, true), ("Saki", 3, false);\
+\> select name, age from cats where id = 1;\
+\> close pets;\
+\> exit;\
 
-##ACID Compliance
+## ACID Compliance
 ### Progress
 ### Atomicity
 ### Consistency
@@ -28,33 +28,33 @@ cmake --build .
 ## SQL-92 Conformance
 ### Entry
 #### Statements
-select
-from
-where
-group by
-having
-insert
-update
-delete
-create table
-create view
+select\
+from\
+where\
+group by\
+having\
+insert\
+update\
+delete\
+create table\
+create view\
 
 #### Constraints/Column Types
-unique
-not null
-default
-check
-primary keys
-foreign keys
+unique\
+not null\
+default\
+check\
+primary keys\
+foreign keys\
 
 #### Data Types
-numeric
-decimal
-integer
-smallint
-float
-real
-double
+numeric\
+decimal\
+integer\
+smallint\
+float\
+real\
+double\
 
 ### Intermediate
 #### TODO: fill in requirements

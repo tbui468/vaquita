@@ -5,7 +5,7 @@
 #include "record.h"
 #include "util.h"
 
-struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct VdbTokenList* attrs, struct VdbTokenList* values) {
+struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct VdbTokenList* attrs, struct VdbExprList* values) {
     struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
     rec->count = schema->count; 
     rec->key = key;
@@ -19,6 +19,11 @@ struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct
             if (strncmp(schema->names[i], attrs->tokens[j].lexeme, attrs->tokens[j].len) != 0) 
                 continue;
 
+            //TODO: passing in NULL for struct VdbRecord* and struct Schema* since values expression shouldn't have identifiers
+            //  but holy hell this is ugly - should fix this
+            rec->data[i] = vdbexpr_eval(values->exprs[j], NULL, NULL);
+
+            /*
             rec->data[i].is_null = false;
             switch (schema->types[i]) {
                 case VDBT_TYPE_INT: {
@@ -55,7 +60,7 @@ struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct
                     assert(false && "invalid data type");
                     break;
                 }
-            }
+            }*/
             found = true;
             break;
 

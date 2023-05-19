@@ -45,7 +45,7 @@ void vdb_free_schema(struct VdbSchema* schema);
 bool vdb_create_table(VDBHANDLE h, const char* name, struct VdbSchema* schema);
 enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name);
 
-enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbTokenList* values);
+enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbExprList* values);
 void vdb_insert_record(VDBHANDLE h, const char* name, ...);
 
 struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key);

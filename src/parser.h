@@ -70,7 +70,7 @@ struct VdbStmt {
         } create;
         struct {
             struct VdbTokenList* attributes;
-            struct VdbTokenList* values;
+            struct VdbExprList* values;
         } insert;
         struct {
             struct VdbTokenList* attributes;
@@ -104,7 +104,7 @@ struct VdbExpr* vdbexpr_init_literal(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_identifier(struct VdbToken token);
 struct VdbExpr* vdbexpr_init_unary(struct VdbToken op, struct VdbExpr* right);
 struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, struct VdbExpr* right);
-bool vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema);
+struct VdbDatum vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema);
 
 void vdbexpr_print(struct VdbExpr* expr);
 void vdbexpr_free(struct VdbExpr* expr);

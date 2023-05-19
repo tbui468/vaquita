@@ -73,5 +73,6 @@ struct VdbTokenList* vdbtokenlist_init();
 void vdbtokenlist_free(struct VdbTokenList* tl);
 void vdbtokenlist_append_token(struct VdbTokenList* tl, struct VdbToken t);
 void vdbtokenlist_print(struct VdbTokenList* tl);
+void vdbtoken_print(struct VdbToken t);
 
 #endif //VDB_TOKEN_H

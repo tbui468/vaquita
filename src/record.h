@@ -4,6 +4,7 @@
 #include <stdarg.h>
 
 #include "schema.h"
+#include "parser.h"
 
 struct VdbRecord {
     struct VdbDatum* data;
@@ -21,7 +22,7 @@ struct VdbRecordSet {
 //record
 //[next|size|data (first is key)....]
 
-struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct VdbTokenList* attrs, struct VdbTokenList* values);
+struct VdbRecord* vdbrecord_alloc(uint32_t key, struct VdbSchema* schema, struct VdbTokenList* attrs, struct VdbExprList* values);
 void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
 uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec);

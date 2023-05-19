@@ -31,13 +31,11 @@ Major components
 Todos
 
 *******************************TODO**************************************************
-    Read in remaining planet data in sol.sql
-        should allow queries to span multiple lines (will just skipping \n work?)
-            this will make .sql files cleaner
-        may need to check if negative ints and floats are read correctly
-            need to use parser to parse values when inserting new record
+    Fix errors with circular dependency
+        refactor into multiple files
+        or forward declare some structs
 
-    Don't need to specify column names if inserting all values
+    delete unused code in parser
 
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
@@ -68,6 +66,8 @@ Todos
             tables planets, moons, dwarf_planets
 
     Remove key field in record and in node- this is now a regular attribute in records now
+
+    Don't need to specify column names if inserting all values
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.

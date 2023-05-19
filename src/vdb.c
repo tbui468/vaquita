@@ -320,21 +320,22 @@ enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
     return VDBRC_ERROR;
 }
 
-enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbTokenList* values) {
+enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbExprList* values) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
 
-    struct VdbToken value_token;
-    value_token.type = VDBT_INT;
-    //TODO: need a better way to convert number to string
+    //append key to end of values list
+    struct VdbToken key_token;
+    key_token.type = VDBT_INT;
     char s[64];
     sprintf(s, "%d", key);
-    value_token.lexeme = s;
-    value_token.len = strlen(s);
-    vdbtokenlist_append_token(values, value_token);
+    key_token.lexeme = s;
+    key_token.len = strlen(s);
+    struct VdbExpr* key_expr = vdbexpr_init_literal(key_token);
+    vdbexprlist_append_expr(values, key_expr);
 
     struct VdbRecord* rec = vdbrecord_alloc(key, schema, attrs, values);
     vdb_schema_free(schema);
@@ -458,7 +459,7 @@ struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor) {
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    bool result = vdbexpr_eval(selection, rec, schema);
+    bool result = vdbexpr_eval(selection, rec, schema).as.Bool;
     vdb_schema_free(schema);
     return result;
 }

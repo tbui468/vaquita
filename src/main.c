@@ -198,13 +198,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 vdbtokenlist_append_token(stmt->as.insert.attributes, attr_token);
 
                 for (int i = 0; i < rec_count; i++) {
-                    struct VdbTokenList* tl = vdbtokenlist_init();
+                    struct VdbExprList* el = vdbexprlist_init();
                     int off = i * attr_count_without_id;
                     for (int j = off; j < off + attr_count_without_id; j++) {
-                        vdbtokenlist_append_token(tl, stmt->as.insert.values->tokens[j]);
+                        vdbexprlist_append_expr(el, stmt->as.insert.values->exprs[j]);
                     }
-                    vdb_insert_new(*h, table_name, stmt->as.insert.attributes, tl);
-                    vdbtokenlist_free(tl);
+                    vdb_insert_new(*h, table_name, stmt->as.insert.attributes, el);
+                    vdbexprlist_free(el);
                 }
                 printf("inserted %d record(s) into %s\n", rec_count, table_name);
                 break;
@@ -378,6 +378,8 @@ void run_script(const char* path) {
         return;
     }
 
+    //vdbtokenlist_print(tokens);
+
     struct VdbStmtList* stmts;
     struct VdbErrorList* parse_errors;
 
@@ -393,6 +395,11 @@ void run_script(const char* path) {
         free(buf);
         return;
     }
+
+    /*
+    for (int i = 0; i < stmts->count; i++) {
+        vdbstmt_print(&stmts->stmts[i]);
+    }*/
 
     vdb_execute(stmts, &h);
 

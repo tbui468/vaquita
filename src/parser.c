@@ -141,6 +141,15 @@ struct VdbDatum vdbexpr_eval_literal(struct VdbToken token) {
             d.as.Int = strtoll(s, NULL, 10);
             break;
         }
+        case VDBT_FLOAT: {
+            d.type = VDBT_TYPE_FLOAT;
+            int len = token.len;
+            char s[len + 1];
+            memcpy(s, token.lexeme, len);
+            s[len] = '\0';
+            d.as.Float = strtod(s, NULL);
+            break;
+        }
         case VDBT_TRUE: {
             d.type = VDBT_TYPE_BOOL;
             d.as.Bool = true;
@@ -554,7 +563,13 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
                     break;
                 case VDBT_MINUS:
                     d = right;
-                    d.as.Int = -d.as.Int;
+                    if (d.type == VDBT_TYPE_INT) {
+                        d.as.Int = -d.as.Int;
+                    } else if (d.type == VDBT_TYPE_FLOAT) {
+                        d.as.Float = -d.as.Float;
+                    } else {
+                        assert(false && "unsupported type for unary operation");
+                    }
                     break;
                 default:
                     assert(false && "unsupported type for unary operation");
@@ -579,12 +594,15 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
     }
 }
 
-bool vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
+struct VdbDatum vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
     if (!expr) {
-        return true;
+        struct VdbDatum d;
+        d.type = VDBT_TYPE_BOOL;
+        d.as.Bool = true;
+        return d;
     }
 
-    return vdbexpr_do_eval(expr, rec, schema).as.Bool;
+    return vdbexpr_do_eval(expr, rec, schema);
 }
 
 void vdbexpr_free(struct VdbExpr* expr) {
@@ -692,6 +710,7 @@ struct VdbToken vdbparser_next_token(struct VdbParser* parser) {
 struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
     switch (vdbparser_peek_token(parser).type) {
         case VDBT_INT:
+        case VDBT_FLOAT:
         case VDBT_STR:
         case VDBT_TRUE:
         case VDBT_FALSE:
@@ -704,6 +723,7 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
             vdbparser_consume_token(parser, VDBT_RPAREN);
             return expr;
         default:
+            assert(false && "invalid token type");
             return NULL;
     }
 }
@@ -930,9 +950,17 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
 
             vdbparser_consume_token(parser, VDBT_VALUES);
 
-            stmt->as.insert.values = vdbtokenlist_init();
+            stmt->as.insert.values = vdbexprlist_init();
             while (vdbparser_peek_token(parser).type == VDBT_LPAREN) {
-                vdbparser_parse_value_tuple(parser, stmt->as.insert.values);
+                vdbparser_consume_token(parser, VDBT_LPAREN);
+                while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
+                    struct VdbExpr* expr = vdbparser_parse_expr(parser);
+                    vdbexprlist_append_expr(stmt->as.insert.values, expr);
+                    if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                        vdbparser_consume_token(parser, VDBT_COMMA);
+                    }
+                }
+                vdbparser_consume_token(parser, VDBT_RPAREN);
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                     vdbparser_consume_token(parser, VDBT_COMMA);
                 } else {
@@ -1078,8 +1106,7 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             for (int i = 0; i < stmt->as.insert.values->count; i += stmt->as.insert.attributes->count) {
                 printf("\t\t");
                 for (int j = i; j < i + stmt->as.insert.attributes->count; j++) {
-                    struct VdbToken value = stmt->as.insert.values->tokens[j];
-                    printf("%.*s", value.len, value.lexeme);
+                    vdbexpr_print(stmt->as.insert.values->exprs[j]);
                     if (j < i +  stmt->as.insert.attributes->count -1) {
                         printf(", ");
                     }

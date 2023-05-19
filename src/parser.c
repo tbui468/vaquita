@@ -66,6 +66,16 @@ void vdbexpr_print(struct VdbExpr* expr) {
             vdbexpr_print(expr->as.binary.right);
             printf(")");
             break;
+        case VDBET_IS_NULL:
+            printf("( ");
+            vdbexpr_print(expr->as.is_null.left);
+            printf(" is null )");
+            break;
+        case VDBET_IS_NOT_NULL:
+            printf("( ");
+            vdbexpr_print(expr->as.is_not_null.left);
+            printf(" is not null )");
+            break;
     }
 }
 
@@ -97,6 +107,20 @@ struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, st
     expr->as.binary.op = op;
     expr->as.binary.left = left;
     expr->as.binary.right = right;
+    return expr;
+}
+
+struct VdbExpr* vdbexpr_init_is_null(struct VdbExpr* left) {
+    struct VdbExpr* expr = malloc_w(sizeof(struct VdbExpr));
+    expr->type = VDBET_IS_NULL;
+    expr->as.is_null.left = left;
+    return expr;
+}
+
+struct VdbExpr* vdbexpr_init_is_not_null(struct VdbExpr* left) {
+    struct VdbExpr* expr = malloc_w(sizeof(struct VdbExpr));
+    expr->type = VDBET_IS_NOT_NULL;
+    expr->as.is_not_null.left = left;
     return expr;
 }
 
@@ -552,32 +576,6 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
             }
 
             return d;
-            /*
-
-            if (left.is_null || right.is_null) {
-                break;
-            }
-
-            assert(left.type == right.type); //TODO: report error if not comparable
-
-            struct VdbDatum d;
-            d.type = VDBT_TYPE_BOOL;
-            d.is_null = false;
-            switch (left.type) {
-                case VDBT_TYPE_BOOL:
-                    d.as.Bool = vdbexpr_eval_binary_bools(expr->as.binary.op.type, &left, &right);
-                    break;
-                case VDBT_TYPE_INT:
-                    d.as.Bool = vdbexpr_eval_binary_ints(expr->as.binary.op.type, &left, &right);
-                    break;
-                case VDBT_TYPE_STR:
-                    d.as.Bool = vdbexpr_eval_binary_strings(expr->as.binary.op.type, &left, &right);
-                    break;
-                default:
-                    assert(false && "unsupported type for binary operation");
-                    break;
-            }
-            return d;*/
         }
         case VDBET_UNARY: {
             struct VdbDatum right = vdbexpr_do_eval(expr->as.unary.right, rec, schema);
@@ -613,6 +611,20 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
         }
         case VDBET_LITERAL: {
             return vdbexpr_eval_literal(expr->as.literal.token);
+        }
+        case VDBET_IS_NULL: {
+            struct VdbDatum left = vdbexpr_do_eval(expr->as.is_null.left, rec, schema);
+            struct VdbDatum d;
+            d.type = VDBT_TYPE_BOOL;
+            d.as.Bool = left.is_null;
+            return d;
+        }
+        case VDBET_IS_NOT_NULL: {
+            struct VdbDatum left = vdbexpr_do_eval(expr->as.is_not_null.left, rec, schema);
+            struct VdbDatum d;
+            d.type = VDBT_TYPE_BOOL;
+            d.as.Bool = !left.is_null;
+            return d;
         }
         default: {
             assert(false && "invalid expression type");
@@ -802,9 +814,21 @@ struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser) {
 }
 struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser) {
     struct VdbExpr* left = vdbparser_parse_relational(parser);
-    while (vdbparser_peek_token(parser).type == VDBT_EQUALS || vdbparser_peek_token(parser).type == VDBT_NOT_EQUALS) {
-        struct VdbToken equal = vdbparser_next_token(parser);
-        left = vdbexpr_init_binary(equal, left, vdbparser_parse_relational(parser));
+    while (vdbparser_peek_token(parser).type == VDBT_EQUALS || 
+           vdbparser_peek_token(parser).type == VDBT_NOT_EQUALS ||
+           vdbparser_peek_token(parser).type == VDBT_IS) {
+
+        struct VdbToken token = vdbparser_next_token(parser);
+        if (token.type != VDBT_IS) {
+            left = vdbexpr_init_binary(token, left, vdbparser_parse_relational(parser));
+        } else if (vdbparser_peek_token(parser).type == VDBT_NOT) {
+            vdbparser_consume_token(parser, VDBT_NOT);
+            vdbparser_consume_token(parser, VDBT_NULL);
+            left = vdbexpr_init_is_not_null(left);
+        } else {
+            vdbparser_consume_token(parser, VDBT_NULL);
+            left = vdbexpr_init_is_null(left);
+        }
     }
 
     return left;

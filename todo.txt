@@ -30,19 +30,54 @@ Example
 Major components
 Todos
 
+*******************data****************************
+
+Use sample data to make sure SQL kinda works
+    https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
+    also look at moons/rings/comets/asteroids fact sheets
+
+        create table planets
+        create table moons
+        create table rings
+        create table comets
+        create table asteroids
+
 *******************************TODO**************************************************
-    Use sample data to make sure SQL kinda works
-        https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
-        also look at moons/rings/comets/asteroids fact sheets
+    parse expr and execute:
+        <attr> is null
+        <attr> is not null
+        
+        should bind as tightly as equality
 
-            create table planets
-            create table moons
-            create table rings
-            create table comets
-            create table asteroids
+    Expr could use own translation unit - it's quite large
+        expr struct could also be simplified
 
-    when inserting, attribute names should be parsed as expressions (being parsed as single tokens now)
-        can remove parse_identifier_tuple function then
+struct VdbExpr {
+    enum VdbExprType type;
+    struct VdbToken token; //all expr use this token (operator for unary and binary), and use unary/binary union to find more
+    union {
+        struct {
+            struct VdbExpr* right;
+        } unary;
+        struct {
+            struct VdbExpr* left;
+            struct VdbExpr* right;
+        } binary;
+    } as;
+};
+
+    Don't need to specify column names if inserting all values
+        insert into planets values (...), (...);
+
+    single line comments
+        use c-style //
+
+    multiline comments
+        use c-style /**/
+
+    node.c should not know anything about struct VdbRecord
+        tree.c should be calling vdbrecord_write, NOT node.c
+        node.c should only update its metadata/pointers
 
     Need to look at memory - measure what is allocated  
         make a static variable that tracks allocated memory in allocation wrapper functions
@@ -52,9 +87,6 @@ Todos
   
     Remove key field in record and in node- this is now a regular attribute in records now
         will need to rewrite some functions that read keys from node buffers
-
-    Don't need to specify column names if inserting all values
-        insert into planets values (...), (...);
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.
@@ -86,6 +118,16 @@ Todos
 
     add more test cases
         use python to automate running of program with test scripts
+        **Do this before writing bytecode generator and vm
+
+    Compile AST to bytecode that runs on vm
+        How could this work?
+            what instructions are needed?
+        when inserting, attribute names should be parsed as expressions (being parsed as single tokens now)
+            can remove parse_identifier_tuple function then
+
+            insert into planets (name, mass) values ("Mars", 242), ("Venus", 242), ("Earth", 534);
+
         
     need checks to prevent table manipulation/creation/dropping when database not open - segfaulting now
 

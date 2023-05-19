@@ -183,6 +183,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_AND;
     } else if (t->len == 2 && strncmp(t->lexeme, "or", 2) == 0) {
         t->type = VDBT_OR;
+    } else if (t->len == 2 && strncmp(t->lexeme, "is", 2) == 0) {
+        t->type = VDBT_IS;
     }
 
     return VDBRC_SUCCESS;

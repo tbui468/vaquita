@@ -81,6 +81,7 @@ void vdbtoken_print(struct VdbToken t) {
         case VDBT_OR: printf("VDBT_OR\n"); break;
         case VDBT_SLASH: printf("VDBT_SLASH\n"); break;
         case VDBT_NOT_EQUALS: printf("VDBT_NOT_EQUALS\n"); break;
+        case VDBT_IS: printf("VDBT_NOT_EQUALS\n"); break;
         default: printf("not implemented\n"); break;
     }
 }

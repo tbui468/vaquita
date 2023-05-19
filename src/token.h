@@ -54,7 +54,8 @@ enum VdbTokenType {
     VDBT_AND,
     VDBT_OR,
     VDBT_SLASH,
-    VDBT_NOT_EQUALS
+    VDBT_NOT_EQUALS,
+    VDBT_IS
 };
 
 struct VdbToken {

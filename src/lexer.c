@@ -42,6 +42,7 @@ enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct 
     struct VdbLexer lexer;
     lexer.src = src;
     lexer.cur = 0;
+
     *tokens = vdbtokenlist_init();
     *errors = vdberrorlist_init();
 
@@ -107,6 +108,15 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->len++;
     }
 
+    //TODO: change to switch
+    /*
+    switch (*(t->lexeme)) {
+        case 'a':
+            if (t.len == 3 && strncmp("and", t.lexeme, 3) == 0)
+                t->type = VDBT_AND;
+            break;
+    }*/
+
     if (strncmp(t->lexeme, "exit", 4) == 0) {
         t->type = VDBT_EXIT;
     } else if (strncmp(t->lexeme, "open", 4) == 0) {
@@ -171,7 +181,7 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_NOT;
     } else if (strncmp(t->lexeme, "and", 3) == 0) {
         t->type = VDBT_AND;
-    } else if (strncmp(t->lexeme, "or", 2) == 0) {
+    } else if (t->len == 2 && strncmp(t->lexeme, "or", 2) == 0) {
         t->type = VDBT_OR;
     }
 

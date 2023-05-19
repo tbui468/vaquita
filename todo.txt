@@ -30,35 +30,15 @@ Example
 Major components
 Todos
 
-**********************************Client**************************
-The dbms should run as a server (rather than embedded) and have a scheduler that
-    gives connecting clients the illusion that they have sole access to the dbms
-
-    Seems like mysql uses tcp sockets
-
-    Some basic SQL implemented in parser:
-        vdb > connect 3000;
-        vdb > show databases;
-        vdb > create database school;
-        vdb > open school;
-        
-        vdb:school > show tables;
-        vdb:school > create table students (name string, age int, grad bool);
-        vdb:school > describe students;
-        vdb:school > insert into students (name, age, male) values ("Bob", 12, true);
-        vdb:school > insert into students (name, age, male) values ("Kate", 13, false), ("John", 14, true);
-        vdb:school > update students set name = "Jim", age = 12, male = true where id = 2;
-        vdb:school > delete from students where id = 1;
-        vdb:school > select * from students;
-        vdb:school > select id, name from students;
-        vdb:school > select id, name, male from students where age >= 12;
-        vdb:school > drop table students;
-        vdb:school > close school;
-
-        vdb > drop database school;
-        vdb > exit;
-
 *******************************TODO**************************************************
+    Read in remaining planet data in sol.sql
+        should allow queries to span multiple lines (will just skipping \n work?)
+            this will make .sql files cleaner
+        may need to check if negative ints and floats are read correctly
+            need to use parser to parse values when inserting new record
+
+    Don't need to specify column names if inserting all values
+
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
             use data here in sample database
@@ -88,6 +68,9 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
             tables planets, moons, dwarf_planets
 
     Remove key field in record and in node- this is now a regular attribute in records now
+
+    If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
+        the attribute names take too much space.  Need an overflow block for attribute strings.
 
     Does struct VdbDatum really need to store struct VdbString as a pointer?
         couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
@@ -172,3 +155,5 @@ The dbms should run as a server (rather than embedded) and have a scheduler that
     group by
 
     joins
+    
+    split into client and server - use tcp sockets to connect client to server

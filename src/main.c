@@ -353,56 +353,54 @@ void run_cli() {
 
 void run_script(const char* path) {
     FILE* f = fopen_w(path, "r");
-    char* line = NULL;
-    size_t len = 0;
-    ssize_t nread;
     VDBHANDLE h = NULL;
 
-    while ((nread = getline(&line, &len, f)) > 0) {
-        line[strlen(line) - 1] = '\0';
+    fseek_w(f, 0, SEEK_END);
+    long fsize = ftell_w(f);
+    fseek_w(f, 0, SEEK_SET);
+    char* buf = malloc_w(sizeof(char) * (fsize)); //will put null terminator on eof character
+    fread_w(buf, fsize, sizeof(char), f);
+    buf[fsize - 1] = '\0';
 
-        struct VdbTokenList* tokens;
-        struct VdbErrorList* lex_errors;
+    fclose_w(f);
 
-        if (vdblexer_lex(line, &tokens, &lex_errors) == VDBRC_ERROR) {
-            for (int i = 0; i < 1; i++) {
-                struct VdbError e = lex_errors->errors[i];
-                printf("error [%d]: %s\n", e.line, e.msg);
-            }
-            vdbtokenlist_free(tokens);
-            vdberrorlist_free(lex_errors);
-            continue;
+    struct VdbTokenList* tokens;
+    struct VdbErrorList* lex_errors;
+
+    if (vdblexer_lex(buf, &tokens, &lex_errors) == VDBRC_ERROR) {
+        for (int i = 0; i < 1; i++) {
+            struct VdbError e = lex_errors->errors[i];
+            printf("error [%d]: %s\n", e.line, e.msg);
         }
+        vdbtokenlist_free(tokens);
+        vdberrorlist_free(lex_errors);
+        free(buf);
+        return;
+    }
 
-        struct VdbStmtList* stmts;
-        struct VdbErrorList* parse_errors;
+    struct VdbStmtList* stmts;
+    struct VdbErrorList* parse_errors;
 
-        if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
-            for (int i = 0; i < 1; i++) {
-                struct VdbError e = parse_errors->errors[i];
-                printf("error [%d]: %s\n", e.line, e.msg);
-            }
-            vdbtokenlist_free(tokens);
-            vdberrorlist_free(lex_errors);
-            vdbstmtlist_free(stmts);
-            vdberrorlist_free(parse_errors);
-            continue;
+    if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
+        for (int i = 0; i < 1; i++) {
+            struct VdbError e = parse_errors->errors[i];
+            printf("error [%d]: %s\n", e.line, e.msg);
         }
-
-        bool end = vdb_execute(stmts, &h);
-
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
         vdbstmtlist_free(stmts);
         vdberrorlist_free(parse_errors);
-
-        if (end) {
-            break;
-        }
+        free(buf);
+        return;
     }
 
-    free(line);
-    fclose_w(f);
+    vdb_execute(stmts, &h);
+
+    vdbtokenlist_free(tokens);
+    vdberrorlist_free(lex_errors);
+    vdbstmtlist_free(stmts);
+    vdberrorlist_free(parse_errors);
+    free(buf);
 }
 
 int main(int argc, char** argv) {

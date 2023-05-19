@@ -43,28 +43,17 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    parse expr and execute:
-        <attr> is null
-        <attr> is not null
-        
-        should bind as tightly as equality
+    struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSchema* schema, uint32_t rec_idx) <-----rewrite this to remove Record from node.c
+        rewrite so that this function returns buf* to start of record
+        then let the tree deserialize this 
+        this should remove record.h completely from node.c/h    
 
-    Expr could use own translation unit - it's quite large
-        expr struct could also be simplified
+    node.c should not know anything about struct VdbSchema
+        use same patterns as with record.h/c to have node functions return pointers to buffer
 
-struct VdbExpr {
-    enum VdbExprType type;
-    struct VdbToken token; //all expr use this token (operator for unary and binary), and use unary/binary union to find more
-    union {
-        struct {
-            struct VdbExpr* right;
-        } unary;
-        struct {
-            struct VdbExpr* left;
-            struct VdbExpr* right;
-        } binary;
-    } as;
-};
+    Does struct VdbDatum really need to store struct VdbString as a pointer?
+        couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
+        this would simplify our code a lot and minimize the chances of a memory leak
 
     Don't need to specify column names if inserting all values
         insert into planets values (...), (...);
@@ -74,10 +63,6 @@ struct VdbExpr {
 
     multiline comments
         use c-style /**/
-
-    node.c should not know anything about struct VdbRecord
-        tree.c should be calling vdbrecord_write, NOT node.c
-        node.c should only update its metadata/pointers
 
     Need to look at memory - measure what is allocated  
         make a static variable that tracks allocated memory in allocation wrapper functions
@@ -90,10 +75,6 @@ struct VdbExpr {
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.
-
-    Does struct VdbDatum really need to store struct VdbString as a pointer?
-        couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
-        this would simplify our code a lot and minimize the chances of a memory leak
 
     cursor abstraction:
         cursors are created when starting a new transaction, and destroyed when transaction ends (commit or not)

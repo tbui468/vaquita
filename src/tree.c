@@ -323,7 +323,11 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
     }
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    vdbnode_leaf_append_record(page->buf, rec, vdbschema_fixedlen_record_size(schema));
+
+    uint32_t rec_idx = vdbleaf_append_record_cell(page->buf, vdbschema_fixedlen_record_size(schema));
+    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx, vdbschema_fixedlen_record_size(schema));
+    vdbrecord_write(buf, rec);
+
     vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);
@@ -339,7 +343,10 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
     }
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    vdbnode_leaf_write_record(page->buf, rec_idx, rec, vdbschema_fixedlen_record_size(schema));
+    
+    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx, vdbschema_fixedlen_record_size(schema));
+    vdbrecord_write(buf, rec);
+
     vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);

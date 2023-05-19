@@ -5,7 +5,6 @@
 
 #include "node.h"
 #include "util.h"
-#include "record.h"
 #include "pager.h"
 
 
@@ -208,7 +207,7 @@ void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
 }
 
-void vdbnode_leaf_write_record(uint8_t* buf, uint32_t rec_idx, struct VdbRecord* rec, uint32_t fixedlen_size) {
+uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx, uint32_t fixedlen_size) {
     int off = VDB_PAGE_HDR_SIZE + rec_idx * sizeof(uint32_t);
     int data_off = *((uint32_t*)(buf + off));
 
@@ -216,18 +215,18 @@ void vdbnode_leaf_write_record(uint8_t* buf, uint32_t rec_idx, struct VdbRecord*
     write_u32(buf, next_field, &data_off);
     write_u32(buf, fixedlen_size, &data_off);
 
-    vdbrecord_write(buf + data_off, rec);
+    return buf + data_off;
 }
 
-void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec, uint32_t fixedlen_size) {
+uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size) {
     uint32_t new_rec_idx = vdbnode_leaf_read_record_count(buf);
     uint32_t new_datacells_size = vdbnode_leaf_read_datacells_size(buf) + sizeof(uint32_t) * 2 + fixedlen_size;
     *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + new_rec_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
 
-    vdbnode_leaf_write_record(buf, new_rec_idx, rec, fixedlen_size);
-
     vdbnode_leaf_write_datacells_size(buf, new_datacells_size);
     vdbnode_leaf_write_record_count(buf, new_rec_idx + 1);
+
+    return new_rec_idx;
 }
 
 void vdbleaf_write_record_key(uint8_t* buf, uint32_t rec_idx, uint32_t key) {

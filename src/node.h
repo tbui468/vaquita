@@ -48,10 +48,11 @@ struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off);
 
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx);
 void vdbnode_leaf_write_record_count(uint8_t* buf, uint32_t count);
-void vdbnode_leaf_write_record(uint8_t* buf, uint32_t rec_idx, struct VdbRecord* rec, uint32_t fixedlen_size);
-void vdbnode_leaf_append_record(uint8_t* buf, struct VdbRecord* rec, uint32_t fixedlen_size);
 void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size);
 void vdbleaf_write_record_key(uint8_t* buf, uint32_t rec_idx, uint32_t key);
+
+uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx, uint32_t fixedlen_size);
+uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);
 
 //Data Node
 void vdbdata_init(uint8_t* buf, uint32_t parent_idx);

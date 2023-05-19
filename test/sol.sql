@@ -28,9 +28,9 @@ values
         ("Uranus", 86.8, 27, null, true),
         ("Neptune", 102.0, 14, null, true);
 
-select * from planets where surface_pressure is null;
+select * from planets where null is null;
 describe planets;
-select name from planets where surface_pressure is not null;
+select name from planets where null is not null;
 
 close sol;
 exit;

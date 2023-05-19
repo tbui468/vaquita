@@ -31,48 +31,30 @@ Major components
 Todos
 
 *******************************TODO**************************************************
-    If value is integer when schema type is float, it becomes 0.00 - fixed this bug
-
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
-            use data here in sample database
+        also look at moons/rings/comets/asteroids fact sheets
 
-            create table planets (name string, 
-                                  mass float,
-                                  diameter int, 
-                                  density int, 
-                                  gravity float, 
-                                  escape_velocity float, 
-                                  rotation_period float, 
-                                  length_of_day float, 
-                                  distance_from_sun float, 
-                                  perihelion float, 
-                                  orbital_period float, 
-                                  orbital_velocity float, 
-                                  orbital_inclination float, 
-                                  orbital_eccentricity float, 
-                                  obliquity_of_orbit float, 
-                                  mean_temperature int, 
-                                  surface_pressure float, 
-                                  number_of_moons int, 
-                                  ring_system bool, 
-                                  global_magnetic_field bool); <----some of these will be NULL
-
-            write SQL script to make database solar_system
-            tables planets, moons, dwarf_planets
+            create table planets
+            create table moons
+            create table rings
+            create table comets
+            create table asteroids
 
     when inserting, attribute names should be parsed as expressions (being parsed as single tokens now)
         can remove parse_identifier_tuple function then
 
-    evaluating expressions now requires struct VdbRecord* - is this necessary?
-        should just need the schema
-        push dealing with records to vm.c
-            will need a bytecode generator and vm if we take this step
-
+    Need to look at memory - measure what is allocated  
+        make a static variable that tracks allocated memory in allocation wrapper functions
+        make a wrapper for free() and use that everywhere - decrememnt memory 
+        print out memory usage at end to see what is still allocated
+        when incrementing/decrementing memory allocation, wrap in debug macro to turn off later
+  
     Remove key field in record and in node- this is now a regular attribute in records now
         will need to rewrite some functions that read keys from node buffers
 
     Don't need to specify column names if inserting all values
+        insert into planets values (...), (...);
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.

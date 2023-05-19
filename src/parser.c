@@ -195,6 +195,9 @@ static struct VdbDatum vdbexpr_eval_binary_equals(struct VdbDatum* left, struct 
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int == right->as.Int;
             break;
+        case VDBT_TYPE_FLOAT:
+            d.as.Bool = left->as.Float == right->as.Float;
+            break;
         case VDBT_TYPE_BOOL:
             d.as.Bool = left->as.Bool == right->as.Bool;
             break;
@@ -227,6 +230,9 @@ static struct VdbDatum vdbexpr_eval_binary_not_equals(struct VdbDatum* left, str
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int != right->as.Int;
             break;
+        case VDBT_TYPE_FLOAT:
+            d.as.Bool = left->as.Float != right->as.Float;
+            break;
         case VDBT_TYPE_BOOL:
             d.as.Bool = left->as.Bool != right->as.Bool;
             break;
@@ -258,6 +264,9 @@ static struct VdbDatum vdbexpr_eval_binary_less(struct VdbDatum* left, struct Vd
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int < right->as.Int;
             break;
+        case VDBT_TYPE_FLOAT:
+            d.as.Bool = left->as.Float < right->as.Float;
+            break;
         default:
             assert(false && "data type not supported");
             break;
@@ -285,6 +294,9 @@ static struct VdbDatum vdbexpr_eval_binary_less_equals(struct VdbDatum* left, st
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int <= right->as.Int;
+            break;
+        case VDBT_TYPE_FLOAT:
+            d.as.Bool = left->as.Float <= right->as.Float;
             break;
         default:
             assert(false && "data type not supported");
@@ -315,6 +327,9 @@ static struct VdbDatum vdbexpr_eval_binary_greater(struct VdbDatum* left, struct
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int > right->as.Int;
             break;
+        case VDBT_TYPE_FLOAT:
+            d.as.Bool = left->as.Float > right->as.Float;
+            break;
         default:
             assert(false && "data type not supported");
             break;
@@ -343,6 +358,9 @@ static struct VdbDatum vdbexpr_eval_binary_greater_equals(struct VdbDatum* left,
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int >= right->as.Int;
+            break;
+        case VDBT_TYPE_FLOAT:
+            d.as.Bool = left->as.Float >= right->as.Float;
             break;
         default:
             assert(false && "data type not supported");
@@ -438,6 +456,10 @@ static struct VdbDatum vdbexpr_eval_binary_plus(struct VdbDatum* left, struct Vd
             d.type = VDBT_TYPE_INT;
             d.as.Int = left->as.Int + right->as.Int;
             break;
+        case VDBT_TYPE_FLOAT:
+            d.type = VDBT_TYPE_FLOAT;
+            d.as.Int = left->as.Float + right->as.Float;
+            break;
         default:
             assert(false && "addition with this data type not supported");
             break;
@@ -463,6 +485,10 @@ static struct VdbDatum vdbexpr_eval_binary_minus(struct VdbDatum* left, struct V
         case VDBT_TYPE_INT:
             d.type = VDBT_TYPE_INT;
             d.as.Int = left->as.Int - right->as.Int;
+            break;
+        case VDBT_TYPE_FLOAT:
+            d.type = VDBT_TYPE_FLOAT;
+            d.as.Int = left->as.Float - right->as.Float;
             break;
         default:
             assert(false && "addition with this data type not supported");

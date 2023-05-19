@@ -340,7 +340,6 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct VdbDatum data[schema->count];
 
     for (uint32_t i = 0; i < schema->count; i++) {
-        data[i].type = schema->types[i];
         
         bool found = false;
         for (int j = 0; j < attrs->count; j++) {
@@ -372,6 +371,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
         }
 
 
+        data[i].type = schema->types[i];
         data[i].block_idx = 0;
         data[i].idxcell_idx = 0;
     }

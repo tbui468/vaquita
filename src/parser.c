@@ -160,6 +160,11 @@ struct VdbDatum vdbexpr_eval_literal(struct VdbToken token) {
             d.as.Bool = false;
             break;
         }
+        case VDBT_NULL: {
+            d.type = VDBT_TYPE_NULL;
+            d.is_null = true;
+            break;
+        }
         default: {
             assert(false && "literal type not supported");
             break;
@@ -714,6 +719,7 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
         case VDBT_STR:
         case VDBT_TRUE:
         case VDBT_FALSE:
+        case VDBT_NULL:
             return vdbexpr_init_literal(vdbparser_next_token(parser));
         case VDBT_IDENTIFIER:
             return vdbexpr_init_identifier(vdbparser_consume_token(parser, VDBT_IDENTIFIER));

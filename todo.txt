@@ -31,10 +31,7 @@ Major components
 Todos
 
 *******************************TODO**************************************************
-    Refactor translation units to avoid warnings due to circular dependencies:
-        expr.h/c
-        stmt.h/c
-        parser.h/c
+    If value is integer when schema type is float, it becomes 0.00 - fixed this bug
 
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html

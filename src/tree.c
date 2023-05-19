@@ -322,7 +322,9 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
         vdbtree_leaf_write_varlen_data(tree, idx, rec);
     }
 
-    vdbnode_leaf_append_record(page->buf, rec);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    vdbnode_leaf_append_record(page->buf, rec, vdbschema_fixedlen_record_size(schema));
+    vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);
 }
@@ -336,7 +338,10 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
         vdbtree_leaf_write_varlen_data(tree, idx, rec);
     }
 
-    vdbnode_leaf_write_record(page->buf, rec_idx, rec);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    vdbnode_leaf_write_record(page->buf, rec_idx, rec, vdbschema_fixedlen_record_size(schema));
+    vdb_schema_free(schema);
+
     vdb_pager_unpin_page(page);
 }
 
@@ -404,13 +409,16 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
     return rec;
 }
 
-static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec) {
+static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
 
     uint32_t idx_cells_size = vdbnode_leaf_read_record_count(page->buf) * sizeof(uint32_t);
     uint32_t data_cells_size = vdbnode_leaf_read_datacells_size(page->buf);
-    uint32_t record_entry_size = vdbrecord_fixedlen_size(rec) + sizeof(uint32_t) * 3; //3 for: index cell + next + size fields
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    uint32_t record_entry_size = vdbschema_fixedlen_record_size(schema) + sizeof(uint32_t) * 3; //3 for: index cell + next + size fields
+    vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);
     return idx_cells_size + data_cells_size + record_entry_size <= VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE;
@@ -572,7 +580,7 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->key);
 
-    if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
+    if (!vdbtree_leaf_can_fit_record(tree, leaf_idx)) {
         leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec->key);
     }
 

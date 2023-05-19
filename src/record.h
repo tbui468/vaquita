@@ -25,7 +25,6 @@ struct VdbRecordSet {
 struct VdbRecord* vdbrecord_init(int count, struct VdbDatum* data);
 void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
-uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec);
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec);
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
 

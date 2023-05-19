@@ -1,9 +1,11 @@
+#include <stdlib.h>
+#include <assert.h>
+#include <string.h>
+
 #include "schema.h"
 #include "util.h"
 
-#include <stdlib.h>
-#include <string.h>
-
+//TODO: should remove this function since we have vdbschema_alloc now
 struct VdbSchema* vdb_schema_alloc(int count, va_list args) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     schema->count = count;
@@ -88,4 +90,31 @@ struct VdbSchema* vdb_schema_deserialize(uint8_t* buf, int* off) {
         *off += len;
     }
     return schema;
+}
+
+uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema) {
+    uint32_t size = 0;
+    size += sizeof(uint32_t); //record key - TODO: should remove since key is now part of data
+    for (uint32_t i = 0; i < schema->count; i++) {
+        size += sizeof(bool); //is_null flag
+        switch (schema->types[i]) {
+            case VDBT_TYPE_INT:
+                size += sizeof(uint64_t);
+                break;
+            case VDBT_TYPE_FLOAT:
+                size += sizeof(double);
+                break;
+            case VDBT_TYPE_STR:
+                size += sizeof(uint32_t) * 2;
+                break;
+            case VDBT_TYPE_BOOL:
+                size += sizeof(bool);
+                break;
+            default:
+                assert(false && "invalid data type");
+                break;
+        }
+    }
+
+    return size;
 }

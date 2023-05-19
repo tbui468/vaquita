@@ -61,34 +61,6 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     return r;
 }
 
-uint32_t vdbrecord_fixedlen_size(struct VdbRecord* rec) {
-    uint32_t size = 0;
-    size += sizeof(uint32_t); //key
-    for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
-        size += sizeof(bool); //is_null flag
-        switch (d->type) {
-            case VDBT_TYPE_INT:
-                size += sizeof(uint64_t);
-                break;
-            case VDBT_TYPE_FLOAT:
-                size += sizeof(double);
-                break;
-            case VDBT_TYPE_STR:
-                size += sizeof(uint32_t) * 2;
-                break;
-            case VDBT_TYPE_BOOL:
-                size += sizeof(bool);
-                break;
-            default:
-                assert(false && "invalid data type");
-                break;
-        }
-    }
-
-    return size;
-}
-
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
     int off = 0;
     write_u32(buf, rec->key, &off);

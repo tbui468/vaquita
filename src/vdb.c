@@ -337,7 +337,46 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct VdbExpr* key_expr = vdbexpr_init_literal(key_token);
     vdbexprlist_append_expr(values, key_expr);
 
-    struct VdbRecord* rec = vdbrecord_alloc(key, schema, attrs, values);
+    struct VdbDatum data[schema->count];
+
+    for (uint32_t i = 0; i < schema->count; i++) {
+        data[i].type = schema->types[i];
+        
+        bool found = false;
+        for (int j = 0; j < attrs->count; j++) {
+            if (strncmp(schema->names[i], attrs->tokens[j].lexeme, attrs->tokens[j].len) != 0) 
+                continue;
+
+            //TODO: passing in NULL for struct VdbRecord* and struct Schema* since values expression shouldn't have identifiers
+            //  but holy hell this is ugly - should fix this
+            data[i] = vdbexpr_eval(values->exprs[j], NULL, NULL);
+
+            found = true;
+            break;
+
+        }
+
+        if (!found) {
+            data[i].is_null = true;
+
+            //writing dummy data since writing records to disk expects a non-NULL struct VdbString*
+            //maybe not the best solution, but it works for now
+            //TODO: should not write data if null - can remove this block when that is implemented
+            if (schema->types[i] == VDBT_TYPE_STR) {
+                int len = 1;
+                data[i].as.Str = malloc_w(sizeof(struct VdbString));
+                data[i].as.Str->start = malloc_w(sizeof(char) * len);
+                data[i].as.Str->len = len;
+                memcpy(data[i].as.Str->start, "0", len);
+            }
+        }
+
+
+        data[i].block_idx = 0;
+        data[i].idxcell_idx = 0;
+    }
+
+    struct VdbRecord* rec = vdbrecord_init(schema->count, data);
     vdb_schema_free(schema);
 
     vdb_tree_insert_record(tree, rec);

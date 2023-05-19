@@ -31,11 +31,10 @@ Major components
 Todos
 
 *******************************TODO**************************************************
-    Fix errors with circular dependency
-        refactor into multiple files
-        or forward declare some structs
-
-    delete unused code in parser
+    Refactor translation units to avoid warnings due to circular dependencies:
+        expr.h/c
+        stmt.h/c
+        parser.h/c
 
     Use sample data to make sure SQL kinda works
         https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
@@ -65,7 +64,16 @@ Todos
             write SQL script to make database solar_system
             tables planets, moons, dwarf_planets
 
+    when inserting, attribute names should be parsed as expressions (being parsed as single tokens now)
+        can remove parse_identifier_tuple function then
+
+    evaluating expressions now requires struct VdbRecord* - is this necessary?
+        should just need the schema
+        push dealing with records to vm.c
+            will need a bytecode generator and vm if we take this step
+
     Remove key field in record and in node- this is now a regular attribute in records now
+        will need to rewrite some functions that read keys from node buffers
 
     Don't need to specify column names if inserting all values
 
@@ -75,10 +83,6 @@ Todos
     Does struct VdbDatum really need to store struct VdbString as a pointer?
         couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
         this would simplify our code a lot and minimize the chances of a memory leak
-
-    Rewrite parser to parse expressions instead of bespoke tuple parsing functions:
-        Should use parser to parse assignment (using 'set' keyword)
-        Should use parser to parse tuples (sequence in parenthesese, separated by commas)
 
     cursor abstraction:
         cursors are created when starting a new transaction, and destroyed when transaction ends (commit or not)

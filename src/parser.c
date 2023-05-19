@@ -829,19 +829,6 @@ void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenL
     vdbparser_consume_token(parser, VDBT_RPAREN);
 }
 
-void vdbparser_parse_value_tuple(struct VdbParser* parser, struct VdbTokenList* tl) {
-    vdbparser_consume_token(parser, VDBT_LPAREN);
-    while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
-        vdbtokenlist_append_token(tl, vdbparser_next_token(parser));
-        if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
-            vdbparser_consume_token(parser, VDBT_COMMA);
-        } else {
-            break;
-        }
-    }
-    vdbparser_consume_token(parser, VDBT_RPAREN);
-}
-
 enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt) {
     switch (vdbparser_next_token(parser).type) {
         case VDBT_CONNECT: {

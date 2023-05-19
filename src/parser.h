@@ -5,6 +5,7 @@
 #include "error.h"
 #include "schema.h"
 #include "record.h"
+#include "expr.h"
 
 enum VdbExprType {
     VDBET_LITERAL,

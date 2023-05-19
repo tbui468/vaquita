@@ -11,6 +11,7 @@ set(Sources
     parser.c
     error.c
     token.c
+    expr.c
     )
 
 set(Headers
@@ -25,6 +26,7 @@ set(Headers
     parser.h
     error.h
     token.h
+    expr.h
     )
 
 add_executable(

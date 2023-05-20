@@ -44,7 +44,6 @@ uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx);
 uint32_t vdbnode_leaf_read_record_count(uint8_t* buf);
 uint32_t vdbnode_leaf_read_datacells_size(uint8_t* buf);
 uint8_t* vdbleaf_get_fixedlen_record_ptr(uint8_t* buf, uint32_t rec_idx);
-struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off);
 
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx);
 void vdbnode_leaf_write_record_count(uint8_t* buf, uint32_t count);
@@ -59,6 +58,7 @@ void vdbdata_init(uint8_t* buf, uint32_t parent_idx);
 uint32_t vdbdata_read_next(uint8_t* buf);
 uint32_t vdbdata_read_idx_count(uint8_t* buf);
 uint32_t vdbdata_get_free_space(uint8_t* buf);
+uint8_t* vdbdata_get_varlen_value_ptr(uint8_t* buf, uint32_t idxcell_idx);
 
 void vdbdata_write_next(uint8_t* buf, uint32_t next_idx);
 void vdbdata_write_idx_count(uint8_t* buf, uint32_t count);

@@ -393,7 +393,8 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
 
         while (block_idx) {
             struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
-            struct VdbDatum datum = vdbnode_leaf_read_varlen_datum(page->buf, offset_idx);
+            uint8_t* ptr = vdbdata_get_varlen_value_ptr(page->buf, offset_idx);
+            struct VdbDatum datum = vdbvalue_deserialize_string(ptr);
 
             d->as.Str->start = realloc_w(d->as.Str->start, sizeof(char) * (d->as.Str->len + datum.as.Str->len));
             memcpy(d->as.Str->start + d->as.Str->len, datum.as.Str->start, datum.as.Str->len);

@@ -137,22 +137,6 @@ uint8_t* vdbleaf_get_fixedlen_record_ptr(uint8_t* buf, uint32_t rec_idx) {
     return buf + data_off;
 }
 
-struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t idx) {
-    uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t)));
-    
-
-    struct VdbDatum d;
-    d.type = VDBT_TYPE_STR;
-    d.block_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 0));
-    d.idxcell_idx = *((uint32_t*)(buf + off + sizeof(uint32_t) * 1));
-
-    d.as.Str = malloc_w(sizeof(struct VdbString));
-    d.as.Str->len = *((uint32_t*)(buf + off + sizeof(uint32_t) * 2));
-    d.as.Str->start = malloc_w(sizeof(char) * d.as.Str->len);
-    memcpy(d.as.Str->start, buf + off + sizeof(uint32_t) * 3, d.as.Str->len);
-    return d;
-}
-
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = data_idx;
 }
@@ -231,6 +215,12 @@ uint32_t vdbdata_read_next(uint8_t* buf) {
 
 uint32_t vdbdata_read_idx_count(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
+}
+
+uint8_t* vdbdata_get_varlen_value_ptr(uint8_t* buf, uint32_t idxcell_idx) {
+    uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t)));
+
+    return buf + off;
 }
 
 static void vdbdata_defrag(uint8_t* buf) {

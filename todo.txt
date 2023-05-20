@@ -47,7 +47,18 @@ Use sample data to make sure SQL kinda works
 *******************************TODO**************************************************
     node.c/h should not know about internal structure of struct VdbDatum
         caller (tree) should just pass in size or request pointer of where a record starts
-    
+        uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written)
+            this function should be:
+                //attempst to allocated requested size, and will set allocated_size to what was possible
+                //returns the index of the index cell
+                uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_size, uint32_t* allocated_size);
+
+                //caller (tree) should then write as much of string as possible and then allocate more space if needed
+                //caller then writes data to buffer (as musch as allocated_size)
+                uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
+
+                loop to allocate more space/write more data as needed in tree.c
+
     Fill in testing suite and framework - this will make catching regressions a lot more efficient
         Have expected test results for each test so outputs can be checked
             create_db.sql

@@ -351,7 +351,7 @@ void run_cli() {
     free(line);
 }
 
-void run_script(const char* path) {
+int run_script(const char* path) {
     FILE* f = fopen_w(path, "r");
     VDBHANDLE h = NULL;
 
@@ -375,7 +375,7 @@ void run_script(const char* path) {
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
         free(buf);
-        return;
+        return -1;
     }
 
     //vdbtokenlist_print(tokens);
@@ -393,7 +393,7 @@ void run_script(const char* path) {
         vdbstmtlist_free(stmts);
         vdberrorlist_free(parse_errors);
         free(buf);
-        return;
+        return -1;
     }
 
     /*
@@ -408,11 +408,13 @@ void run_script(const char* path) {
     vdbstmtlist_free(stmts);
     vdberrorlist_free(parse_errors);
     free(buf);
+
+    return 0;
 }
 
 int main(int argc, char** argv) {
     if (argc > 1) {
-        run_script(argv[1]);
+        return run_script(argv[1]);
     } else {
         run_cli();
     }

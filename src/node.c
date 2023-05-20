@@ -233,22 +233,6 @@ uint32_t vdbdata_read_idx_count(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
-struct VdbDatum vdbdata_read_datum(uint8_t* buf, uint32_t idxcell_idx) {
-    uint32_t datacell_off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t)));
-
-    struct VdbDatum d;
-
-    d.type = VDBT_TYPE_STR;
-    d.as.Str = malloc_w(sizeof(struct VdbString));
-    d.block_idx = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0));
-    d.idxcell_idx = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 1));
-    d.as.Str->len = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 2));
-    d.as.Str->start = malloc_w(sizeof(char) * d.as.Str->len);
-    memcpy(d.as.Str->start, buf + datacell_off + sizeof(uint32_t) * 3, d.as.Str->len);
-
-    return d;
-}
-
 static void vdbdata_defrag(uint8_t* buf) {
     uint32_t free_data_off = *((uint32_t*)(buf + sizeof(uint32_t) * 6));
     *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = 0;

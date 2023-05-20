@@ -45,6 +45,9 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
+    node.c/h should not know about internal structure of struct VdbDatum
+        caller (tree) should just pass in size or request pointer of where a record starts
+    
     Fill in testing suite and framework - this will make catching regressions a lot more efficient
         Have expected test results for each test so outputs can be checked
             create_db.sql
@@ -85,11 +88,6 @@ Use sample data to make sure SQL kinda works
                 
             
         Add python script to run tests
-
-    node.c shouldn't need record.h
-        make a value.h/c file for vdb value types
-        replace vdbdatum with this
-        replace struct VdbString* with just a struct VdbString in struct VdbValue
   
     Remove key field in record and in node- this is now a regular attribute in records now
         will need to rewrite some functions that read keys from node buffers

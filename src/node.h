@@ -58,7 +58,6 @@ uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);
 void vdbdata_init(uint8_t* buf, uint32_t parent_idx);
 uint32_t vdbdata_read_next(uint8_t* buf);
 uint32_t vdbdata_read_idx_count(uint8_t* buf);
-struct VdbDatum vdbdata_read_datum(uint8_t* buf, uint32_t idxcell_idx);
 uint32_t vdbdata_get_free_space(uint8_t* buf);
 
 void vdbdata_write_next(uint8_t* buf, uint32_t next_idx);

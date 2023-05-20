@@ -45,14 +45,7 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    node.c should not know anything about struct VdbSchema
-        use same patterns as with record.h/c to have node functions return pointers to buffer
-
-    node.c shouldn't need record.h
-        make a value.h/c file for vdb value types
-        replace vdbdatum with this
-
-    Fill in testing suite and framework:
+    Fill in testing suite and framework - this will make catching regressions a lot more efficient
         Have expected test results for each test so outputs can be checked
             create_db.sql
                 check that [name].vdb is created
@@ -93,9 +86,10 @@ Use sample data to make sure SQL kinda works
             
         Add python script to run tests
 
-    Does struct VdbDatum really need to store struct VdbString as a pointer?
-        couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
-        this would simplify our code a lot and minimize the chances of a memory leak
+    node.c shouldn't need record.h
+        make a value.h/c file for vdb value types
+        replace vdbdatum with this
+        replace struct VdbString* with just a struct VdbString in struct VdbValue
   
     Remove key field in record and in node- this is now a regular attribute in records now
         will need to rewrite some functions that read keys from node buffers

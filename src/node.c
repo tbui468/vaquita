@@ -21,9 +21,8 @@ uint32_t vdb_node_meta_read_root(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
-struct VdbSchema* vdbnode_meta_read_schema(uint8_t* buf) {
-    int off = 0;
-    return vdb_schema_deserialize(buf + sizeof(uint32_t) * 4, &off);
+uint8_t* vdbmeta_get_schema_ptr(uint8_t* buf) {
+    return buf + sizeof(uint32_t) * 4;
 }
 
 void vdbnode_meta_write_primary_key_counter(uint8_t* buf, uint32_t pk_counter) {
@@ -32,11 +31,6 @@ void vdbnode_meta_write_primary_key_counter(uint8_t* buf, uint32_t pk_counter) {
 
 void vdbnode_meta_write_root(uint8_t* buf, uint32_t root_idx) {
     *((uint32_t*)(buf + 3 * sizeof(uint32_t))) = root_idx;
-}
-
-void vdbnode_meta_write_schema(uint8_t* buf, struct VdbSchema* schema) {
-    int off = 0;
-    vdb_schema_serialize(buf + sizeof(uint32_t) * 4, schema, &off);
 }
 
 

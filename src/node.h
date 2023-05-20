@@ -22,11 +22,10 @@ struct VdbPtr {
 //meta data node
 uint32_t vdbnode_meta_read_primary_key_counter(uint8_t* buf);
 uint32_t vdb_node_meta_read_root(uint8_t* buf);
-struct VdbSchema* vdbnode_meta_read_schema(uint8_t* buf);
+uint8_t* vdbmeta_get_schema_ptr(uint8_t* buf);
 
 void vdbnode_meta_write_primary_key_counter(uint8_t* buf, uint32_t pk_counter);
 void vdbnode_meta_write_root(uint8_t* buf, uint32_t root_idx);
-void vdbnode_meta_write_schema(uint8_t* buf, struct VdbSchema* schema);
 
 //internal node
 struct VdbPtr vdbnode_intern_read_right_ptr(uint8_t* buf);

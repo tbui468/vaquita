@@ -61,7 +61,11 @@ struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {
     return s;
 }
 
-void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off) {
+void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema) {
+    //TODO: remove these two
+    int i = 0;
+    int* off = &i;
+
     write_u32(buf, schema->count, off);
     for (uint32_t i = 0; i < schema->count; i++) {
         enum VdbTokenType f = schema->types[i];
@@ -73,7 +77,11 @@ void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off) {
     }
 }
 
-struct VdbSchema* vdb_schema_deserialize(uint8_t* buf, int* off) {
+struct VdbSchema* vdbschema_deserialize(uint8_t* buf) {
+    //TODO: remove these two
+    int i = 0;
+    int* off = &i;
+
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     read_u32(&schema->count, buf, off);
     schema->types = malloc_w(sizeof(enum VdbTokenType) * schema->count);

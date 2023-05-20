@@ -47,7 +47,7 @@ static uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema
     vdbnode_write_parent(page->buf, 0);
     vdbnode_meta_write_primary_key_counter(page->buf, 0);
     vdbnode_meta_write_root(page->buf, 0);
-    vdbnode_meta_write_schema(page->buf, schema);
+    vdbschema_serialize(vdbmeta_get_schema_ptr(page->buf), schema);
 
     vdb_pager_unpin_page(page);
 
@@ -81,7 +81,9 @@ static void vdbtree_meta_write_root(struct VdbTree* tree, uint32_t root_idx) {
 struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree) {
     assert(vdbtree_node_type(tree, 0) == VDBN_META);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
-    struct VdbSchema* schema = vdbnode_meta_read_schema(page->buf);
+
+    uint8_t* ptr = vdbmeta_get_schema_ptr(page->buf);
+    struct VdbSchema* schema = vdbschema_deserialize(ptr);
     vdb_pager_unpin_page(page);
     return schema;
 }

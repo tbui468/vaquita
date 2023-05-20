@@ -37,8 +37,8 @@ struct VdbSchema* vdb_schema_alloc(int count, va_list args);
 struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types);
 void vdb_schema_free(struct VdbSchema* schema);
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
-void vdb_schema_serialize(uint8_t* buf, struct VdbSchema* schema, int* off);
-struct VdbSchema* vdb_schema_deserialize(uint8_t* buf, int* off);
+void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema);
+struct VdbSchema* vdbschema_deserialize(uint8_t* buf);
 uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema);
 
 #endif //VDB_SCHEMA_H

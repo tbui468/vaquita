@@ -6,6 +6,7 @@
 
 #include "record.h"
 
+
 enum VdbNodeType {
     VDBN_META,
     VDBN_INTERN,
@@ -43,7 +44,7 @@ uint32_t vdbnode_leaf_read_data_block(uint8_t* buf);
 uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx);
 uint32_t vdbnode_leaf_read_record_count(uint8_t* buf);
 uint32_t vdbnode_leaf_read_datacells_size(uint8_t* buf);
-struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSchema* schema, uint32_t rec_idx);
+uint8_t* vdbleaf_get_fixedlen_record_ptr(uint8_t* buf, uint32_t rec_idx);
 struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t off);
 
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx);

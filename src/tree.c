@@ -372,7 +372,10 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    struct VdbRecord* rec = vdbnode_leaf_read_fixedlen_record(page->buf, schema, rec_idx);
+
+    uint8_t* buf = vdbleaf_get_fixedlen_record_ptr(page->buf, rec_idx);
+    struct VdbRecord* rec = vdbrecord_read(buf, schema);
+
     vdb_schema_free(schema);
 
     for (uint32_t i = 0; i < rec->count; i++) {

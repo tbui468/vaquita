@@ -25,6 +25,8 @@
 
     sqlite documentation has great explanation of how bytecode works
 
+    handmade.network has cool mini projects (such as barebones OS with only a few thousand lines of C)
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -43,20 +45,60 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSchema* schema, uint32_t rec_idx) <-----rewrite this to remove Record from node.c
-        rewrite so that this function returns buf* to start of record
-        then let the tree deserialize this 
-        this should remove record.h completely from node.c/h    
-
     node.c should not know anything about struct VdbSchema
         use same patterns as with record.h/c to have node functions return pointers to buffer
+
+    node.c shouldn't need record.h
+        make a value.h/c file for vdb value types
+        replace vdbdatum with this
+
+    Fill in testing suite and framework:
+        Have expected test results for each test so outputs can be checked
+            create_db.sql
+                check that [name].vdb is created
+            create_tab.sql
+                check that [name].vtb is inside of [db].vdb
+            drop_db.sql
+                check that [name].vdb is NOT there (should create one db and then drop it)
+            drop_tab.sql
+                check that [name].vtb is NOT there (should create table and then drop it)
+            describe.sql
+                check that output is correct (table name + attributes + types)
+            drop_db_ifexists.sql
+                check case where db exists, and where db doesn't exist
+            drop_tab_ifexists.sql
+                check case where table exists and where table doesn't exist
+            insert_count.sql
+                check that output shows correct number of records inserted
+            Note: use 'select * from ...' output to test these
+                insertion with all attributes defined:
+                    insert_primary_key.sql
+                        use select to make sure primary key increments correct
+                    insert_strings.sql
+                        use select to make sure all strings are read correctly
+                    insert_int.sql
+                        check ints
+                    insert_bool.sql
+                        check bools
+                    insert_float.sql
+                        check floats
+                    insert_null.sql
+                        check nulls
+                insertion with automatic insertion of nulls for undefined attributes:
+                    insert_default_null_string.sql
+                        automated insertion of null for undefined strings   
+                    insert_default_null_int.sql
+                        automated insertion of null for undefined strings
+                
+            
+        Add python script to run tests
 
     Does struct VdbDatum really need to store struct VdbString as a pointer?
         couldn't it just save the value itself, and leave the pointer to only refer to the d.as.Str->start?
         this would simplify our code a lot and minimize the chances of a memory leak
-
-    Don't need to specify column names if inserting all values
-        insert into planets values (...), (...);
+  
+    Remove key field in record and in node- this is now a regular attribute in records now
+        will need to rewrite some functions that read keys from node buffers
 
     single line comments
         use c-style //
@@ -64,14 +106,14 @@ Use sample data to make sure SQL kinda works
     multiline comments
         use c-style /**/
 
+    Don't need to specify column names if inserting all values
+        insert into planets values (...), (...);
+
     Need to look at memory - measure what is allocated  
         make a static variable that tracks allocated memory in allocation wrapper functions
         make a wrapper for free() and use that everywhere - decrememnt memory 
         print out memory usage at end to see what is still allocated
         when incrementing/decrementing memory allocation, wrap in debug macro to turn off later
-  
-    Remove key field in record and in node- this is now a regular attribute in records now
-        will need to rewrite some functions that read keys from node buffers
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.

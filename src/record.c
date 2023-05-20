@@ -94,6 +94,47 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
     }
 }
 
+struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
+    uint32_t data_off = 0;
+    struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
+    rec->count = schema->count;
+    rec->key = *((uint32_t*)(buf + data_off));
+    data_off += sizeof(uint32_t);
+    rec->data = malloc_w(sizeof(struct VdbDatum) * rec->count);
+
+    for (uint32_t i = 0; i < schema->count; i++) {
+        enum VdbTokenType type = schema->types[i];
+        rec->data[i].type = type;
+        rec->data[i].is_null = *((bool*)(buf + data_off));
+        data_off += sizeof(bool);
+        switch (type) {
+            case VDBT_TYPE_INT:
+                rec->data[i].as.Int = *((uint64_t*)(buf + data_off));
+                data_off += sizeof(uint64_t);
+                break;
+            case VDBT_TYPE_FLOAT:
+                rec->data[i].as.Float = *((double*)(buf + data_off));
+                data_off += sizeof(double);
+                break;
+            case VDBT_TYPE_STR:
+                rec->data[i].block_idx = *((uint32_t*)(buf + data_off));
+                data_off += sizeof(uint32_t);
+                rec->data[i].idxcell_idx = *((uint32_t*)(buf + data_off));
+                data_off += sizeof(uint32_t);
+                break;
+            case VDBT_TYPE_BOOL:
+                rec->data[i].as.Bool = *((bool*)(buf + data_off));
+                data_off += sizeof(bool);
+                break;
+            default:
+                assert(false && "invalid data type");
+                break;
+        }
+    }
+
+    return rec;
+}
+
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];

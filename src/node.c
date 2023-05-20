@@ -133,50 +133,14 @@ uint32_t vdbnode_leaf_read_record_count(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
-struct VdbRecord* vdbnode_leaf_read_fixedlen_record(uint8_t* buf, struct VdbSchema* schema, uint32_t rec_idx) {
+uint8_t* vdbleaf_get_fixedlen_record_ptr(uint8_t* buf, uint32_t rec_idx) {
     int off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * rec_idx;
 
     uint32_t data_off;
     read_u32(&data_off, buf, &off);
-
-    struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
-    rec->count = schema->count;
     data_off += sizeof(uint32_t) * 2; //skip next and size fields
-    rec->key = *((uint32_t*)(buf + data_off));
-    data_off += sizeof(uint32_t);
-    rec->data = malloc_w(sizeof(struct VdbDatum) * rec->count);
 
-    for (uint32_t i = 0; i < schema->count; i++) {
-        enum VdbTokenType type = schema->types[i];
-        rec->data[i].type = type;
-        rec->data[i].is_null = *((bool*)(buf + data_off));
-        data_off += sizeof(bool);
-        switch (type) {
-            case VDBT_TYPE_INT:
-                rec->data[i].as.Int = *((uint64_t*)(buf + data_off));
-                data_off += sizeof(uint64_t);
-                break;
-            case VDBT_TYPE_FLOAT:
-                rec->data[i].as.Float = *((double*)(buf + data_off));
-                data_off += sizeof(double);
-                break;
-            case VDBT_TYPE_STR:
-                rec->data[i].block_idx = *((uint32_t*)(buf + data_off));
-                data_off += sizeof(uint32_t);
-                rec->data[i].idxcell_idx = *((uint32_t*)(buf + data_off));
-                data_off += sizeof(uint32_t);
-                break;
-            case VDBT_TYPE_BOOL:
-                rec->data[i].as.Bool = *((bool*)(buf + data_off));
-                data_off += sizeof(bool);
-                break;
-            default:
-                assert(false && "invalid data type");
-                break;
-        }
-    }
-
-    return rec;
+    return buf + data_off;
 }
 
 struct VdbDatum vdbnode_leaf_read_varlen_datum(uint8_t* buf, uint32_t idx) {

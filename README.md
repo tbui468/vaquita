@@ -9,8 +9,7 @@ cd build<br>
 cmake ..<br>
 cmake --build .<br>
 
-### CLI
-####REPL
+###REPL
 ./vdb
 \> create database pets;<br>
 \> open pets;<br>
@@ -19,7 +18,8 @@ cmake --build .<br>
 \> select name, age from cats where id = 1;<br>
 \> close pets;<br>
 \> exit;<br>
-####Running a Script
+
+###Running a Script
 ./vdb myscript.sql<br>
 
 ## ACID Compliance

@@ -33,4 +33,5 @@ describe planets;
 select name from planets where null is not null;
 
 close sol;
+drop database sol;
 exit;

@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 def test(filename):
     cmd = "./../build/src/vdb ./" + filename + ".sql"
@@ -14,16 +15,13 @@ def test(filename):
                 output_matches = True
 
     if (return_code == 0 and output_matches):
-        print(filename.ljust(20, " "), "passed")
+        print(filename.ljust(30, " "), "passed")
     else:
-        print(filename.ljust(20, " "), "failed")
+        print(filename.ljust(30, " "), "failed")
 
-test("create_drop_db")
-test("open_close_db")
-test("show_dbs")
-test("create_drop_table")
-test("insert_records")
-test("describe_table")
-test("select_all")
-test("select_projection")
-#test("insert_records_with_nulls")
+files = os.listdir('./')
+
+for f in files:
+    if f.endswith('.sql'):
+        test(f[:-4])
+

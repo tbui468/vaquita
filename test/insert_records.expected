@@ -1,0 +1,11 @@
+created database sol
+opened database sol
+created table planets
+inserted 1 record(s) into planets
+inserted 2 record(s) into planets
+inserted 1 record(s) into planets
+inserted 1 record(s) into planets
+inserted 1 record(s) into planets
+dropped table planets
+closed database sol
+dropped database sol

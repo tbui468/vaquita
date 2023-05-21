@@ -1,5 +1,5 @@
-if exists drop database sol;
 create database sol;
 open sol;
 close sol;
+drop database sol;
 exit;

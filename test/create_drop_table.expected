@@ -1,0 +1,6 @@
+created database sol
+opened database sol
+created table planets
+dropped table planets
+closed database sol
+dropped database sol

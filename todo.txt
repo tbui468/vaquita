@@ -45,19 +45,14 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
+    Fix bug with segfaulting when manually setting string to null on insert <------ START HERE
+        then check if test passes
+
     Fill in tests
-        where_greater.sql
-        where_greate_equals.sql
-        where_equals.sql
-        where_not_equals.sql
+        null_manually_insert_for_string.sql <-----failing - related to freeing more than once...?
         where_is_null.sql
         where_is_not_null.sql
-        null_manually_insert_for_string.sql <-----failing - related to freeing more than once...?
-
-        Move non-test files out of test directory
-        Write script to automatically test ALL .sql files in test directory
-        make scratch directory to hold current tests in progress
-            include a script to generate a .expected file, and also copy both .sql and .expected into test directory
+        insert_invalid_col_name.sql <----should report error message
 
     node.c/h should not know about internal structure of struct VdbDatum
         caller (tree) should just pass in size or request pointer of where a record starts
@@ -72,6 +67,8 @@ Use sample data to make sure SQL kinda works
                 uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
 
                 loop to allocate more space/write more data as needed in tree.c
+
+    Change struct VdbDatum to struct VdbValue and put into own translation unit/header
 
     Remove key field in record and in node- this is now a regular attribute in records now
         will need to rewrite some functions that read keys from node buffers

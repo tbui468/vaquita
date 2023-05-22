@@ -36,7 +36,6 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
         r->data[i].type = d->type;
-        r->data[i].is_null = d->is_null;
         switch (d->type) {
             case VDBT_TYPE_INT:
                 r->data[i].as.Int = d->as.Int;
@@ -49,6 +48,8 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
                 break;
             case VDBT_TYPE_BOOL:
                 r->data[i].as.Bool = d->as.Bool;
+                break;
+            case VDBT_TYPE_NULL:
                 break;
             default:
                 assert(false && "invalid data type");
@@ -67,7 +68,7 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* sche
 
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
-        *((bool*)(buf + off)) = d->is_null;
+        *((bool*)(buf + off)) = rec->data[i].type == VDBT_TYPE_NULL;
         off += sizeof(bool);
 
         switch (schema->types[i]) {
@@ -106,8 +107,10 @@ struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
     for (uint32_t i = 0; i < schema->count; i++) {
         enum VdbTokenType type = schema->types[i];
         rec->data[i].type = type;
-        rec->data[i].is_null = *((bool*)(buf + data_off));
+        bool is_null = *((bool*)(buf + data_off));
         data_off += sizeof(bool);
+
+        //don't switch data type to null (if needed) since we need to get correct offset
         switch (type) {
             case VDBT_TYPE_INT:
                 rec->data[i].as.Int = *((uint64_t*)(buf + data_off));
@@ -131,6 +134,12 @@ struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
                 assert(false && "invalid data type");
                 break;
         }
+
+        //switch data type to null
+        if (is_null) {
+            rec->data[i].type = VDBT_TYPE_NULL;
+        }
+
     }
 
     return rec;

@@ -45,24 +45,47 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
+    **********************Fixing Memory**********************
+        Rewrite struct VdbDatum:
+            struct VdbValue { <--------rename to vdbValue (also to save name 'data' for the data/leaf/intern/meta block)
+                enum VdbTokenType type;
+                //remove field bool is_null; <------type field holds same info already - should need schema if writing/reading to determine actual type
+                union {
+                    uint64_t Int;
+                    struct VdbString Str; <-----make this a stack allocated field
+                    bool Bool;
+                    double Float;
+                } as;
+                uint32_t block_idx;
+                uint32_t idxcell_idx;
+            };
+
+        Move struct VdbValue to own translation unit/header 
+
+        node.c/h should not know about internal structure of struct VdbValue
+            caller (tree) should just pass in size or request pointer of where a record starts
+            uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written)
+                this function should be:
+                    //attempst to allocated requested size, and will set allocated_size to what was possible
+                    //returns the index of the index cell
+                    uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_size, uint32_t* allocated_size);
+
+                    //caller (tree) should then write as much of string as possible and then allocate more space if needed
+                    //caller then writes data to buffer (as musch as allocated_size)
+                    uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
+
+                    loop to allocate more space/write more data as needed in tree.c
+
+        Set up system to track memory allocation/freeing
+            need to write a wrapper for free that decrements whenever something is freed
+
+        Integrate gdb and valgrind to check for common memory problems/leaks
+            Need memory allocation/freeing controlled before implementing page eviction in buffer pool
+
+    ************************************************
+
     vdb_insert_new - refactor this function
         inserting placeholder strings for nulls (automatic and manual insertion) is messy
-
-    node.c/h should not know about internal structure of struct VdbDatum
-        caller (tree) should just pass in size or request pointer of where a record starts
-        uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written)
-            this function should be:
-                //attempst to allocated requested size, and will set allocated_size to what was possible
-                //returns the index of the index cell
-                uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_size, uint32_t* allocated_size);
-
-                //caller (tree) should then write as much of string as possible and then allocate more space if needed
-                //caller then writes data to buffer (as musch as allocated_size)
-                uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
-
-                loop to allocate more space/write more data as needed in tree.c
-
-    Change struct VdbDatum to struct VdbValue and put into own translation unit/header
 
     Add test for:
         insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
@@ -80,12 +103,6 @@ Use sample data to make sure SQL kinda works
 
     Don't need to specify column names if inserting all values
         insert into planets values (...), (...);
-
-    Need to look at memory - measure what is allocated  
-        make a static variable that tracks allocated memory in allocation wrapper functions
-        make a wrapper for free() and use that everywhere - decrememnt memory 
-        print out memory usage at end to see what is still allocated
-        when incrementing/decrementing memory allocation, wrap in debug macro to turn off later
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.

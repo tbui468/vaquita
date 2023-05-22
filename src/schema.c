@@ -139,3 +139,7 @@ struct VdbDatum vdbvalue_deserialize_string(uint8_t* buf) {
     memcpy(d.as.Str->start, buf + sizeof(uint32_t) * 3, d.as.Str->len);
     return d;
 }
+
+bool vdbvalue_is_null(struct VdbDatum* d) {
+    return d->type == VDBT_TYPE_NULL;
+}

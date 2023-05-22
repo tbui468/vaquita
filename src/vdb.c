@@ -365,12 +365,10 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
             memcpy(data[i].as.Str->start, "0", len);
         }
 
-        data[i].type = schema->types[i];
         data[i].block_idx = 0;
         data[i].idxcell_idx = 0;
 
         if (!found) {
-            data[i].is_null = true;
             data[i].type = VDBT_TYPE_NULL;
 
             //writing dummy data since writing records to disk expects a non-NULL struct VdbString*

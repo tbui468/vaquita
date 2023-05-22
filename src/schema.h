@@ -22,7 +22,6 @@ struct VdbString {
 //TODO: should be part of record.h
 struct VdbDatum {
     enum VdbTokenType type;
-    bool is_null;
     union {
         uint64_t Int;
         struct VdbString* Str;
@@ -41,5 +40,6 @@ void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema);
 struct VdbSchema* vdbschema_deserialize(uint8_t* buf);
 uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema);
 struct VdbDatum vdbvalue_deserialize_string(uint8_t* buf);
+bool vdbvalue_is_null(struct VdbDatum* d);
 
 #endif //VDB_SCHEMA_H

@@ -51,6 +51,8 @@ Use sample data to make sure SQL kinda works
         where_and.sql
         where_or.sql
         insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
+            create table planets (name string, moons int);
+            insert into planets (name, gravity) values ("Earth", 9.81); //this should report error instead of setting moons to null and ignoring 9.81
 
     vdb_insert_new - refactor this function
         inserting placeholder strings for nulls (automatic and manual insertion) is messy

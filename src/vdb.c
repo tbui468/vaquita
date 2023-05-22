@@ -356,6 +356,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
         }
 
         //write dummy data if string type and user entered null as value during insertion
+        //TODO: doing the exact same thing below - this entire function requires a rewrite
         if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
             int len = 1;
             data[i].as.Str = malloc_w(sizeof(struct VdbString));

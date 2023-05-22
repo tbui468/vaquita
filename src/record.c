@@ -61,7 +61,7 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     return r;
 }
 
-void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
+void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema) {
     int off = 0;
     write_u32(buf, rec->key, &off);
 
@@ -69,7 +69,8 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec) {
         struct VdbDatum* d = &rec->data[i];
         *((bool*)(buf + off)) = d->is_null;
         off += sizeof(bool);
-        switch (d->type) {
+
+        switch (schema->types[i]) {
             case VDBT_TYPE_INT:
                 *((uint64_t*)(buf + off)) = d->as.Int;
                 off += sizeof(uint64_t);
@@ -146,6 +147,34 @@ bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     return false;
 }
 
+void vdbrecord_print(struct VdbRecord* r) {
+    for (uint32_t j = 0; j < r->count; j++) {
+        switch (r->data[j].type) {
+            case VDBT_TYPE_STR:
+                printf("%.*s, ", r->data[j].as.Str->len, r->data[j].as.Str->start); 
+                break;
+            case VDBT_TYPE_INT:
+                printf("%ld, ", r->data[j].as.Int);
+                break;
+            case VDBT_TYPE_FLOAT:
+                printf("%f, ", r->data[j].as.Float);
+                break;
+            case VDBT_TYPE_BOOL:
+                if (r->data[j].as.Bool) {
+                    printf("true, ");
+                } else {
+                    printf("false, ");
+                }
+                break;
+             case VDBT_TYPE_NULL:
+                printf("null, ");
+                break;
+             default:
+                assert(false && "token is not valid data type");
+                break;
+        }
+    }
+}
 
 struct VdbRecordSet* vdbrecordset_init() {
     struct VdbRecordSet* rs = malloc_w(sizeof(struct VdbRecordSet));

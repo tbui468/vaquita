@@ -25,9 +25,10 @@ struct VdbRecordSet {
 struct VdbRecord* vdbrecord_init(int count, struct VdbDatum* data);
 void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
-void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec);
+void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema);
 struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema);
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
+void vdbrecord_print(struct VdbRecord* record);
 
 struct VdbRecordSet* vdbrecordset_init();
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);

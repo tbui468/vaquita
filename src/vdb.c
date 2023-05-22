@@ -355,8 +355,22 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
 
         }
 
+        //write dummy data if string type and user entered null as value during insertion
+        if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
+            int len = 1;
+            data[i].as.Str = malloc_w(sizeof(struct VdbString));
+            data[i].as.Str->start = malloc_w(sizeof(char) * len);
+            data[i].as.Str->len = len;
+            memcpy(data[i].as.Str->start, "0", len);
+        }
+
+        data[i].type = schema->types[i];
+        data[i].block_idx = 0;
+        data[i].idxcell_idx = 0;
+
         if (!found) {
             data[i].is_null = true;
+            data[i].type = VDBT_TYPE_NULL;
 
             //writing dummy data since writing records to disk expects a non-NULL struct VdbString*
             //maybe not the best solution, but it works for now
@@ -370,13 +384,10 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
             }
         }
 
-
-        data[i].type = schema->types[i];
-        data[i].block_idx = 0;
-        data[i].idxcell_idx = 0;
     }
 
-    struct VdbRecord* rec = vdbrecord_init(schema->count, data);
+    struct VdbRecord* rec = vdbrecord_init(schema->count, data); 
+    
     vdb_schema_free(schema);
 
     vdb_tree_insert_record(tree, rec);

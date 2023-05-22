@@ -45,14 +45,15 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    Fix bug with segfaulting when manually setting string to null on insert <------ START HERE
-        then check if test passes
-
     Fill in tests
-        null_manually_insert_for_string.sql <-----failing - related to freeing more than once...?
         where_is_null.sql
         where_is_not_null.sql
-        insert_invalid_col_name.sql <----should report error message
+        where_and.sql
+        where_or.sql
+        insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
+
+    vdb_insert_new - refactor this function
+        inserting placeholder strings for nulls (automatic and manual insertion) is messy
 
     node.c/h should not know about internal structure of struct VdbDatum
         caller (tree) should just pass in size or request pointer of where a record starts

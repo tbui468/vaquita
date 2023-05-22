@@ -240,33 +240,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 //TODO: apply projections to record set - also need to reorder data
 
                 for (uint32_t i = 0; i < rs->count; i++) {
-                    struct VdbRecord* r = rs->records[i];
-                    for (uint32_t j = 0; j < r->count; j++) {
-                        switch (r->data[j].type) {
-                            case VDBT_TYPE_STR:
-                                printf("%.*s, ", r->data[j].as.Str->len, r->data[j].as.Str->start); 
-                                break;
-                            case VDBT_TYPE_INT:
-                                printf("%ld, ", r->data[j].as.Int);
-                                break;
-                            case VDBT_TYPE_FLOAT:
-                                printf("%f, ", r->data[j].as.Float);
-                                break;
-                            case VDBT_TYPE_BOOL:
-                                if (r->data[j].as.Bool) {
-                                    printf("true, ");
-                                } else {
-                                    printf("false, ");
-                                }
-                                break;
-                             case VDBT_TYPE_NULL:
-                                printf("null, ");
-                                break;
-                             default:
-                                assert(false && "token is not valid data type");
-                                break;
-                        }
-                    }
+                    vdbrecord_print(rs->records[i]);
                     printf("\n");
                 }
 

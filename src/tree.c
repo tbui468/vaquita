@@ -328,7 +328,7 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
 
     uint32_t rec_idx = vdbleaf_append_record_cell(page->buf, vdbschema_fixedlen_record_size(schema));
     uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx, vdbschema_fixedlen_record_size(schema));
-    vdbrecord_write(buf, rec);
+    vdbrecord_write(buf, rec, schema);
 
     vdb_schema_free(schema);
 
@@ -347,7 +347,7 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     
     uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx, vdbschema_fixedlen_record_size(schema));
-    vdbrecord_write(buf, rec);
+    vdbrecord_write(buf, rec, schema);
 
     vdb_schema_free(schema);
 

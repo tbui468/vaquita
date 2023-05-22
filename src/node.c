@@ -269,7 +269,7 @@ void vdbdata_write_idx_count(uint8_t* buf, uint32_t count) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 3)) = count;
 }
 
-uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written) {
+uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbValue* datum, uint32_t* len_written) {
     uint32_t free = vdbdata_get_free_space(buf);
 
     uint32_t idxcell_off = *((uint32_t*)(buf + sizeof(uint32_t) * 5));

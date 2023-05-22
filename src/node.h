@@ -62,7 +62,7 @@ uint8_t* vdbdata_get_varlen_value_ptr(uint8_t* buf, uint32_t idxcell_idx);
 
 void vdbdata_write_next(uint8_t* buf, uint32_t next_idx);
 void vdbdata_write_idx_count(uint8_t* buf, uint32_t count);
-uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written);
+uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbValue* datum, uint32_t* len_written);
 void vdbdata_free_cells(uint8_t* buf, uint32_t idxcell_idx, uint32_t* overflow_block_idx, uint32_t* overflow_idxcell_idx);
 void vdbdata_data_write_overflow(uint8_t* buf, uint32_t idxcell_idx, uint32_t of_block_idx, uint32_t of_idxcell_idx);
 

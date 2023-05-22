@@ -7,7 +7,7 @@
 //#include "parser.h"
 
 struct VdbRecord {
-    struct VdbDatum* data;
+    struct VdbValue* data;
     uint32_t count;
     uint32_t key;
 };
@@ -22,7 +22,7 @@ struct VdbRecordSet {
 //record
 //[next|size|data (first is key)....]
 
-struct VdbRecord* vdbrecord_init(int count, struct VdbDatum* data);
+struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data);
 void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema);

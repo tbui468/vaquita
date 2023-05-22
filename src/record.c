@@ -5,19 +5,19 @@
 #include "record.h"
 #include "util.h"
 
-struct VdbRecord* vdbrecord_init(int count, struct VdbDatum* data) {
+struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data) {
     struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
     rec->count = count;
     rec->key = data[0].as.Int; //primary key is first attribute by default
-    rec->data = malloc_w(sizeof(struct VdbDatum) * rec->count);
-    memcpy(rec->data, data, sizeof(struct VdbDatum) * rec->count);
+    rec->data = malloc_w(sizeof(struct VdbValue) * rec->count);
+    memcpy(rec->data, data, sizeof(struct VdbValue) * rec->count);
 
     return rec;
 }
 
 void vdb_record_free(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
+        struct VdbValue* d = &rec->data[i];
         if (d->type == VDBT_TYPE_STR) {
             free(d->as.Str.start);
         }
@@ -30,10 +30,10 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     struct VdbRecord* r = malloc_w(sizeof(struct VdbRecord));
     r->count = rec->count; 
     r->key = rec->key;
-    r->data = malloc_w(sizeof(struct VdbDatum) * r->count);
+    r->data = malloc_w(sizeof(struct VdbValue) * r->count);
 
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
+        struct VdbValue* d = &rec->data[i];
         r->data[i].type = d->type;
         switch (d->type) {
             case VDBT_TYPE_INT:
@@ -65,7 +65,7 @@ void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* sche
     write_u32(buf, rec->key, &off);
 
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
+        struct VdbValue* d = &rec->data[i];
         *((bool*)(buf + off)) = rec->data[i].type == VDBT_TYPE_NULL;
         off += sizeof(bool);
 
@@ -100,7 +100,7 @@ struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
     rec->count = schema->count;
     rec->key = *((uint32_t*)(buf + data_off));
     data_off += sizeof(uint32_t);
-    rec->data = malloc_w(sizeof(struct VdbDatum) * rec->count);
+    rec->data = malloc_w(sizeof(struct VdbValue) * rec->count);
 
     for (uint32_t i = 0; i < schema->count; i++) {
         enum VdbTokenType type = schema->types[i];
@@ -145,7 +145,7 @@ struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
 
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
+        struct VdbValue* d = &rec->data[i];
         if (d->type == VDBT_TYPE_STR) {
             return true;
         }

@@ -337,7 +337,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct VdbExpr* key_expr = vdbexpr_init_literal(key_token);
     vdbexprlist_append_expr(values, key_expr);
 
-    struct VdbDatum data[schema->count];
+    struct VdbValue data[schema->count];
 
     for (uint32_t i = 0; i < schema->count; i++) {
         
@@ -516,7 +516,7 @@ void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec,
         struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
         struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-        struct VdbDatum* data = malloc_w(sizeof(struct VdbDatum) * projection->count);
+        struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
         for (int i = 0; i < projection->count; i++) {
             for (uint32_t j = 0; j < rec->count; j++) {
                 if (strncmp(schema->names[j], projection->tokens[i].lexeme, projection->tokens[i].len) == 0) {

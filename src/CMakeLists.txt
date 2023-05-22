@@ -12,6 +12,7 @@ set(Sources
     error.c
     token.c
     expr.c
+    value.c
     )
 
 set(Headers
@@ -27,6 +28,7 @@ set(Headers
     error.h
     token.h
     expr.h
+    value.h
     )
 
 add_executable(

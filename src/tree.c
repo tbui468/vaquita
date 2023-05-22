@@ -15,7 +15,7 @@
     vdb_pager_unpin_page(page)
 
 static uint32_t vdbtree_data_init(struct VdbTree* tree, int32_t parent_idx);
-static uint32_t vdbtree_data_append_datum(struct VdbTree* tree, uint32_t idx, struct VdbDatum* datum, uint32_t* len_written);
+static uint32_t vdbtree_data_append_datum(struct VdbTree* tree, uint32_t idx, struct VdbValue* datum, uint32_t* len_written);
 static void vdbtree_data_write_next(struct VdbTree* tree, uint32_t idx, uint32_t next);
 static uint32_t vdbtree_data_get_free_space(struct VdbTree* tree, uint32_t idx);
 static struct VdbPtr vdbtree_intern_read_right_ptr(struct VdbTree* tree, uint32_t idx);
@@ -381,7 +381,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
     vdb_schema_free(schema);
 
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum* d = &rec->data[i];
+        struct VdbValue* d = &rec->data[i];
         if (d->type != VDBT_TYPE_STR)
             continue;
 
@@ -393,7 +393,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
         while (block_idx) {
             struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
             uint8_t* ptr = vdbdata_get_varlen_value_ptr(page->buf, offset_idx);
-            struct VdbDatum datum = vdbvalue_deserialize_string(ptr);
+            struct VdbValue datum = vdbvalue_deserialize_string(ptr);
 
             d->as.Str.start = realloc_w(d->as.Str.start, sizeof(char) * (d->as.Str.len + datum.as.Str.len));
             memcpy(d->as.Str.start + d->as.Str.len, datum.as.Str.start, datum.as.Str.len);
@@ -478,7 +478,7 @@ static uint32_t vdbtree_data_init(struct VdbTree* tree, int32_t parent_idx) {
     return idx;
 }
 
-static uint32_t vdbtree_data_append_datum(struct VdbTree* tree, uint32_t idx, struct VdbDatum* datum, uint32_t* len_written) {
+static uint32_t vdbtree_data_append_datum(struct VdbTree* tree, uint32_t idx, struct VdbValue* datum, uint32_t* len_written) {
     assert(vdbtree_node_type(tree, idx) == VDBN_DATA);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
@@ -611,7 +611,7 @@ struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key) {
 
 void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbDatum d = rec->data[i]; 
+        struct VdbValue d = rec->data[i]; 
         if (d.type != VDBT_TYPE_STR)
             continue;
        

@@ -6,30 +6,12 @@
 #include <stdarg.h>
 
 #include "token.h"
+#include "value.h"
 
 struct VdbSchema {
     enum VdbTokenType* types;
     char** names;
     uint32_t count;
-};
-
-//TODO: should be part of record.h
-struct VdbString {
-    char* start;
-    uint32_t len;
-};
-
-//TODO: should be part of record.h
-struct VdbDatum {
-    enum VdbTokenType type;
-    union {
-        uint64_t Int;
-        struct VdbString Str;
-        bool Bool;
-        double Float;
-    } as;
-    uint32_t block_idx;
-    uint32_t idxcell_idx;
 };
 
 struct VdbSchema* vdb_schema_alloc(int count, va_list args);
@@ -39,7 +21,5 @@ struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
 void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema);
 struct VdbSchema* vdbschema_deserialize(uint8_t* buf);
 uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema);
-struct VdbDatum vdbvalue_deserialize_string(uint8_t* buf);
-bool vdbvalue_is_null(struct VdbDatum* d);
 
 #endif //VDB_SCHEMA_H

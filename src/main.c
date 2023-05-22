@@ -191,6 +191,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
                 int attr_count_without_id = stmt->as.insert.attributes->count;
 
+                //inserting 'id' as last column name (inserting actual key at end in vdb_insert_new)
                 struct VdbToken attr_token;
                 attr_token.type = VDBT_IDENTIFIER;
                 attr_token.lexeme = "id";

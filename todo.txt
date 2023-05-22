@@ -58,6 +58,8 @@ Use sample data to make sure SQL kinda works
                     //caller then writes data to buffer (as musch as allocated_size)
                     uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
 
+                    [size][space for string]
+
                     loop to allocate more space/write more data as needed in tree.c
 
         Set up system to track memory allocation/freeing
@@ -67,18 +69,13 @@ Use sample data to make sure SQL kinda works
             Need memory allocation/freeing controlled before implementing page eviction in buffer pool
 
     ************************************************
-
-    vdb_insert_new - refactor this function
-        inserting placeholder strings for nulls (automatic and manual insertion) is messy
-        break it up into logical sub routines
+    Remove key field in record and in node- this is now a regular attribute in records now
+        will need to rewrite some functions that read keys from node buffers
 
     Add test for:
         insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
             create table planets (name string, moons int);
             insert into planets (name, gravity) values ("Earth", 9.81); //this should report error instead of setting moons to null and ignoring 9.81
-
-    Remove key field in record and in node- this is now a regular attribute in records now
-        will need to rewrite some functions that read keys from node buffers
 
     Add update and delete statements:
         cursor abstraction:

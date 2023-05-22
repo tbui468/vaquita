@@ -320,7 +320,50 @@ enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
     return VDBRC_ERROR;
 }
 
-enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbExprList* values) {
+static void vdb_allocate_dummy_string(struct VdbValue* value) {
+    value->as.Str.start = malloc_w(sizeof(char) * 1);
+    value->as.Str.len = 1;
+    memcpy(value->as.Str.start, "0", 1);
+}
+
+static void vdb_assign_column_values(struct VdbValue* data, struct VdbSchema* schema, struct VdbTokenList* cols, struct VdbExprList* values) {
+    for (uint32_t i = 0; i < schema->count; i++) {
+        
+        bool found = false;
+        for (int j = 0; j < cols->count; j++) {
+            if (strncmp(schema->names[i], cols->tokens[j].lexeme, cols->tokens[j].len) != 0) 
+                continue;
+
+            //TODO: passing in NULL for struct VdbRecord* and struct Schema* since values expression shouldn't have identifiers
+            //  but holy hell this is ugly - should fix this
+            data[i] = vdbexpr_eval(values->exprs[j], NULL, NULL);
+
+            found = true;
+            break;
+
+        }
+
+        //user manually inserted null for a string value
+        if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
+            vdb_allocate_dummy_string(&data[i]);
+        }
+
+        if (!found) {
+            data[i].type = VDBT_TYPE_NULL;
+
+            //automacally insert null value for string
+            if (schema->types[i] == VDBT_TYPE_STR) {
+                vdb_allocate_dummy_string(&data[i]);
+            }
+        }
+
+        data[i].block_idx = 0;
+        data[i].idxcell_idx = 0;
+
+    }
+}
+
+enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* cols, struct VdbExprList* values) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
@@ -338,50 +381,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     vdbexprlist_append_expr(values, key_expr);
 
     struct VdbValue data[schema->count];
-
-    for (uint32_t i = 0; i < schema->count; i++) {
-        
-        bool found = false;
-        for (int j = 0; j < attrs->count; j++) {
-            if (strncmp(schema->names[i], attrs->tokens[j].lexeme, attrs->tokens[j].len) != 0) 
-                continue;
-
-            //TODO: passing in NULL for struct VdbRecord* and struct Schema* since values expression shouldn't have identifiers
-            //  but holy hell this is ugly - should fix this
-            data[i] = vdbexpr_eval(values->exprs[j], NULL, NULL);
-
-            found = true;
-            break;
-
-        }
-
-        //write dummy data if string type and user entered null as value during insertion
-        //TODO: doing the exact same thing below - this entire function requires a rewrite
-        if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
-            int len = 1;
-            data[i].as.Str.start = malloc_w(sizeof(char) * len);
-            data[i].as.Str.len = len;
-            memcpy(data[i].as.Str.start, "0", len);
-        }
-
-        data[i].block_idx = 0;
-        data[i].idxcell_idx = 0;
-
-        if (!found) {
-            data[i].type = VDBT_TYPE_NULL;
-
-            //writing dummy data since writing records to disk expects a non-NULL struct VdbString*
-            //maybe not the best solution, but it works for now
-            //TODO: should not write data if null - can remove this block when that is implemented
-            if (schema->types[i] == VDBT_TYPE_STR) {
-                int len = 1;
-                data[i].as.Str.start = malloc_w(sizeof(char) * len);
-                data[i].as.Str.len = len;
-                memcpy(data[i].as.Str.start, "0", len);
-            }
-        }
-
-    }
+    vdb_assign_column_values(data, schema, cols, values);
 
     struct VdbRecord* rec = vdbrecord_init(schema->count, data); 
     

@@ -1,0 +1,8 @@
+created database sol
+opened database sol
+created table planets
+inserted 1 record(s) into planets
+inserted 1 record(s) into planets
+2, Mars, 2, 
+closed database sol
+dropped database sol

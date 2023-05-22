@@ -45,15 +45,6 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    Fill in tests
-        where_is_null.sql
-        where_is_not_null.sql
-        where_and.sql
-        where_or.sql
-        insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
-            create table planets (name string, moons int);
-            insert into planets (name, gravity) values ("Earth", 9.81); //this should report error instead of setting moons to null and ignoring 9.81
-
     vdb_insert_new - refactor this function
         inserting placeholder strings for nulls (automatic and manual insertion) is messy
 
@@ -72,6 +63,11 @@ Use sample data to make sure SQL kinda works
                 loop to allocate more space/write more data as needed in tree.c
 
     Change struct VdbDatum to struct VdbValue and put into own translation unit/header
+
+    Add test for:
+        insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
+            create table planets (name string, moons int);
+            insert into planets (name, gravity) values ("Earth", 9.81); //this should report error instead of setting moons to null and ignoring 9.81
 
     Remove key field in record and in node- this is now a regular attribute in records now
         will need to rewrite some functions that read keys from node buffers

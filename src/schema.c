@@ -102,7 +102,6 @@ struct VdbSchema* vdbschema_deserialize(uint8_t* buf) {
 
 uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema) {
     uint32_t size = 0;
-    size += sizeof(uint32_t); //record key - TODO: should remove since key is now part of data
     for (uint32_t i = 0; i < schema->count; i++) {
         size += sizeof(bool); //is_null flag
         switch (schema->types[i]) {

@@ -581,10 +581,10 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->key);
+    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->data[0].as.Int);
 
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx)) {
-        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec->key);
+        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec->data[0].as.Int);
     }
 
     vdbtree_leaf_append_record(tree, leaf_idx, rec);
@@ -653,17 +653,17 @@ bool vdbtree_delete_record(struct VdbTree* tree, uint32_t key) {
 }
 
 bool vdbtree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
-    if (rec->key > vdbtree_meta_read_primary_key_counter(tree)) {
+    if (rec->data[0].as.Int > vdbtree_meta_read_primary_key_counter(tree)) {
         return false;
     }
 
     uint32_t root_idx = vdbtree_meta_read_root(tree);
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->key);
+    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->data[0].as.Int);
 
     //TODO: switch from linear to binary search
     for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
         uint32_t cur_key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
-        if (cur_key == rec->key) {
+        if (cur_key == rec->data[0].as.Int) {
             struct VdbRecord* old_rec = vdbtree_leaf_read_record(tree, leaf_idx, i);
             vdbtree_leaf_free_varlen_data(tree, old_rec);
             vdb_record_free(old_rec);

@@ -120,7 +120,8 @@ uint32_t vdbnode_leaf_read_record_key(uint8_t* buf, uint32_t idx) {
     uint32_t data_off;
     read_u32(&data_off, buf, &off);
 
-    return *((uint32_t*)(buf + data_off + sizeof(uint32_t) * 2));
+    //skip two fields (next and size) and is_null for id column
+    return *((uint32_t*)(buf + data_off + sizeof(uint32_t) * 2 + sizeof(bool)));
 }
 
 uint32_t vdbnode_leaf_read_record_count(uint8_t* buf) {
@@ -174,7 +175,8 @@ uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size) {
 void vdbleaf_write_record_key(uint8_t* buf, uint32_t rec_idx, uint32_t key) {
     uint32_t rec_off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * rec_idx));
 
-    *((uint32_t*)(buf + rec_off + sizeof(uint32_t) * 2)) = key;
+    //skip two fields (next and size) and is_null for id column
+    *((uint32_t*)(buf + rec_off + sizeof(uint32_t) * 2 + sizeof(bool))) = key;
 }
 
 /* 

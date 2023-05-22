@@ -8,7 +8,6 @@
 struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data) {
     struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
     rec->count = count;
-    rec->key = data[0].as.Int; //primary key is first attribute by default
     rec->data = malloc_w(sizeof(struct VdbValue) * rec->count);
     memcpy(rec->data, data, sizeof(struct VdbValue) * rec->count);
 
@@ -29,7 +28,6 @@ void vdb_record_free(struct VdbRecord* rec) {
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
     struct VdbRecord* r = malloc_w(sizeof(struct VdbRecord));
     r->count = rec->count; 
-    r->key = rec->key;
     r->data = malloc_w(sizeof(struct VdbValue) * r->count);
 
     for (uint32_t i = 0; i < rec->count; i++) {
@@ -62,7 +60,6 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
 
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema) {
     int off = 0;
-    write_u32(buf, rec->key, &off);
 
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue* d = &rec->data[i];
@@ -98,8 +95,6 @@ struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
     uint32_t data_off = 0;
     struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
     rec->count = schema->count;
-    rec->key = *((uint32_t*)(buf + data_off));
-    data_off += sizeof(uint32_t);
     rec->data = malloc_w(sizeof(struct VdbValue) * rec->count);
 
     for (uint32_t i = 0; i < schema->count; i++) {

@@ -69,9 +69,6 @@ Use sample data to make sure SQL kinda works
             Need memory allocation/freeing controlled before implementing page eviction in buffer pool
 
     ************************************************
-    Remove key field in record and in node- this is now a regular attribute in records now
-        will need to rewrite some functions that read keys from node buffers
-
     Add test for:
         insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
             create table planets (name string, moons int);
@@ -99,6 +96,8 @@ Use sample data to make sure SQL kinda works
             initialize a cursor at key
             delete record there
 
+    Eviction policy
+
     single line comments
         use c-style //
 
@@ -110,10 +109,6 @@ Use sample data to make sure SQL kinda works
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
         the attribute names take too much space.  Need an overflow block for attribute strings.
-
-    add more test cases
-        use python to automate running of program with test scripts
-        **Do this before writing bytecode generator and vm
 
     Compile AST to bytecode that runs on vm
         How could this work?

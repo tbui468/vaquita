@@ -9,7 +9,6 @@
 struct VdbRecord {
     struct VdbValue* data;
     uint32_t count;
-    uint32_t key;
 };
 
 struct VdbRecordSet {
@@ -20,7 +19,7 @@ struct VdbRecordSet {
 
 
 //record
-//[next|size|data (first is key)....]
+//[next|size|data....]
 
 struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data);
 void vdb_record_free(struct VdbRecord* rec);

@@ -359,10 +359,9 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
         //TODO: doing the exact same thing below - this entire function requires a rewrite
         if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
             int len = 1;
-            data[i].as.Str = malloc_w(sizeof(struct VdbString));
-            data[i].as.Str->start = malloc_w(sizeof(char) * len);
-            data[i].as.Str->len = len;
-            memcpy(data[i].as.Str->start, "0", len);
+            data[i].as.Str.start = malloc_w(sizeof(char) * len);
+            data[i].as.Str.len = len;
+            memcpy(data[i].as.Str.start, "0", len);
         }
 
         data[i].block_idx = 0;
@@ -376,10 +375,9 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
             //TODO: should not write data if null - can remove this block when that is implemented
             if (schema->types[i] == VDBT_TYPE_STR) {
                 int len = 1;
-                data[i].as.Str = malloc_w(sizeof(struct VdbString));
-                data[i].as.Str->start = malloc_w(sizeof(char) * len);
-                data[i].as.Str->len = len;
-                memcpy(data[i].as.Str->start, "0", len);
+                data[i].as.Str.start = malloc_w(sizeof(char) * len);
+                data[i].as.Str.len = len;
+                memcpy(data[i].as.Str.start, "0", len);
             }
         }
 

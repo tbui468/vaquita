@@ -286,14 +286,14 @@ uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* le
     uint32_t datacells_size = vdbdata_read_datacells_size(buf);
     uint32_t header_size = vdbdata_datacell_header_size();
 
-    uint32_t can_fit = free < datum->as.Str->len - *len_written ? free : datum->as.Str->len - *len_written;
+    uint32_t can_fit = free < datum->as.Str.len - *len_written ? free : datum->as.Str.len - *len_written;
     uint32_t off = VDB_PAGE_SIZE - datacells_size - can_fit - header_size;
 
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)) = 0;
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)) = can_fit;
 
-    memcpy(buf + off + header_size, datum->as.Str->start + *len_written, can_fit);
+    memcpy(buf + off + header_size, datum->as.Str.start + *len_written, can_fit);
     *len_written += can_fit;
 
     vdbdata_write_datacells_size(buf, datacells_size + header_size + can_fit);

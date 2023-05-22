@@ -134,9 +134,8 @@ struct VdbDatum vdbexpr_eval_identifier(struct VdbToken token, struct VdbRecord*
 
     if (rec->data[i].type == VDBT_TYPE_STR) {
         struct VdbDatum d = rec->data[i];
-        d.as.Str = malloc_w(sizeof(struct VdbString));
-        d.as.Str->len = rec->data[i].as.Str->len;
-        d.as.Str->start = strdup_w(rec->data[i].as.Str->start);
+        d.as.Str.len = rec->data[i].as.Str.len;
+        d.as.Str.start = strdup_w(rec->data[i].as.Str.start);
         return d;
     }
     
@@ -148,11 +147,10 @@ struct VdbDatum vdbexpr_eval_literal(struct VdbToken token) {
     switch (token.type) {
         case VDBT_STR: {
             d.type = VDBT_TYPE_STR;
-            d.as.Str = malloc_w(sizeof(struct VdbString));
-            d.as.Str->len = token.len;
-            d.as.Str->start = malloc_w(token.len + 1);
-            memcpy(d.as.Str->start, token.lexeme, token.len);
-            d.as.Str->start[token.len] = '\0';
+            d.as.Str.len = token.len;
+            d.as.Str.start = malloc_w(token.len + 1);
+            memcpy(d.as.Str.start, token.lexeme, token.len);
+            d.as.Str.start[token.len] = '\0';
             break;
         }
         case VDBT_INT: {
@@ -211,7 +209,7 @@ static struct VdbDatum vdbexpr_eval_binary_equals(struct VdbDatum* left, struct 
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
         case VDBT_TYPE_STR:
-            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) == 0;
+            d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) == 0;
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int == right->as.Int;
@@ -245,7 +243,7 @@ static struct VdbDatum vdbexpr_eval_binary_not_equals(struct VdbDatum* left, str
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
         case VDBT_TYPE_STR:
-            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) != 0;
+            d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) != 0;
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int != right->as.Int;
@@ -278,7 +276,7 @@ static struct VdbDatum vdbexpr_eval_binary_less(struct VdbDatum* left, struct Vd
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
         case VDBT_TYPE_STR:
-            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) < 0;
+            d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) < 0;
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int < right->as.Int;
@@ -309,7 +307,7 @@ static struct VdbDatum vdbexpr_eval_binary_less_equals(struct VdbDatum* left, st
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
         case VDBT_TYPE_STR:
-            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) <= 0;
+            d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) <= 0;
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int <= right->as.Int;
@@ -340,7 +338,7 @@ static struct VdbDatum vdbexpr_eval_binary_greater(struct VdbDatum* left, struct
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
         case VDBT_TYPE_STR:
-            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) > 0;
+            d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) > 0;
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int > right->as.Int;
@@ -371,7 +369,7 @@ static struct VdbDatum vdbexpr_eval_binary_greater_equals(struct VdbDatum* left,
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
         case VDBT_TYPE_STR:
-            d.as.Bool = strncmp(left->as.Str->start, right->as.Str->start, left->as.Str->len) >= 0;
+            d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) >= 0;
             break;
         case VDBT_TYPE_INT:
             d.as.Bool = left->as.Int >= right->as.Int;
@@ -456,13 +454,12 @@ static struct VdbDatum vdbexpr_eval_binary_plus(struct VdbDatum* left, struct Vd
     switch (left->type) {
         case VDBT_TYPE_STR:
             d.type = VDBT_TYPE_STR;
-            d.as.Str = malloc_w(sizeof(struct VdbString));
-            int len = left->as.Str->len + right->as.Str->len;
-            d.as.Str->len = len;
-            d.as.Str->start = malloc_w(sizeof(char) * (len + 1));
-            memcpy(d.as.Str->start, left->as.Str->start, left->as.Str->len);
-            memcpy(d.as.Str->start + left->as.Str->len, right->as.Str->start, right->as.Str->len);
-            d.as.Str->start[len] = '\0';
+            int len = left->as.Str.len + right->as.Str.len;
+            d.as.Str.len = len;
+            d.as.Str.start = malloc_w(sizeof(char) * (len + 1));
+            memcpy(d.as.Str.start, left->as.Str.start, left->as.Str.len);
+            memcpy(d.as.Str.start + left->as.Str.len, right->as.Str.start, right->as.Str.len);
+            d.as.Str.start[len] = '\0';
             break;
         case VDBT_TYPE_INT:
             d.type = VDBT_TYPE_INT;
@@ -553,13 +550,11 @@ static struct VdbDatum vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
             }
 
             if (left.type == VDBT_TYPE_STR) {
-                free(left.as.Str->start);
-                free(left.as.Str);
+                free(left.as.Str.start);
             }
 
             if (right.type == VDBT_TYPE_STR) {
-                free(right.as.Str->start);
-                free(right.as.Str);
+                free(right.as.Str.start);
             }
 
             return d;

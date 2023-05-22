@@ -19,8 +19,7 @@ void vdb_record_free(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbDatum* d = &rec->data[i];
         if (d->type == VDBT_TYPE_STR) {
-            free(d->as.Str->start);
-            free(d->as.Str);
+            free(d->as.Str.start);
         }
     }
     free(rec->data);
@@ -41,10 +40,9 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
                 r->data[i].as.Int = d->as.Int;
                 break;
             case VDBT_TYPE_STR:
-                r->data[i].as.Str = malloc_w(sizeof(struct VdbString));
-                r->data[i].as.Str->len = d->as.Str->len;
-                r->data[i].as.Str->start = malloc_w(sizeof(char) * d->as.Str->len);
-                memcpy(r->data[i].as.Str->start, d->as.Str->start, d->as.Str->len);
+                r->data[i].as.Str.len = d->as.Str.len;
+                r->data[i].as.Str.start = malloc_w(sizeof(char) * d->as.Str.len);
+                memcpy(r->data[i].as.Str.start, d->as.Str.start, d->as.Str.len);
                 break;
             case VDBT_TYPE_BOOL:
                 r->data[i].as.Bool = d->as.Bool;
@@ -160,7 +158,7 @@ void vdbrecord_print(struct VdbRecord* r) {
     for (uint32_t j = 0; j < r->count; j++) {
         switch (r->data[j].type) {
             case VDBT_TYPE_STR:
-                printf("%.*s, ", r->data[j].as.Str->len, r->data[j].as.Str->start); 
+                printf("%.*s, ", r->data[j].as.Str.len, r->data[j].as.Str.start); 
                 break;
             case VDBT_TYPE_INT:
                 printf("%ld, ", r->data[j].as.Int);

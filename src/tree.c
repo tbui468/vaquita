@@ -302,7 +302,7 @@ static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, s
         rec->data[i].block_idx = data_block_idx;
         rec->data[i].idxcell_idx = off;
 
-        while (len_written < rec->data[i].as.Str->len) {
+        while (len_written < rec->data[i].as.Str.len) {
             uint32_t new_data_idx = vdbtree_data_init(tree, data_block_idx);
             vdbtree_data_write_next(tree, data_block_idx, new_data_idx); 
             uint32_t new_off = vdbtree_data_append_datum(tree, new_data_idx, &rec->data[i], &len_written);
@@ -387,23 +387,21 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
 
         uint32_t block_idx = d->block_idx;
         uint32_t offset_idx = d->idxcell_idx;
-        d->as.Str = malloc_w(sizeof(struct VdbString));
-        d->as.Str->start = NULL;
-        d->as.Str->len = 0;
+        d->as.Str.start = NULL;
+        d->as.Str.len = 0;
 
         while (block_idx) {
             struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, block_idx);
             uint8_t* ptr = vdbdata_get_varlen_value_ptr(page->buf, offset_idx);
             struct VdbDatum datum = vdbvalue_deserialize_string(ptr);
 
-            d->as.Str->start = realloc_w(d->as.Str->start, sizeof(char) * (d->as.Str->len + datum.as.Str->len));
-            memcpy(d->as.Str->start + d->as.Str->len, datum.as.Str->start, datum.as.Str->len);
-            d->as.Str->len += datum.as.Str->len;
+            d->as.Str.start = realloc_w(d->as.Str.start, sizeof(char) * (d->as.Str.len + datum.as.Str.len));
+            memcpy(d->as.Str.start + d->as.Str.len, datum.as.Str.start, datum.as.Str.len);
+            d->as.Str.len += datum.as.Str.len;
 
             block_idx = datum.block_idx;
             offset_idx = datum.idxcell_idx;
-            free(datum.as.Str->start);
-            free(datum.as.Str);
+            free(datum.as.Str.start);
 
             vdb_pager_unpin_page(page);
         }

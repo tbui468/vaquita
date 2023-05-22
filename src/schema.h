@@ -24,7 +24,7 @@ struct VdbDatum {
     enum VdbTokenType type;
     union {
         uint64_t Int;
-        struct VdbString* Str;
+        struct VdbString Str;
         bool Bool;
         double Float;
     } as;

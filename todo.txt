@@ -46,21 +46,7 @@ Use sample data to make sure SQL kinda works
 
 *******************************TODO**************************************************
     **********************Fixing Memory**********************
-        Rewrite struct VdbDatum:
-            struct VdbValue { <--------rename to vdbValue (also to save name 'data' for the data/leaf/intern/meta block)
-                enum VdbTokenType type;
-                //remove field bool is_null; <------type field holds same info already - should need schema if writing/reading to determine actual type
-                union {
-                    uint64_t Int;
-                    struct VdbString Str; <-----make this a stack allocated field
-                    bool Bool;
-                    double Float;
-                } as;
-                uint32_t block_idx;
-                uint32_t idxcell_idx;
-            };
-
-        Move struct VdbValue to own translation unit/header 
+        Rename struct VdbDatum to struct VdbValue and move to own translation unit/header
 
         node.c/h should not know about internal structure of struct VdbValue
             caller (tree) should just pass in size or request pointer of where a record starts

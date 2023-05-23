@@ -21,8 +21,8 @@ void vdb_record_free(struct VdbRecord* rec) {
             free(d->as.Str.start);
         }
     }
-    free(rec->data);
-    free(rec);
+    free_w(rec->data, rec->count * sizeof(struct VdbValue));
+    free_w(rec, sizeof(struct VdbRecord));
 }
 
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
@@ -240,8 +240,9 @@ struct VdbRecordSet* vdbrecordset_init() {
 
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec) {
     if (rs->count == rs->capacity) {
+        uint32_t old_cap = rs->capacity;
         rs->capacity *= 2;
-        rs->records = realloc_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
+        rs->records = realloc_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity, sizeof(struct VdbRecord*) * old_cap);
     }
 
     rs->records[rs->count++] = rec;

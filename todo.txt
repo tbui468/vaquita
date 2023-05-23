@@ -50,23 +50,31 @@ Use sample data to make sure SQL kinda works
 
 *******************************TODO**************************************************
     **********************Fixing Memory**********************
-        Refactor this guy a bit:
-        static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec) {
+        Replace ALL free() calls with free_w() calls
+            main.c
+            vdb.c
+            util.c
+            schema.c
+            tree.c
+            node.c
+            record.c
+            pager.c
+            lexer.c
+            parser.c
+            error.c
+            token.c
+            expr.c
+            value.c
 
-        Set up system to track memory allocation/freeing
-            need to write a wrapper for free that decrements whenever something is freed
+        How much memory is still allocated when program runs?
+            Track down all unallocated memory - valgrind may help here
+            Occasionally remove the print statement and run tests to make sure we didn't break anything
 
         Use valgrind to check for common memory problems/leaks
             https://valgrind.org/docs/manual/quick-start.html
             Need memory allocation/freeing controlled before implementing page eviction in buffer pool
 
     ************************************************
-    Add test for:
-        insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
-            create table planets (name string, moons int);
-            insert into planets (name, gravity) values ("Earth", 9.81); //this should report error instead of setting moons to null and ignoring 9.81
-
-        *will probably need to introduce runtime errors here (we have tokenizing and parsing(?) errors already)
 
     Add update and delete statements:
         cursor abstraction:
@@ -96,6 +104,13 @@ Use sample data to make sure SQL kinda works
         Use O_DIRECT to bypass OS pager
 
         implement LRU policy for now, but make it easy to swap algorithms (such as to clock policy or using a nn)
+
+    Add tests for errors:
+        insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug
+            create table planets (name string, moons int);
+            insert into planets (name, gravity) values ("Earth", 9.81); //this should report error instead of setting moons to null and ignoring 9.81
+
+        *will probably need to introduce runtime errors here (we have tokenizing and parsing(?) errors already)
 
     single line comments
         use c-style //

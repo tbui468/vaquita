@@ -665,8 +665,9 @@ void vdbexprlist_free(struct VdbExprList* el) {
 
 void vdbexprlist_append_expr(struct VdbExprList* el, struct VdbExpr* expr) {
     if (el->count + 1 > el->capacity) {
+        int old_cap = el->capacity;
         el->capacity *= 2;
-        el->exprs = realloc_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
+        el->exprs = realloc_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity, sizeof(struct VdbExpr*) * old_cap);
     }
 
     el->exprs[el->count++] = expr;
@@ -691,8 +692,9 @@ void vdbstmtlist_free(struct VdbStmtList* sl) {
 
 void vdbstmtlist_append_stmt(struct VdbStmtList* sl, struct VdbStmt stmt) {
     if (sl->count + 1 > sl->capacity) {
+        int old_cap = sl->capacity;
         sl->capacity *= 2;
-        sl->stmts = realloc_w(sl->stmts, sizeof(struct VdbStmt) * sl->capacity);
+        sl->stmts = realloc_w(sl->stmts, sizeof(struct VdbStmt) * sl->capacity, sizeof(struct VdbStmt) * old_cap);
     }
 
     sl->stmts[sl->count++] = stmt;

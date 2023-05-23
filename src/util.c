@@ -7,6 +7,8 @@
 
 #include "util.h"
 
+uint64_t allocated_memory = 0;
+/*
 struct U32List* u32l_alloc() {
     struct U32List* list = malloc_w(sizeof(struct U32List));
     list->count = 0;
@@ -28,7 +30,7 @@ void u32l_append(struct U32List* list, uint32_t v) {
 void u32l_free(struct U32List* list) {
     free(list->values);
     free(list);
-}
+}*/
 
 int get_filename(FILE* f, char* buf, ssize_t max_len) {
     get_pathname(f, buf, max_len);
@@ -151,6 +153,7 @@ int fclose_w(FILE* f) {
 }
 
 void* calloc_w(size_t count, size_t size) {
+    allocated_memory += count * size;
     void* ptr;
     if (!(ptr = calloc(count, size)))
         err_quit("calloc failed");
@@ -159,17 +162,24 @@ void* calloc_w(size_t count, size_t size) {
 }
 
 void* malloc_w(size_t size) {
+    allocated_memory += size;
     void* ptr;
     if (!(ptr = malloc(size)))
         err_quit("malloc failed");
     return ptr;
 }
 
-void* realloc_w(void* ptr, size_t size) {
+void* realloc_w(void* ptr, size_t new_size, size_t prev_size) {
+    allocated_memory += (new_size - prev_size);
     void* ret;
-    if (!(ret = realloc(ptr, size)))
+    if (!(ret = realloc(ptr, new_size)))
         err_quit("realloc failed");
     return ret;
+}
+
+void free_w(void* ptr, size_t size) {
+    free(ptr);
+    allocated_memory -= size;
 }
 
 int remove_w(const char* pathname) {

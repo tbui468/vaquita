@@ -49,8 +49,9 @@ struct VdbPageList* _vdb_pagelist_alloc() {
 
 void _vdb_pagelist_append_page(struct VdbPageList* pl, struct VdbPage* page) {
     if (pl->count == pl->capacity) {
+        int old_cap = pl->capacity;
         pl->capacity *= 2;
-        pl->pages = realloc_w(pl->pages, sizeof(struct VdbPage*) * pl->capacity);
+        pl->pages = realloc_w(pl->pages, sizeof(struct VdbPage*) * pl->capacity, sizeof(struct VdbPage*) * old_cap);
     }
 
     pl->pages[pl->count++] = page;

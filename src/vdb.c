@@ -102,8 +102,9 @@ enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count) {
             continue;
 
         if (*count + 1 > capacity) {
+            int old_cap = capacity;
             capacity *= 2;
-            *dbs = realloc_w(*dbs, sizeof(char*) * capacity);
+            *dbs = realloc_w(*dbs, sizeof(char*) * capacity, sizeof(char*) * old_cap);
         }
 
         (*dbs)[*count] = malloc_w(sizeof(char) * (entry_len - ext_len + 1));

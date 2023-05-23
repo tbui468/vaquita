@@ -24,8 +24,9 @@ void vdberrorlist_free(struct VdbErrorList* el) {
 void vdberrorlist_append_error(struct VdbErrorList* el, int line, const char* fmt, ...) {
     static int MSG_MAX = 64;
     if (el->count + 1 > el->capacity) {
+        int old_cap = el->capacity;
         el->capacity *= 2;
-        el->errors = realloc_w(el->errors, sizeof(struct VdbError) * el->capacity);
+        el->errors = realloc_w(el->errors, sizeof(struct VdbError) * el->capacity, sizeof(struct VdbError) * old_cap);
     }
 
     struct VdbError e;

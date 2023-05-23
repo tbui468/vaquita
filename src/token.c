@@ -13,14 +13,15 @@ struct VdbTokenList* vdbtokenlist_init() {
 }
 
 void vdbtokenlist_free(struct VdbTokenList* tl) {
-    free(tl->tokens);
-    free(tl);
+    free_w(tl->tokens, sizeof(struct VdbToken) * tl->capacity);
+    free_w(tl, sizeof(struct VdbTokenList));
 }
 
 void vdbtokenlist_append_token(struct VdbTokenList* tl, struct VdbToken t) {
     if (tl->count + 1 > tl->capacity) {
+        int old_cap = tl->capacity;
         tl->capacity *= 2;
-        tl->tokens = realloc_w(tl->tokens, sizeof(struct VdbToken) * tl->capacity);
+        tl->tokens = realloc_w(tl->tokens, sizeof(struct VdbToken) * tl->capacity, sizeof(struct VdbToken) * old_cap);
     }
 
     tl->tokens[tl->count++] = t;

@@ -294,6 +294,7 @@ static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, s
             data_block_idx = new_data_idx;
         }
 
+        //append string to data block
         struct VdbPage* data_page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, data_block_idx);
 
         uint32_t allocated_size;
@@ -309,7 +310,8 @@ static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, s
 
         vdb_pager_unpin_page(data_page);
 
-
+        //this only runs if an overflow block is needed
+        //keep adding new data blocks and appending string if necessary
         while (len_written < rec->data[i].as.Str.len) {
             uint32_t new_data_idx = vdbtree_data_init(tree, data_block_idx);
             vdbtree_data_write_next(tree, data_block_idx, new_data_idx); 
@@ -421,7 +423,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
             uint8_t* ptr = vdbdata_get_varlen_value_ptr(page->buf, offset_idx);
             struct VdbValue datum = vdbvalue_deserialize_string(ptr);
 
-            d->as.Str.start = realloc_w(d->as.Str.start, sizeof(char) * (d->as.Str.len + datum.as.Str.len));
+            d->as.Str.start = realloc_w(d->as.Str.start, sizeof(char) * (d->as.Str.len + datum.as.Str.len), sizeof(char) * d->as.Str.len);
             memcpy(d->as.Str.start + d->as.Str.len, datum.as.Str.start, datum.as.Str.len);
             d->as.Str.len += datum.as.Str.len;
 
@@ -714,8 +716,9 @@ struct VdbTreeList* vdb_treelist_init() {
 
 void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree) {
     if (tl->count == tl->capacity) {
+        uint32_t old_cap = tl->capacity;
         tl->capacity *= 2;
-        tl->trees = realloc_w(tl->trees, sizeof(struct VdbTree*) * tl->capacity);
+        tl->trees = realloc_w(tl->trees, sizeof(struct VdbTree*) * tl->capacity, sizeof(struct VdbTree*) * old_cap);
     }
 
     tl->trees[tl->count++] = tree;

@@ -6,16 +6,18 @@
 #include <dirent.h>
 #include <stdint.h>
 
-#define flow(msg) printf("%s - %d\n", __func__, msg)
+extern uint64_t allocated_memory;
 
+/*
 struct U32List {
     uint32_t* values;
     uint32_t count;
     uint32_t capacity;
 };
+
 struct U32List* u32l_alloc();
 void u32l_append(struct U32List* list, uint32_t v);
-void u32l_free(struct U32List* list);
+void u32l_free(struct U32List* list);*/
 
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);
@@ -32,7 +34,8 @@ FILE* fopen_w(const char* filename, const char* mode);
 int fclose_w(FILE* f);
 void* calloc_w(size_t count, size_t size);
 void* malloc_w(size_t size);
-void* realloc_w(void* ptr, size_t size);
+void* realloc_w(void* ptr, size_t new_size, size_t prev_size);
+void free_w(void* ptr, size_t size);
 int remove_w(const char* pathname);
 int rmdir_w(const char* pathname);
 int mkdir_w(const char* pathname, int mode);

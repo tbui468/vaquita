@@ -117,6 +117,7 @@ struct VdbExpr* vdbexpr_init_is_null(struct VdbExpr* left);
 struct VdbExpr* vdbexpr_init_is_not_null(struct VdbExpr* left);
 struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema);
 
+struct VdbExpr* vdbexpr_copy(struct VdbExpr* expr);
 void vdbexpr_print(struct VdbExpr* expr);
 void vdbexpr_free(struct VdbExpr* expr);
 struct VdbExprList* vdbexprlist_init();
@@ -135,6 +136,7 @@ struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser);
 struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser);
 void vdbparser_parse_tuple(struct VdbParser* parser, struct VdbTokenList* tl);
 enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt);
+void vdbstmt_free_fields(struct VdbStmt* stmt);
 void vdbstmt_print(struct VdbStmt* stmt);
 
 #endif //VDB_PARSER_H

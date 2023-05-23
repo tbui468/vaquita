@@ -550,11 +550,11 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
             }
 
             if (left.type == VDBT_TYPE_STR) {
-                free(left.as.Str.start);
+                free_w(left.as.Str.start, sizeof(char) * left.as.Str.len);
             }
 
             if (right.type == VDBT_TYPE_STR) {
-                free(right.as.Str.start);
+                free_w(right.as.Str.start, sizeof(char) * right.as.Str.len);
             }
 
             return d;
@@ -632,6 +632,10 @@ struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct
 
 void vdbexpr_free(struct VdbExpr* expr) {
     switch (expr->type) {
+        case VDBET_LITERAL:
+            break;
+        case VDBET_IDENTIFIER:
+            break;
         case VDBET_UNARY:
             vdbexpr_free(expr->as.unary.right);
             break;
@@ -639,11 +643,18 @@ void vdbexpr_free(struct VdbExpr* expr) {
             vdbexpr_free(expr->as.binary.left);
             vdbexpr_free(expr->as.binary.right);
             break;
-         default:
+        case VDBET_IS_NULL:
+            vdbexpr_free(expr->as.is_null.left);
+            break;
+        case VDBET_IS_NOT_NULL:
+            vdbexpr_free(expr->as.is_not_null.left);
+            break;
+        default:
+            assert(false && "expr type not freed");
             break;
     }
 
-    free(expr);
+    free_w(expr, sizeof(struct VdbExpr));
 }
 
 struct VdbExprList* vdbexprlist_init() {
@@ -659,8 +670,8 @@ void vdbexprlist_free(struct VdbExprList* el) {
     for (int i = 0; i < el->count; i++) {
         vdbexpr_free(el->exprs[i]);
     }
-    free(el->exprs);
-    free(el);
+    free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
+    free_w(el, sizeof(struct VdbExprList));
 }
 
 void vdbexprlist_append_expr(struct VdbExprList* el, struct VdbExpr* expr) {
@@ -685,9 +696,11 @@ struct VdbStmtList* vdbstmtlist_init() {
 }
 
 void vdbstmtlist_free(struct VdbStmtList* sl) {
-    //TODO: free all token lists, expr lists in statements
-    free(sl->stmts);
-    free(sl);
+    for (int i = 0; i < sl->count; i++) {
+        vdbstmt_free_fields(&sl->stmts[i]);
+    }
+    free_w(sl->stmts, sizeof(struct VdbStmt) * sl->capacity);
+    free_w(sl, sizeof(struct VdbStmtList));
 }
 
 void vdbstmtlist_append_stmt(struct VdbStmtList* sl, struct VdbStmt stmt) {
@@ -1053,10 +1066,15 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
 
             vdbparser_consume_token(parser, VDBT_FROM);
             stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            stmt->as.select.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
                 vdbparser_consume_token(parser, VDBT_WHERE);
                 stmt->as.select.selection = vdbparser_parse_expr(parser);
+            } else {
+                struct VdbToken t;
+                t.type = VDBT_TRUE;
+                t.lexeme = "true";
+                t.len = 4;
+                stmt->as.select.selection = vdbexpr_init_literal(t);
             }
             break;
         }
@@ -1072,6 +1090,34 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
     vdbparser_consume_token(parser, VDBT_SEMICOLON);
 
     return VDBRC_SUCCESS;
+}
+
+void vdbstmt_free_fields(struct VdbStmt* stmt) {
+    switch (stmt->type) {
+        case VDBST_CREATE_TAB:
+            vdbtokenlist_free(stmt->as.create.attributes);
+            vdbtokenlist_free(stmt->as.create.types);
+            break;
+        case VDBST_INSERT:
+            vdbtokenlist_free(stmt->as.insert.attributes);
+            vdbexprlist_free(stmt->as.insert.values);
+            break;
+        case VDBST_UPDATE:
+            vdbtokenlist_free(stmt->as.update.attributes);
+            vdbtokenlist_free(stmt->as.update.values);
+            vdbexpr_free(stmt->as.update.selection);
+            break;
+        case VDBST_DELETE:
+            vdbexpr_free(stmt->as.delete.selection);
+            break;
+        case VDBST_SELECT:
+            vdbtokenlist_free(stmt->as.select.projection);
+            vdbexpr_free(stmt->as.select.selection);
+            break;
+        default:
+            //nothing to free
+            break;
+    }
 }
 
 void vdbstmt_print(struct VdbStmt* stmt) {

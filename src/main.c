@@ -193,7 +193,10 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                         vdbexprlist_append_expr(el, stmt->as.insert.values->exprs[j]);
                     }
                     vdb_insert_new(*h, table_name, stmt->as.insert.attributes, el);
-                    vdbexprlist_free(el);
+
+                    //not calling vdbexprlist_free(el) since the expressions will be freed when stmt is freed
+                    free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
+                    free_w(el, sizeof(struct VdbExprList));
                 }
                 printf("inserted %d record(s) into %s\n", rec_count, table_name);
                 break;
@@ -378,7 +381,7 @@ int run_script(const char* path) {
 int main(int argc, char** argv) {
     if (argc > 1) {
         int result = run_script(argv[1]);
-        printf("allocated memory: %ld\n", allocated_memory);
+//        printf("allocated memory: %ld\n", allocated_memory);
         return result;
     } else {
         run_cli();

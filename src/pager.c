@@ -12,14 +12,14 @@ uint32_t vdb_pager_fresh_page(FILE* f) {
 
     uint8_t* buf = calloc_w(VDB_PAGE_SIZE, sizeof(uint8_t));
     fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f); 
-    free(buf);
+    free_w(buf, sizeof(uint8_t) * VDB_PAGE_SIZE);
     return idx;
 }
 
 void _vdb_pager_free_page(struct VdbPage* page) {
-    free(page->name);
-    free(page->buf);
-    free(page);
+    free_w(page->name, sizeof(char) * (strlen(page->name) + 1)); //include null terminator
+    free_w(page->buf, sizeof(uint8_t) * VDB_PAGE_SIZE);
+    free_w(page, sizeof(struct VdbPage));
 }
 
 struct VdbPage* _vdb_pager_load_page(char* name, FILE* f, uint32_t idx) {
@@ -29,7 +29,7 @@ struct VdbPage* _vdb_pager_load_page(char* name, FILE* f, uint32_t idx) {
     page->dirty = false;
     page->pin_count = 0;
     page->idx = idx;
-    page->buf = malloc_w(VDB_PAGE_SIZE);
+    page->buf = malloc_w(sizeof(uint8_t) * VDB_PAGE_SIZE);
     fseek_w(f, page->idx * VDB_PAGE_SIZE, SEEK_SET);
     fread_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
     page->f = f;
@@ -63,8 +63,8 @@ void _vdb_pagelist_free(struct VdbPageList* pl) {
         _vdb_pager_free_page(p);
     }
 
-    free(pl->pages);
-    free(pl);
+    free_w(pl->pages, sizeof(struct VdbPage*) * pl->capacity);
+    free_w(pl, sizeof(struct VdbPageList));
 }
 
 void _vdb_pager_flush_page(struct VdbPage* page) {
@@ -85,7 +85,8 @@ void vdb_pager_free(struct VdbPager* pager) {
             _vdb_pager_flush_page(p);
         }
     }
-    free(pager);
+    _vdb_pagelist_free(pager->pages);
+    free_w(pager, sizeof(struct VdbPager));
 }
 
 struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {

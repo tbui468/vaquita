@@ -19,4 +19,4 @@ planets:
 	ring_system: bool
 closed database sol
 dropped database sol
-allocated memory: 620
+allocated memory: -52

@@ -31,6 +31,8 @@
         https://github.com/astronexus/HYG-Database
         One has around 100,000 stars, one has about 200,000 stars/objects and one database has over 2.5 billion(!) stars
 
+    valgrind --leak-check=full --show-leak-kinds=all --log-file="output.txt" -v ./../build/src/vdb sol.sql
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -49,16 +51,10 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    **********************Fixing Memory**********************
-        How much memory is still allocated when program runs?
-            Track down all unallocated memory - valgrind may help here
-            Occasionally remove the print statement and run tests to make sure we didn't break anything
+    tree_catch and tree_release are weird functions
+        are they being used now?
 
-        Use valgrind to check for common memory problems/leaks
-            https://valgrind.org/docs/manual/quick-start.html
-            Need memory allocation/freeing controlled before implementing page eviction in buffer pool
-
-    ************************************************
+    Also, seems like there's a memory leak with trees - see valgrind outpu
 
     Probably should cached schema and use that whenever vdbmeta_get_schema is called rather than having to
         manually free it every single time - error prone and just makes everything look messier

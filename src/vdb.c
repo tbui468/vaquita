@@ -373,6 +373,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
 
     vdb_tree_insert_record(tree, rec);
     vdb_record_free(rec);
+    vdbexpr_free(key_expr);
 
     return VDBRC_SUCCESS;
 }

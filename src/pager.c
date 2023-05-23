@@ -24,7 +24,6 @@ void _vdb_pager_free_page(struct VdbPage* page) {
 
 struct VdbPage* _vdb_pager_load_page(char* name, FILE* f, uint32_t idx) {
     struct VdbPage* page = malloc_w(sizeof(struct VdbPage));
-    page->buf = calloc(VDB_PAGE_SIZE, sizeof(uint8_t));
 
     page->dirty = false;
     page->pin_count = 0;

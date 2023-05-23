@@ -365,7 +365,16 @@ uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx) {
 uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    uint32_t key = vdbnode_leaf_read_record_key(page->buf, rec_idx);
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    uint8_t* ptr = vdbleaf_get_fixedlen_record_ptr(page->buf, rec_idx);
+    struct VdbValue v = vdbrecord_read_value_at_idx(ptr, schema, 0);
+    assert(v.type == VDBT_TYPE_INT);
+    uint32_t key = v.as.Int;
+
+    vdb_schema_free(schema);
+
     vdb_pager_unpin_page(page);
     return key;
 }
@@ -457,7 +466,16 @@ void vdbtree_leaf_write_record_key(struct VdbTree* tree, uint32_t idx, uint32_t 
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
 
-    vdbleaf_write_record_key(page->buf, rec_idx, key);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    struct VdbValue v;
+    v.type = VDBT_TYPE_INT;
+    v.as.Int = key;
+
+    uint8_t* ptr = vdbleaf_get_fixedlen_record_ptr(page->buf, rec_idx);
+    vdbrecord_write_value_at_idx(ptr, schema, 0, v);
+
+    vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);
 }
@@ -581,10 +599,12 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->data[0].as.Int);
+    assert(rec->data[0].type == VDBT_TYPE_INT);
+    uint32_t key = rec->data[0].as.Int;
+    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
 
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx)) {
-        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec->data[0].as.Int);
+        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, key);
     }
 
     vdbtree_leaf_append_record(tree, leaf_idx, rec);

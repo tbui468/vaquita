@@ -26,6 +26,8 @@ void vdb_record_free(struct VdbRecord* rec);
 struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema);
 struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema);
+struct VdbValue vdbrecord_read_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx);
+void vdbrecord_write_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx, struct VdbValue v);
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
 void vdbrecord_print(struct VdbRecord* record);
 

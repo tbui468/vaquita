@@ -5,15 +5,6 @@
 #include "util.h"
 #include "tree.h"
 
-//TODO: how could we use macros to simplify code a bit? Would it just make things more confusing?
-//This macro is currenlty not used
-#define vdbintern_write(fn, idx, ...) \
-    assert(vdbtree_node_type(tree, (idx)) == VDBN_INTERN);\
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, (idx));\
-    page->dirty = true;\
-    (fn)(page->buf, __VA_ARGS__);\
-    vdb_pager_unpin_page(page)
-
 static uint32_t vdbtree_data_init(struct VdbTree* tree, int32_t parent_idx);
 static void vdbtree_data_write_next(struct VdbTree* tree, uint32_t idx, uint32_t next);
 static uint32_t vdbtree_data_get_free_space(struct VdbTree* tree, uint32_t idx);
@@ -429,7 +420,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
 
             block_idx = datum.block_idx;
             offset_idx = datum.idxcell_idx;
-            free(datum.as.Str.start);
+            free_w(datum.as.Str.start, sizeof(char) * datum.as.Str.len);
 
             vdb_pager_unpin_page(page);
         }
@@ -567,8 +558,8 @@ struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager
 }
 
 void vdb_tree_release(struct VdbTree* tree) {
-    free(tree->name);
-    free(tree);
+    free_w(tree->name, sizeof(char) * (strlen(tree->name) + 1));
+    free_w(tree, sizeof(struct VdbTree));
 }
 
 uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) {
@@ -758,8 +749,8 @@ void vdb_treelist_free(struct VdbTreeList* tl) {
         vdb_tree_release(t);
     }
 
-    free(tl->trees);
-    free(tl);
+    free_w(tl->trees, sizeof(struct VdbTree*) * tl->capacity);
+    free_w(tl, sizeof(struct VdbTreeList));
 }
 
 

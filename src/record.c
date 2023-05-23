@@ -18,7 +18,7 @@ void vdb_record_free(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue* d = &rec->data[i];
         if (d->type == VDBT_TYPE_STR) {
-            free(d->as.Str.start);
+            free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
         }
     }
     free_w(rec->data, rec->count * sizeof(struct VdbValue));
@@ -254,7 +254,7 @@ void vdbrecordset_free(struct VdbRecordSet* rs) {
         vdb_record_free(rec);
     }
 
-    free(rs->records);
-    free(rs);
+    free_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
+    free_w(rs, sizeof(struct VdbRecordSet));
 }
 

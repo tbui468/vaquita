@@ -39,11 +39,11 @@ struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, st
 
 void vdb_schema_free(struct VdbSchema* schema) {
     for (uint32_t i = 0; i < schema->count; i++) {
-        free(schema->names[i]);
+        free_w(schema->names[i], sizeof(char) * (strlen(schema->names[i]) + 1));
     }
-    free(schema->names);
-    free(schema->types);
-    free(schema);
+    free_w(schema->names, sizeof(char*) * schema->count);
+    free_w(schema->types, sizeof(enum VdbTokenType) * schema->count);
+    free_w(schema, sizeof(struct VdbSchema));
 }
 
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {

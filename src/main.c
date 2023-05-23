@@ -378,7 +378,7 @@ int run_script(const char* path) {
 int main(int argc, char** argv) {
     if (argc > 1) {
         int result = run_script(argv[1]);
-//        printf("allocated memory: %ld\n", allocated_memory);
+        printf("allocated memory: %ld\n", allocated_memory);
         return result;
     } else {
         run_cli();

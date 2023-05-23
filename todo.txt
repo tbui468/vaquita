@@ -54,10 +54,10 @@ Use sample data to make sure SQL kinda works
             Replace all instances of free with free_w, and then go fix compiler errors
                 main.c          DONE
                 vdb.c           DONE
-                util.c
-                schema.c
-                tree.c
-                node.c
+                util.c          DONE
+                schema.c        DONE
+                tree.c          DONE
+                node.c          DONE
                 record.c
                 pager.c
                 lexer.c
@@ -76,6 +76,9 @@ Use sample data to make sure SQL kinda works
             Need memory allocation/freeing controlled before implementing page eviction in buffer pool
 
     ************************************************
+
+    Probably should cached schema and use that whenever vdbmeta_get_schema is called rather than having to
+        manually free it every single time - error prone and just makes everything look messier
 
     Add update and delete statements:
         cursor abstraction:

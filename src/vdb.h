@@ -27,6 +27,9 @@ struct VdbCursor {
     uint32_t cur_rec_idx;
 };
 
+struct Vdb* vdb_init();
+void vdb_free(struct Vdb* db);
+
 VDBHANDLE vdb_open_db(const char* name);
 enum VdbReturnCode vdb_create_db(const char* name);
 

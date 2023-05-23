@@ -9,12 +9,24 @@
 #include "util.h"
 #include "tree.h"
 
-
-VDBHANDLE vdb_open_db(const char* name) {
+struct Vdb* vdb_init(const char* name) {
     struct Vdb* db = malloc_w(sizeof(struct Vdb));
     db->pager = vdb_pager_alloc();
     db->trees = vdb_treelist_init();
     db->name = strdup_w(name);
+
+    return db;
+}
+
+void vdb_free(struct Vdb* db) {
+    vdb_treelist_free(db->trees);
+    vdb_pager_free(db->pager);
+    free_w(db->name, sizeof(char) * (strlen(db->name) + 1)); //include null terminator
+    free_w(db, sizeof(struct Vdb));
+}
+
+VDBHANDLE vdb_open_db(const char* name) {
+    struct Vdb* db = vdb_init(name);
 
     char dirname[FILENAME_MAX];
     dirname[0] = '\0';
@@ -158,10 +170,7 @@ enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, struct VdbV
 
 bool vdb_close(VDBHANDLE h) {
     struct Vdb* db = (struct Vdb*)h;
-    vdb_treelist_free(db->trees);
-    vdb_pager_free(db->pager);
-    free(db->name);
-    free(db);
+    vdb_free(db);
 
     return true;
 }
@@ -444,8 +453,8 @@ struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t k
 }
 
 void vdbcursor_free(struct VdbCursor* cursor) {
-    free(cursor->table_name);
-    free(cursor);
+    free_w(cursor->table_name, sizeof(char) * (strlen(cursor->table_name) + 1)); //include null terminator
+    free_w(cursor, sizeof(struct VdbCursor));
 }
 
 void vdbcursor_increment(struct VdbCursor* cursor) {
@@ -501,7 +510,7 @@ void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec,
             }
         }
 
-        free(rec->data);
+        free_w(rec->data, sizeof(struct VdbValue) * rec->count);
         rec->data = data;
         rec->count = projection->count;
 

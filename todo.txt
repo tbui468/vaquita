@@ -53,7 +53,7 @@ Use sample data to make sure SQL kinda works
         Replace ALL free() calls with free_w() calls
             Replace all instances of free with free_w, and then go fix compiler errors
                 main.c          DONE
-                vdb.c
+                vdb.c           DONE
                 util.c
                 schema.c
                 tree.c
@@ -105,6 +105,16 @@ Use sample data to make sure SQL kinda works
         Use O_DIRECT to bypass OS pager
 
         implement LRU policy for now, but make it easy to swap algorithms (such as to clock policy or using a nn)
+
+    User defined primary keys
+        Need to make sure keys are unique
+        Need to rewrite B-Tree to not always append at end
+
+    Aggreate functions (count, max, ave, etc)
+
+    Group by, etc
+
+    Subqueries
 
     Add tests for errors:
         insert_invalid_col_name.sql <----should report error message.  Silenty failing now when mistyped, and hard to debug

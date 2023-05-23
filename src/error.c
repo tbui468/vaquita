@@ -17,8 +17,8 @@ void vdberrorlist_free(struct VdbErrorList* el) {
     for (int i = 0; i < el->count; i++) {
         free(el->errors[i].msg);
     }
-    free(el->errors);
-    free(el);
+    free_w(el->errors, sizeof(struct VdbError) * el->capacity);
+    free_w(el, sizeof(struct VdbErrorList));
 }
 
 void vdberrorlist_append_error(struct VdbErrorList* el, int line, const char* fmt, ...) {

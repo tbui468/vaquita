@@ -49,27 +49,7 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    select.selection is sometimes NULL - checking if null before freeing is okay, but can we 
-        just make it true?
-
     **********************Fixing Memory**********************
-        Replace ALL free() calls with free_w() calls
-            Replace all instances of free with free_w, and then go fix compiler errors
-                main.c          DONE
-                vdb.c           DONE
-                util.c          DONE
-                schema.c        DONE
-                tree.c          DONE
-                node.c          DONE
-                record.c        DONE
-                pager.c         DONE
-                lexer.c         DONE
-                parser.c        DONE
-                error.c
-                token.c
-                expr.c
-                value.c
-
         How much memory is still allocated when program runs?
             Track down all unallocated memory - valgrind may help here
             Occasionally remove the print statement and run tests to make sure we didn't break anything

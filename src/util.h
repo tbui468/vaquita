@@ -8,16 +8,6 @@
 
 extern uint64_t allocated_memory;
 
-/*
-struct U32List {
-    uint32_t* values;
-    uint32_t count;
-    uint32_t capacity;
-};
-
-struct U32List* u32l_alloc();
-void u32l_append(struct U32List* list, uint32_t v);
-void u32l_free(struct U32List* list);*/
 
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);

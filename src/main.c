@@ -28,30 +28,26 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_SHOW_DBS: {
-                int count;
-                char** dbs;
-                if (vdb_show_dbs(&dbs, &count) == VDBRC_SUCCESS) {
+                struct VdbValueList* vl;
+                if (vdb_show_dbs(&vl) == VDBRC_SUCCESS) {
                     printf("databases:\n");
-                    for (int i = 0; i < count; i++) {
-                        printf("\t%s\n", dbs[i]);
-                        free(dbs[i]);
+                    for (int i = 0; i < vl->count; i++) {
+                        printf("\t%.*s\n", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
                     }
-                    free(dbs);
+                    vdbvaluelist_free(vl);
                 } else {
                     printf("execution error: cannot show databases\n");
                 }
                 break;
             }
             case VDBST_SHOW_TABS: {
-                int count;
-                char** tabs;
-                if (vdb_show_tabs(*h, &tabs, &count) == VDBRC_SUCCESS) {
+                struct VdbValueList* vl;
+                if (vdb_show_tabs(*h, &vl) == VDBRC_SUCCESS) {
                     printf("tables:\n");
-                    for (int i = 0; i < count; i++) {
-                        printf("\t%s\n", tabs[i]);
-                        free(tabs[i]);
+                    for (int i = 0; i < vl->count; i++) {
+                        printf("\t%.*s\n", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
                     }
-                    free(tabs);
+                    vdbvaluelist_free(vl);
                 } else {
                     printf("execution error: cannot show tables\n");
                 }
@@ -82,18 +78,16 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_IF_EXISTS_DROP_DB: {
-                int count;
-                char** dbs;
                 bool found = false;
                 char* db_name = to_string(stmt->target);
-                if (vdb_show_dbs(&dbs, &count) == VDBRC_SUCCESS) {
-                    for (int i = 0; i < count; i++) {
-                        if (strncmp(dbs[i], db_name, strlen(db_name)) == 0) {
+                struct VdbValueList *vl;
+                if (vdb_show_dbs(&vl) == VDBRC_SUCCESS) {
+                    for (int i = 0; i < vl->count; i++) {
+                        if (strncmp(vl->values[i].as.Str.start, db_name, strlen(db_name)) == 0) {
                             found = true;
                         }
-                        free(dbs[i]);
                     }
-                    free(dbs);
+                    vdbvaluelist_free(vl);
 
                     if (found) {
                         if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
@@ -106,18 +100,16 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_IF_EXISTS_DROP_TAB: {
-                int count;
-                char** tabs;
                 bool found = false;
                 char* tab_name = to_string(stmt->target);
-                if (vdb_show_tabs(*h, &tabs, &count) == VDBRC_SUCCESS) {
-                    for (int i = 0; i < count; i++) {
-                        if (strncmp(tabs[i], tab_name, strlen(tab_name)) == 0) {
+                struct VdbValueList* vl;
+                if (vdb_show_tabs(*h, &vl) == VDBRC_SUCCESS) {
+                    for (int i = 0; i < vl->count; i++) {
+                        if (strncmp(vl->values[i].as.Str.start, tab_name, strlen(tab_name)) == 0) {
                             found = true;
                         }
-                        free(tabs[i]);
                     }
-                    free(tabs);
+                    vdbvaluelist_free(vl);
 
                     if (found) {
                         if (vdb_drop_table(*h, tab_name) == VDBRC_SUCCESS) {
@@ -167,20 +159,16 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_DESCRIBE: {
-                int count;
-                char** attributes;
-                char** types;
                 char* table_name = to_string(stmt->target);
-                if (vdb_describe_table(*h, table_name, &attributes, &types, &count) == VDBRC_SUCCESS) {
+                struct VdbValueList* vl;
+                if (vdb_describe_table(*h, table_name, &vl) == VDBRC_SUCCESS) {
                     printf("%s:\n", table_name);
-                    for (int i = 0; i < count; i++) {
-                        printf("\t%s: %s\n", attributes[i], types[i]);
-                        free(attributes[i]);
-                        free(types[i]);
+                    for (int i = 0; i < vl->count; i += 2) {
+                        struct VdbValue attr = vl->values[i];
+                        struct VdbValue type = vl->values[i + 1];
+                        printf("\t%.*s: %.*s\n", attr.as.Str.len, attr.as.Str.start, type.as.Str.len, type.as.Str.start);
                     }
-
-                    free(attributes);
-                    free(types);
+                    vdbvaluelist_free(vl);
                 } else {
                     printf("failed to describe table %s\n", table_name);
                 }
@@ -267,7 +255,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 }
 
 void run_cli() {
-    char* line = NULL;
+    char* line = NULL; //not including this in memory allocation tracker
     size_t len = 0;
     ssize_t nread;
     VDBHANDLE h = NULL;
@@ -323,7 +311,7 @@ void run_cli() {
         }
     }
 
-    free(line);
+    free(line); //not including this in memory allocation tracker
 }
 
 int run_script(const char* path) {
@@ -349,7 +337,7 @@ int run_script(const char* path) {
         }
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
-        free(buf);
+        free_w(buf, sizeof(char) * fsize);
         return -1;
     }
 
@@ -367,7 +355,7 @@ int run_script(const char* path) {
         vdberrorlist_free(lex_errors);
         vdbstmtlist_free(stmts);
         vdberrorlist_free(parse_errors);
-        free(buf);
+        free_w(buf, sizeof(char) * fsize);
         return -1;
     }
 
@@ -382,7 +370,7 @@ int run_script(const char* path) {
     vdberrorlist_free(lex_errors);
     vdbstmtlist_free(stmts);
     vdberrorlist_free(parse_errors);
-    free(buf);
+    free_w(buf, sizeof(char) * fsize);
 
     return 0;
 }
@@ -390,7 +378,7 @@ int run_script(const char* path) {
 int main(int argc, char** argv) {
     if (argc > 1) {
         int result = run_script(argv[1]);
-        printf("allocated memory: %ld\n", allocated_memory);
+//        printf("allocated memory: %ld\n", allocated_memory);
         return result;
     } else {
         run_cli();

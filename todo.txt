@@ -51,20 +51,21 @@ Use sample data to make sure SQL kinda works
 *******************************TODO**************************************************
     **********************Fixing Memory**********************
         Replace ALL free() calls with free_w() calls
-            main.c
-            vdb.c
-            util.c
-            schema.c
-            tree.c
-            node.c
-            record.c
-            pager.c
-            lexer.c
-            parser.c
-            error.c
-            token.c
-            expr.c
-            value.c
+            Replace all instances of free with free_w, and then go fix compiler errors
+                main.c          DONE
+                vdb.c
+                util.c
+                schema.c
+                tree.c
+                node.c
+                record.c
+                pager.c
+                lexer.c
+                parser.c
+                error.c
+                token.c
+                expr.c
+                value.c
 
         How much memory is still allocated when program runs?
             Track down all unallocated memory - valgrind may help here

@@ -78,16 +78,13 @@ enum VdbReturnCode vdb_create_db(const char* name) {
     return VDBRC_SUCCESS;
 }
 
-enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count) {
+enum VdbReturnCode vdb_show_dbs(struct VdbValueList** vl) {
     DIR* d;
     if (!(d = opendir("./"))) {
         return VDBRC_ERROR;
     } 
 
-    int capacity = 8;
-    *count = 0;
-    *dbs = malloc_w(sizeof(char*) * capacity); 
-
+    *vl = vdbvaluelist_init();
 
     struct dirent* ent;
     while ((ent = readdir(d)) != NULL) {
@@ -101,16 +98,8 @@ enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count) {
         if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
             continue;
 
-        if (*count + 1 > capacity) {
-            int old_cap = capacity;
-            capacity *= 2;
-            *dbs = realloc_w(*dbs, sizeof(char*) * capacity, sizeof(char*) * old_cap);
-        }
-
-        (*dbs)[*count] = malloc_w(sizeof(char) * (entry_len - ext_len + 1));
-        memcpy((*dbs)[*count], ent->d_name, entry_len - ext_len);
-        (*dbs)[*count][entry_len - ext_len] = '\0';
-        (*count)++;
+        struct VdbValue v = vdbvalue_init_string(ent->d_name, entry_len - ext_len);
+        vdbvaluelist_append_value(*vl, v);
     }
 
     closedir_w(d);
@@ -118,58 +107,43 @@ enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count) {
     return VDBRC_SUCCESS;
 }
 
-
-enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count) {
+enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, struct VdbValueList** vl) {
     struct Vdb* db = (struct Vdb*)h;
-    *count = db->trees->count;
-    *tabs = malloc_w(sizeof(char*) * (*count)); 
+
+    *vl = vdbvaluelist_init();
+
     for (uint32_t i = 0; i < db->trees->count; i++) {
         struct VdbTree* tree = db->trees->trees[i];
-        (*tabs)[i] = strdup_w(tree->name);
+        struct VdbValue v = vdbvalue_init_string(tree->name, strlen(tree->name));
+        vdbvaluelist_append_value(*vl, v);
     }
 
     return VDBRC_SUCCESS;
 }
 
-/*
-struct VdbSchema {
-    enum VdbField* fields;
-    char** names;
-    uint32_t count;
-};*/
-
-enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** attributes, char*** types, int* count) {
+enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, struct VdbValueList** vl) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    *count = schema->count;
-    *attributes = malloc_w(sizeof(char*) * (*count));
-    *types = malloc_w(sizeof(char*) * (*count));
+    *vl = vdbvaluelist_init();
 
-    for (int i = 0; i < *count; i++) {
-        (*attributes)[i] = strdup_w(schema->names[i]);
+    for (uint32_t i = 0; i < schema->count; i++) {
+        struct VdbValue attr_name = vdbvalue_init_string(schema->names[i], strlen(schema->names[i]));
+        vdbvaluelist_append_value(*vl, attr_name);
+
         switch (schema->types[i]) {
             case VDBT_TYPE_INT:
-                (*types)[i] = malloc_w(sizeof(char) * 4);
-                memcpy((*types)[i], "int", 3);
-                (*types)[i][3] = '\0';
+                vdbvaluelist_append_value(*vl, vdbvalue_init_string("int", 3));
                 break;
             case VDBT_TYPE_STR:
-                (*types)[i] = malloc_w(sizeof(char) * 7);
-                memcpy((*types)[i], "string", 6);
-                (*types)[i][6] = '\0';
+                vdbvaluelist_append_value(*vl, vdbvalue_init_string("string", 6));
                 break;
             case VDBT_TYPE_FLOAT:
-                (*types)[i] = malloc_w(sizeof(char) * 6);
-                memcpy((*types)[i], "float", 5);
-                (*types)[i][5] = '\0';
+                vdbvaluelist_append_value(*vl, vdbvalue_init_string("float", 5));
                 break;
             case VDBT_TYPE_BOOL:
-                (*types)[i] = malloc_w(sizeof(char) * 5);
-                memcpy((*types)[i], "bool", 4);
-                (*types)[i][4] = '\0';
+                vdbvaluelist_append_value(*vl, vdbvalue_init_string("bool", 4));
                 break;
             default:
                 assert(false && "invalid schema data type");

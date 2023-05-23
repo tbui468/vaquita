@@ -30,12 +30,12 @@ struct VdbCursor {
 VDBHANDLE vdb_open_db(const char* name);
 enum VdbReturnCode vdb_create_db(const char* name);
 
-enum VdbReturnCode vdb_show_dbs(char*** dbs, int* count);
-enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, char*** tabs, int* count);
+enum VdbReturnCode vdb_show_dbs(struct VdbValueList** vl);
+enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, struct VdbValueList** vl);
 bool vdb_close(VDBHANDLE h);
 char* vdb_dbname(VDBHANDLE h);
 
-enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, char*** attributes, char*** types, int* count);
+enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, struct VdbValueList** vl);
 
 enum VdbReturnCode vdb_drop_db(const char* name);
 

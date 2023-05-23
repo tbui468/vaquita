@@ -23,8 +23,19 @@ struct VdbValue {
     uint32_t idxcell_idx;
 };
 
+struct VdbValueList {
+    struct VdbValue* values;
+    int capacity;
+    int count;
+};
+
 
 struct VdbValue vdbvalue_deserialize_string(uint8_t* buf);
 bool vdbvalue_is_null(struct VdbValue* d);
+struct VdbValue vdbvalue_init_string(char* start, int len);
+
+struct VdbValueList * vdbvaluelist_init();
+void vdbvaluelist_free(struct VdbValueList* vl);
+void vdbvaluelist_append_value(struct VdbValueList* vl, struct VdbValue v);
 
 #endif //VDB_VALUE_H

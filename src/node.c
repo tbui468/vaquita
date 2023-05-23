@@ -255,9 +255,10 @@ void vdbdata_write_idx_count(uint8_t* buf, uint32_t count) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 3)) = count;
 }
 
-uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbValue* datum, uint32_t* len_written) {
-    uint32_t free = vdbdata_get_free_space(buf);
+uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_len, uint32_t* allocated_len) {
 
+    //get free idxcell - either reuse an existing free one or allocate new one
+    uint32_t free = vdbdata_get_free_space(buf);
     uint32_t idxcell_off = *((uint32_t*)(buf + sizeof(uint32_t) * 5));
     uint32_t idxcell_idx;
     if (idxcell_off > 0) { //reuse unused idxcell
@@ -272,21 +273,26 @@ uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbValue* datum, uint32_t* le
     uint32_t datacells_size = vdbdata_read_datacells_size(buf);
     uint32_t header_size = vdbdata_datacell_header_size();
 
-    uint32_t can_fit = free < datum->as.Str.len - *len_written ? free : datum->as.Str.len - *len_written;
+    uint32_t can_fit = free < requested_len ? free : requested_len;
     uint32_t off = VDB_PAGE_SIZE - datacells_size - can_fit - header_size;
 
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 0)) = 0;
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 1)) = 0;
     *((uint32_t*)(buf + off + sizeof(uint32_t) * 2)) = can_fit;
 
-    memcpy(buf + off + header_size, datum->as.Str.start + *len_written, can_fit);
-    *len_written += can_fit;
+    *allocated_len = can_fit;
 
     vdbdata_write_datacells_size(buf, datacells_size + header_size + can_fit);
 
     *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = off;
 
     return idxcell_idx;
+}
+
+uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx) {
+    uint32_t data_off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t)));
+    data_off += sizeof(uint32_t) * 3; //skip overflow block_idx, overflow idxcell_idx and size
+    return buf + data_off;
 }
 
 //sets overflow_block and overflow_idxcell_off to values in freed data cell - up to caller to free any overflow data

@@ -27,6 +27,10 @@
 
     handmade.network has cool mini projects (such as barebones OS with only a few thousand lines of C)
 
+    Look here for two star databases:
+        https://github.com/astronexus/HYG-Database
+        One has around 100,000 stars, one has about 200,000 stars/objects and one database has over 2.5 billion(!) stars
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -45,36 +49,15 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    vdb_tree_insert_record should use functions to read key
-
-
-    node.c should not know where key is (vdbleaf_read_record_key and vdbleaf_write_record_key shouldn't exist)
-        should call vdbleaf_get_fixedlen_record_ptr, and then use deserialize record OR have record function get key
-        struct VdbValue vdbrecord_read_ith_value(uint8_t* buf, struct VdbSchema* schema, uint32_t i);
-
-        Should also use above function instead of having rec->data[i].as.Int everywhere in tree.c
-
     **********************Fixing Memory**********************
-        node.c/h should not know about internal structure of struct VdbValue
-            caller (tree) should just pass in size or request pointer of where a record starts
-            uint32_t vdbdata_append_datum(uint8_t* buf, struct VdbDatum* datum, uint32_t* len_written)
-                this function should be:
-                    //attempst to allocated requested size, and will set allocated_size to what was possible
-                    //returns the index of the index cell
-                    uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_size, uint32_t* allocated_size);
-
-                    //caller (tree) should then write as much of string as possible and then allocate more space if needed
-                    //caller then writes data to buffer (as musch as allocated_size)
-                    uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
-
-                    [size][space for string]
-
-                    loop to allocate more space/write more data as needed in tree.c
+        Refactor this guy a bit:
+        static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec) {
 
         Set up system to track memory allocation/freeing
             need to write a wrapper for free that decrements whenever something is freed
 
-        Integrate gdb and valgrind to check for common memory problems/leaks
+        Use valgrind to check for common memory problems/leaks
+            https://valgrind.org/docs/manual/quick-start.html
             Need memory allocation/freeing controlled before implementing page eviction in buffer pool
 
     ************************************************
@@ -108,6 +91,11 @@ Use sample data to make sure SQL kinda works
             delete record there
 
     Eviction policy
+        make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
+        Or just manually limit number of pages allowed to hold at a time
+        Use O_DIRECT to bypass OS pager
+
+        implement LRU policy for now, but make it easy to swap algorithms (such as to clock policy or using a nn)
 
     single line comments
         use c-style //
@@ -119,7 +107,7 @@ Use sample data to make sure SQL kinda works
         insert into planets values (...), (...);
 
     If block size is 256 and block header size is 128, it crashes if not enough room to store schema data
-        the attribute names take too much space.  Need an overflow block for attribute strings.
+        the attribute names take too much space.  Need an data blocks and overflow blocks for colunm names
 
     Compile AST to bytecode that runs on vm
         How could this work?
@@ -134,10 +122,14 @@ Use sample data to make sure SQL kinda works
 
     need to return error if table doesn't exist when insert/select/update/delete - segfaulting now
 
-    pager eviction policy
-        make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
-        Or just manually limit number of pages allowed to hold at a time
-        Use O_DIRECT to bypass OS pager
+    primary keys rework
+        user MUST define primary key using 'primary key' keywords
+        'auto' keyword will make an autoincrementing column value
+        'constraint' can be used to set primary key
+        should allow this:
+            create table planets (name string, moons int);
+            create table planets (name string not null, id int auto);
+            create table planets (name string, moons int, primary key
 
     Concurrency - need to get read/write locks on file
         pager can take care of this

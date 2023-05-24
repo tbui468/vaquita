@@ -19,8 +19,8 @@ struct Vdb* vdb_init(const char* name) {
 }
 
 void vdb_free(struct Vdb* db) {
-    vdb_treelist_free(db->trees);
     vdb_pager_free(db->pager);
+    vdb_treelist_free(db->trees);
     free_w(db->name, sizeof(char) * (strlen(db->name) + 1)); //include null terminator
     free_w(db, sizeof(struct Vdb));
 }
@@ -291,8 +291,7 @@ enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
         strcat(path, ".vdb/");
         strcat(path, tree->name);
         strcat(path, ".vtb");
-
-        fclose_w(tree->f);
+        
         vdb_tree_close(tree);
         vdb_pager_evict_pages(db->pager, name);
 

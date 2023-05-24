@@ -1,190 +1,172 @@
-==9363== Memcheck, a memory error detector
-==9363== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
-==9363== Using Valgrind-3.15.0-608cb11914-20190413 and LibVEX; rerun with -h for copyright info
-==9363== Command: ./../build/src/vdb sol.sql
-==9363== Parent PID: 128
-==9363== 
---9363-- 
---9363-- Valgrind options:
---9363--    --leak-check=full
---9363--    --show-leak-kinds=all
---9363--    --log-file=output.txt
---9363--    -v
---9363-- Contents of /proc/version:
---9363--   Linux version 5.10.102.1-microsoft-standard-WSL2 (oe-user@oe-host) (x86_64-msft-linux-gcc (GCC) 9.3.0, GNU ld (GNU Binutils) 2.34.0.20200220) #1 SMP Wed Mar 2 00:30:59 UTC 2022
---9363-- 
---9363-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand
---9363-- Page sizes: currently 4096, max supported 4096
---9363-- Valgrind library directory: /usr/lib/x86_64-linux-gnu/valgrind
---9363-- Reading syms from /home/thomas/vaquita/build/src/vdb
---9363-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-2.31.so
---9363--   Considering /usr/lib/debug/.build-id/45/87364908de169dec62ffa538170118c1c3a078.debug ..
---9363--   .. build-id is valid
---9363-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux
---9363--    object doesn't have a symbol table
---9363--    object doesn't have a dynamic symbol table
---9363-- Scheduler: using generic scheduler lock implementation.
---9363-- Reading suppressions file: /usr/lib/x86_64-linux-gnu/valgrind/default.supp
-==9363== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-9363-by-thomas-on-???
-==9363== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-9363-by-thomas-on-???
-==9363== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-9363-by-thomas-on-???
-==9363== 
-==9363== TO CONTROL THIS PROCESS USING vgdb (which you probably
-==9363== don't want to do, unless you know exactly what you're doing,
-==9363== or are doing some strange experiment):
-==9363==   /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=9363 ...command...
-==9363== 
-==9363== TO DEBUG THIS PROCESS USING GDB: start GDB like this
-==9363==   /path/to/gdb ./../build/src/vdb
-==9363== and then give GDB the following command
-==9363==   target remote | /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=9363
-==9363== --pid is optional if only one valgrind process is running
-==9363== 
---9363-- REDIR: 0x4022e20 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c9ce2 (???)
---9363-- REDIR: 0x4022bf0 (ld-linux-x86-64.so.2:index) redirected to 0x580c9cfc (???)
---9363-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_core-amd64-linux.so
---9363--    object doesn't have a symbol table
---9363-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so
---9363--    object doesn't have a symbol table
-==9363== WARNING: new redirection conflicts with existing -- ignoring it
---9363--     old: 0x04022e20 (strlen              ) R-> (0000.0) 0x580c9ce2 ???
---9363--     new: 0x04022e20 (strlen              ) R-> (2007.0) 0x0483f060 strlen
---9363-- REDIR: 0x401f600 (ld-linux-x86-64.so.2:strcmp) redirected to 0x483ffd0 (strcmp)
---9363-- REDIR: 0x4023380 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4843a20 (mempcpy)
---9363-- Reading syms from /usr/lib/x86_64-linux-gnu/libc-2.31.so
---9363--   Considering /usr/lib/debug/.build-id/18/78e6b475720c7c51969e69ab2d276fae6d1dee.debug ..
---9363--   .. build-id is valid
---9363-- REDIR: 0x48f8480 (libc.so.6:memmove) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7780 (libc.so.6:strncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f87b0 (libc.so.6:strcasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f70a0 (libc.so.6:strcat) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f77e0 (libc.so.6:rindex) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f9c50 (libc.so.6:rawmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x4914ce0 (libc.so.6:wmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x4914820 (libc.so.6:wcscmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f85e0 (libc.so.6:mempcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f8410 (libc.so.6:bcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7710 (libc.so.6:strncmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7150 (libc.so.6:strcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f8540 (libc.so.6:memset) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x49147e0 (libc.so.6:wcschr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7670 (libc.so.6:strnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7230 (libc.so.6:strcspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f8800 (libc.so.6:strncasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f71d0 (libc.so.6:strcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f8950 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x4915f50 (libc.so.6:wcsnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x4914860 (libc.so.6:wcscpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7820 (libc.so.6:strpbrk) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7100 (libc.so.6:index) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7630 (libc.so.6:strlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x4900bb0 (libc.so.6:memrchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f8850 (libc.so.6:strcasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f83d0 (libc.so.6:memchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x4914930 (libc.so.6:wcslen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f7ae0 (libc.so.6:strspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f8750 (libc.so.6:stpncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f86f0 (libc.so.6:stpcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f9c90 (libc.so.6:strchrnul) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x48f88a0 (libc.so.6:strncasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
---9363-- REDIR: 0x49e0500 (libc.so.6:__strrchr_avx2) redirected to 0x483ea10 (rindex)
---9363-- REDIR: 0x48f20e0 (libc.so.6:malloc) redirected to 0x483b780 (malloc)
---9363-- REDIR: 0x48f7fa0 (libc.so.6:__GI_strstr) redirected to 0x4843ca0 (__strstr_sse2)
---9363-- REDIR: 0x48f26d0 (libc.so.6:free) redirected to 0x483c9d0 (free)
---9363-- REDIR: 0x49e36e0 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x48429f0 (memmove)
---9363-- REDIR: 0x49e06d0 (libc.so.6:__strlen_avx2) redirected to 0x483ef40 (strlen)
---9363-- REDIR: 0x49dc010 (libc.so.6:__strncmp_avx2) redirected to 0x483f670 (strncmp)
---9363-- REDIR: 0x48f2e80 (libc.so.6:realloc) redirected to 0x483df30 (realloc)
---9363-- REDIR: 0x49e0b90 (libc.so.6:__strcat_avx2) redirected to 0x483ec20 (strcat)
---9363-- REDIR: 0x49e0310 (libc.so.6:__strchrnul_avx2) redirected to 0x4843540 (strchrnul)
---9363-- REDIR: 0x49e36c0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x4843660 (mempcpy)
---9363-- REDIR: 0x48f3b10 (libc.so.6:calloc) redirected to 0x483dce0 (calloc)
---9363-- REDIR: 0x49e0870 (libc.so.6:__strnlen_avx2) redirected to 0x483eee0 (strnlen)
-==9363== Syscall param write(buf) points to uninitialised byte(s)
-==9363==    at 0x4966077: write (write.c:26)
-==9363==    by 0x48E6E8C: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
-==9363==    by 0x48E8950: new_do_write (fileops.c:449)
-==9363==    by 0x48E8950: _IO_new_do_write (fileops.c:426)
-==9363==    by 0x48E8950: _IO_do_write@@GLIBC_2.2.5 (fileops.c:423)
-==9363==    by 0x48E9944: _IO_switch_to_get_mode (genops.c:166)
-==9363==    by 0x48E68C2: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
-==9363==    by 0x48E337C: fseek (fseek.c:36)
-==9363==    by 0x10C96B: fseek_w (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x111B27: _vdb_pager_flush_page (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x111BCB: vdb_pager_free (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10A8E3: vdb_free (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10B231: vdb_close (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x109D65: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
-==9363==  Address 0x4a658c5 is 2,677 bytes inside a block of size 4,096 alloc'd
-==9363==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==9363==    by 0x48D9D03: _IO_file_doallocate (filedoalloc.c:101)
-==9363==    by 0x48E9ECF: _IO_doallocbuf (genops.c:347)
-==9363==    by 0x48E6994: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
-==9363==    by 0x48E337C: fseek (fseek.c:36)
-==9363==    by 0x10C96B: fseek_w (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x1117F8: vdb_pager_fresh_page (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10D634: vdbtree_meta_init (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10F3AC: vdb_tree_init (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10B6A2: vdb_create_table (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x109949: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10A79A: run_script (in /home/thomas/vaquita/build/src/vdb)
-==9363== 
-==9363== 
-==9363== HEAP SUMMARY:
-==9363==     in use at exit: 472 bytes in 1 blocks
-==9363==   total heap usage: 1,054 allocs, 1,053 frees, 157,631 bytes allocated
-==9363== 
-==9363== Searching for pointers to 1 not-freed blocks
-==9363== Checked 76,472 bytes
-==9363== 
-==9363== 472 bytes in 1 blocks are still reachable in loss record 1 of 1
-==9363==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==9363==    by 0x48DA92D: __fopen_internal (iofopen.c:65)
-==9363==    by 0x48DA92D: fopen@@GLIBC_2.2.5 (iofopen.c:86)
-==9363==    by 0x10C9E5: fopen_w (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10B673: vdb_create_table (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x109949: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10A79A: run_script (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10A824: main (in /home/thomas/vaquita/build/src/vdb)
-==9363== 
-==9363== LEAK SUMMARY:
-==9363==    definitely lost: 0 bytes in 0 blocks
-==9363==    indirectly lost: 0 bytes in 0 blocks
-==9363==      possibly lost: 0 bytes in 0 blocks
-==9363==    still reachable: 472 bytes in 1 blocks
-==9363==         suppressed: 0 bytes in 0 blocks
-==9363== 
-==9363== Use --track-origins=yes to see where uninitialised values come from
-==9363== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
-==9363== 
-==9363== 1 errors in context 1 of 1:
-==9363== Syscall param write(buf) points to uninitialised byte(s)
-==9363==    at 0x4966077: write (write.c:26)
-==9363==    by 0x48E6E8C: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
-==9363==    by 0x48E8950: new_do_write (fileops.c:449)
-==9363==    by 0x48E8950: _IO_new_do_write (fileops.c:426)
-==9363==    by 0x48E8950: _IO_do_write@@GLIBC_2.2.5 (fileops.c:423)
-==9363==    by 0x48E9944: _IO_switch_to_get_mode (genops.c:166)
-==9363==    by 0x48E68C2: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
-==9363==    by 0x48E337C: fseek (fseek.c:36)
-==9363==    by 0x10C96B: fseek_w (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x111B27: _vdb_pager_flush_page (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x111BCB: vdb_pager_free (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10A8E3: vdb_free (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10B231: vdb_close (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x109D65: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
-==9363==  Address 0x4a658c5 is 2,677 bytes inside a block of size 4,096 alloc'd
-==9363==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
-==9363==    by 0x48D9D03: _IO_file_doallocate (filedoalloc.c:101)
-==9363==    by 0x48E9ECF: _IO_doallocbuf (genops.c:347)
-==9363==    by 0x48E6994: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
-==9363==    by 0x48E337C: fseek (fseek.c:36)
-==9363==    by 0x10C96B: fseek_w (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x1117F8: vdb_pager_fresh_page (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10D634: vdbtree_meta_init (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10F3AC: vdb_tree_init (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10B6A2: vdb_create_table (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x109949: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
-==9363==    by 0x10A79A: run_script (in /home/thomas/vaquita/build/src/vdb)
-==9363== 
-==9363== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+==989== Memcheck, a memory error detector
+==989== Copyright (C) 2002-2017, and GNU GPL'd, by Julian Seward et al.
+==989== Using Valgrind-3.15.0-608cb11914-20190413 and LibVEX; rerun with -h for copyright info
+==989== Command: ./../build/src/vdb sol.sql
+==989== Parent PID: 72
+==989== 
+--989-- 
+--989-- Valgrind options:
+--989--    --leak-check=full
+--989--    --show-leak-kinds=all
+--989--    --log-file=output.txt
+--989--    -v
+--989-- Contents of /proc/version:
+--989--   Linux version 5.10.102.1-microsoft-standard-WSL2 (oe-user@oe-host) (x86_64-msft-linux-gcc (GCC) 9.3.0, GNU ld (GNU Binutils) 2.34.0.20200220) #1 SMP Wed Mar 2 00:30:59 UTC 2022
+--989-- 
+--989-- Arch and hwcaps: AMD64, LittleEndian, amd64-cx16-lzcnt-rdtscp-sse3-ssse3-avx-avx2-bmi-f16c-rdrand
+--989-- Page sizes: currently 4096, max supported 4096
+--989-- Valgrind library directory: /usr/lib/x86_64-linux-gnu/valgrind
+--989-- Reading syms from /home/thomas/vaquita/build/src/vdb
+--989-- Reading syms from /usr/lib/x86_64-linux-gnu/ld-2.31.so
+--989--   Considering /usr/lib/debug/.build-id/45/87364908de169dec62ffa538170118c1c3a078.debug ..
+--989--   .. build-id is valid
+--989-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/memcheck-amd64-linux
+--989--    object doesn't have a symbol table
+--989--    object doesn't have a dynamic symbol table
+--989-- Scheduler: using generic scheduler lock implementation.
+--989-- Reading suppressions file: /usr/lib/x86_64-linux-gnu/valgrind/default.supp
+==989== embedded gdbserver: reading from /tmp/vgdb-pipe-from-vgdb-to-989-by-thomas-on-???
+==989== embedded gdbserver: writing to   /tmp/vgdb-pipe-to-vgdb-from-989-by-thomas-on-???
+==989== embedded gdbserver: shared mem   /tmp/vgdb-pipe-shared-mem-vgdb-989-by-thomas-on-???
+==989== 
+==989== TO CONTROL THIS PROCESS USING vgdb (which you probably
+==989== don't want to do, unless you know exactly what you're doing,
+==989== or are doing some strange experiment):
+==989==   /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=989 ...command...
+==989== 
+==989== TO DEBUG THIS PROCESS USING GDB: start GDB like this
+==989==   /path/to/gdb ./../build/src/vdb
+==989== and then give GDB the following command
+==989==   target remote | /usr/lib/x86_64-linux-gnu/valgrind/../../bin/vgdb --pid=989
+==989== --pid is optional if only one valgrind process is running
+==989== 
+--989-- REDIR: 0x4022e20 (ld-linux-x86-64.so.2:strlen) redirected to 0x580c9ce2 (???)
+--989-- REDIR: 0x4022bf0 (ld-linux-x86-64.so.2:index) redirected to 0x580c9cfc (???)
+--989-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_core-amd64-linux.so
+--989--    object doesn't have a symbol table
+--989-- Reading syms from /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so
+--989--    object doesn't have a symbol table
+==989== WARNING: new redirection conflicts with existing -- ignoring it
+--989--     old: 0x04022e20 (strlen              ) R-> (0000.0) 0x580c9ce2 ???
+--989--     new: 0x04022e20 (strlen              ) R-> (2007.0) 0x0483f060 strlen
+--989-- REDIR: 0x401f600 (ld-linux-x86-64.so.2:strcmp) redirected to 0x483ffd0 (strcmp)
+--989-- REDIR: 0x4023380 (ld-linux-x86-64.so.2:mempcpy) redirected to 0x4843a20 (mempcpy)
+--989-- Reading syms from /usr/lib/x86_64-linux-gnu/libc-2.31.so
+--989--   Considering /usr/lib/debug/.build-id/18/78e6b475720c7c51969e69ab2d276fae6d1dee.debug ..
+--989--   .. build-id is valid
+--989-- REDIR: 0x48f8480 (libc.so.6:memmove) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7780 (libc.so.6:strncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f87b0 (libc.so.6:strcasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f70a0 (libc.so.6:strcat) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f77e0 (libc.so.6:rindex) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f9c50 (libc.so.6:rawmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x4914ce0 (libc.so.6:wmemchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x4914820 (libc.so.6:wcscmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f85e0 (libc.so.6:mempcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f8410 (libc.so.6:bcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7710 (libc.so.6:strncmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7150 (libc.so.6:strcmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f8540 (libc.so.6:memset) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x49147e0 (libc.so.6:wcschr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7670 (libc.so.6:strnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7230 (libc.so.6:strcspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f8800 (libc.so.6:strncasecmp) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f71d0 (libc.so.6:strcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f8950 (libc.so.6:memcpy@@GLIBC_2.14) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x4915f50 (libc.so.6:wcsnlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x4914860 (libc.so.6:wcscpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7820 (libc.so.6:strpbrk) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7100 (libc.so.6:index) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7630 (libc.so.6:strlen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x4900bb0 (libc.so.6:memrchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f8850 (libc.so.6:strcasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f83d0 (libc.so.6:memchr) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x4914930 (libc.so.6:wcslen) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f7ae0 (libc.so.6:strspn) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f8750 (libc.so.6:stpncpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f86f0 (libc.so.6:stpcpy) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f9c90 (libc.so.6:strchrnul) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x48f88a0 (libc.so.6:strncasecmp_l) redirected to 0x48311d0 (_vgnU_ifunc_wrapper)
+--989-- REDIR: 0x49e0500 (libc.so.6:__strrchr_avx2) redirected to 0x483ea10 (rindex)
+--989-- REDIR: 0x48f20e0 (libc.so.6:malloc) redirected to 0x483b780 (malloc)
+--989-- REDIR: 0x48f7fa0 (libc.so.6:__GI_strstr) redirected to 0x4843ca0 (__strstr_sse2)
+--989-- REDIR: 0x48f26d0 (libc.so.6:free) redirected to 0x483c9d0 (free)
+--989-- REDIR: 0x49e36e0 (libc.so.6:__memcpy_avx_unaligned_erms) redirected to 0x48429f0 (memmove)
+--989-- REDIR: 0x49e06d0 (libc.so.6:__strlen_avx2) redirected to 0x483ef40 (strlen)
+--989-- REDIR: 0x49dc010 (libc.so.6:__strncmp_avx2) redirected to 0x483f670 (strncmp)
+--989-- REDIR: 0x48f2e80 (libc.so.6:realloc) redirected to 0x483df30 (realloc)
+--989-- REDIR: 0x49e0b90 (libc.so.6:__strcat_avx2) redirected to 0x483ec20 (strcat)
+--989-- REDIR: 0x49e0310 (libc.so.6:__strchrnul_avx2) redirected to 0x4843540 (strchrnul)
+--989-- REDIR: 0x49e36c0 (libc.so.6:__mempcpy_avx_unaligned_erms) redirected to 0x4843660 (mempcpy)
+--989-- REDIR: 0x48f3b10 (libc.so.6:calloc) redirected to 0x483dce0 (calloc)
+--989-- REDIR: 0x49e0870 (libc.so.6:__strnlen_avx2) redirected to 0x483eee0 (strnlen)
+==989== Syscall param write(buf) points to uninitialised byte(s)
+==989==    at 0x4966077: write (write.c:26)
+==989==    by 0x48E6E8C: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==989==    by 0x48E8950: new_do_write (fileops.c:449)
+==989==    by 0x48E8950: _IO_new_do_write (fileops.c:426)
+==989==    by 0x48E8950: _IO_do_write@@GLIBC_2.2.5 (fileops.c:423)
+==989==    by 0x48E9944: _IO_switch_to_get_mode (genops.c:166)
+==989==    by 0x48E68C2: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
+==989==    by 0x48E337C: fseek (fseek.c:36)
+==989==    by 0x10C93D: fseek_w (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x111B09: _vdb_pager_flush_page (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x111BAD: vdb_pager_free (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10A8B8: vdb_free (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10B216: vdb_close (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x109D65: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
+==989==  Address 0x4a658c5 is 2,677 bytes inside a block of size 4,096 alloc'd
+==989==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==989==    by 0x48D9D03: _IO_file_doallocate (filedoalloc.c:101)
+==989==    by 0x48E9ECF: _IO_doallocbuf (genops.c:347)
+==989==    by 0x48E6994: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==989==    by 0x48E337C: fseek (fseek.c:36)
+==989==    by 0x10C93D: fseek_w (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x1117DA: vdb_pager_fresh_page (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10D606: vdbtree_meta_init (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10F37E: vdb_tree_init (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10B687: vdb_create_table (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x109949: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10A79A: run_script (in /home/thomas/vaquita/build/src/vdb)
+==989== 
+==989== 
+==989== HEAP SUMMARY:
+==989==     in use at exit: 0 bytes in 0 blocks
+==989==   total heap usage: 1,054 allocs, 1,054 frees, 157,631 bytes allocated
+==989== 
+==989== All heap blocks were freed -- no leaks are possible
+==989== 
+==989== Use --track-origins=yes to see where uninitialised values come from
+==989== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+==989== 
+==989== 1 errors in context 1 of 1:
+==989== Syscall param write(buf) points to uninitialised byte(s)
+==989==    at 0x4966077: write (write.c:26)
+==989==    by 0x48E6E8C: _IO_file_write@@GLIBC_2.2.5 (fileops.c:1181)
+==989==    by 0x48E8950: new_do_write (fileops.c:449)
+==989==    by 0x48E8950: _IO_new_do_write (fileops.c:426)
+==989==    by 0x48E8950: _IO_do_write@@GLIBC_2.2.5 (fileops.c:423)
+==989==    by 0x48E9944: _IO_switch_to_get_mode (genops.c:166)
+==989==    by 0x48E68C2: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:927)
+==989==    by 0x48E337C: fseek (fseek.c:36)
+==989==    by 0x10C93D: fseek_w (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x111B09: _vdb_pager_flush_page (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x111BAD: vdb_pager_free (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10A8B8: vdb_free (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10B216: vdb_close (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x109D65: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
+==989==  Address 0x4a658c5 is 2,677 bytes inside a block of size 4,096 alloc'd
+==989==    at 0x483B7F3: malloc (in /usr/lib/x86_64-linux-gnu/valgrind/vgpreload_memcheck-amd64-linux.so)
+==989==    by 0x48D9D03: _IO_file_doallocate (filedoalloc.c:101)
+==989==    by 0x48E9ECF: _IO_doallocbuf (genops.c:347)
+==989==    by 0x48E6994: _IO_file_seekoff@@GLIBC_2.2.5 (fileops.c:938)
+==989==    by 0x48E337C: fseek (fseek.c:36)
+==989==    by 0x10C93D: fseek_w (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x1117DA: vdb_pager_fresh_page (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10D606: vdbtree_meta_init (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10F37E: vdb_tree_init (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10B687: vdb_create_table (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x109949: vdb_execute (in /home/thomas/vaquita/build/src/vdb)
+==989==    by 0x10A79A: run_script (in /home/thomas/vaquita/build/src/vdb)
+==989== 
+==989== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)

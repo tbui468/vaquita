@@ -558,6 +558,7 @@ struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager)
 }
 
 void vdb_tree_close(struct VdbTree* tree) {
+    fclose_w(tree->f);
     free_w(tree->name, sizeof(char) * (strlen(tree->name) + 1));
     free_w(tree, sizeof(struct VdbTree));
 }

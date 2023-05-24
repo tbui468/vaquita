@@ -51,7 +51,9 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    Also, seems like there's a memory leak with trees - see valgrind output
+    allocated_memory variable show -52 bytes when runnging sol.sql
+        I suspect that a non-wrapper allocation function is being called somewhere
+        OR free_w has a wrong size argument
 
     Probably should cached schema and use that whenever vdbmeta_get_schema is called rather than having to
         manually free it every single time - error prone and just makes everything look messier

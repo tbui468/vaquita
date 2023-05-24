@@ -5,6 +5,9 @@ GREEN = '\033[32m'
 RED = '\033[31m'
 ENDC = '\033[0m'
 
+names = []
+results = {}
+
 def test(filename):
     cmd = "./../build/src/vdb ./" + filename + ".sql"
     #cmd += " > /dev/null"
@@ -18,11 +21,14 @@ def test(filename):
             if expected.read() == result.read():
                 output_matches = True
 
+    names.append(filename)
     if (return_code == 0 and output_matches):
-        print(filename.ljust(30, " "), GREEN + "passed" + ENDC)
+        results[filename] = True
+        #print(filename.ljust(30, " "), GREEN + "passed" + ENDC)
         return True
     else:
-        print(filename.ljust(30, " "), RED + "failed" + ENDC)
+        results[filename] = False
+        #print(filename.ljust(30, " "), RED + "failed" + ENDC)
         return False
 
 files = os.listdir('./')
@@ -38,6 +44,13 @@ for f in files:
             passed +=1 
         else:
             failed += 1
+
+names.sort()
+for n in names:
+    if results[n]:
+        print(n.ljust(30, " "), GREEN + "passed" + ENDC)
+    else:
+        print(n.ljust(30, " "), RED + "failed" + ENDC)
 
 print("")
 print(GREEN + "passed: " + str(passed) + "  " + RED + "failed: " + str(failed) + ENDC + "  of " + str(total) + " tests")

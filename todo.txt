@@ -52,9 +52,9 @@ Use sample data to make sure SQL kinda works
 
 *******************************TODO**************************************************
     tree_catch and tree_release are weird functions
-        are they being used now?
+        are they being used now?  isn't tree_get also the same thing?
 
-    Also, seems like there's a memory leak with trees - see valgrind outpu
+    Also, seems like there's a memory leak with trees - see valgrind output
 
     Probably should cached schema and use that whenever vdbmeta_get_schema is called rather than having to
         manually free it every single time - error prone and just makes everything look messier

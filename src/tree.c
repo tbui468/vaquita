@@ -548,7 +548,7 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     return tree;
 }
 
-struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager) {
+struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager) {
     struct VdbTree* tree = malloc_w(sizeof(struct VdbTree));
     tree->name = strdup(name);
     tree->f = f;
@@ -557,7 +557,7 @@ struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager
     return tree;
 }
 
-void vdb_tree_release(struct VdbTree* tree) {
+void vdb_tree_close(struct VdbTree* tree) {
     free_w(tree->name, sizeof(char) * (strlen(tree->name) + 1));
     free_w(tree, sizeof(struct VdbTree));
 }
@@ -746,7 +746,7 @@ struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* nam
 void vdb_treelist_free(struct VdbTreeList* tl) {
     for (uint32_t i = 0; i < tl->count; i++) {
         struct VdbTree* t = tl->trees[i];
-        vdb_tree_release(t);
+        vdb_tree_close(t);
     }
 
     free_w(tl->trees, sizeof(struct VdbTree*) * tl->capacity);

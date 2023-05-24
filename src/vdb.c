@@ -64,7 +64,7 @@ VDBHANDLE vdb_open_db(const char* name) {
         char* s = malloc_w(sizeof(char) * (entry_len - 3));
         memcpy(s, ent->d_name, entry_len - 4);
         s[entry_len - 3] = '\0';
-        struct VdbTree* tree = vdb_tree_catch(s, f, db->pager);
+        struct VdbTree* tree = vdb_tree_open(s, f, db->pager);
         vdb_treelist_append_tree(db->trees, tree);
     }
 
@@ -293,7 +293,7 @@ enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
         strcat(path, ".vtb");
 
         fclose_w(tree->f);
-        vdb_tree_release(tree);
+        vdb_tree_close(tree);
         vdb_pager_evict_pages(db->pager, name);
 
         remove_w(path);

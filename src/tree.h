@@ -25,8 +25,8 @@ struct VdbPage* vdb_tree_pin_page(struct VdbTree* tree, uint32_t idx);
 void vdb_tree_unpin_page(struct VdbTree* tree, struct VdbPage* page);
 
 struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct VdbPager* pager, FILE* f);
-struct VdbTree* vdb_tree_catch(const char* name, FILE* f, struct VdbPager* pager);
-void vdb_tree_release(struct VdbTree* tree);
+struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager);
+void vdb_tree_close(struct VdbTree* tree);
 
 struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree);
 uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree);

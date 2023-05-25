@@ -111,15 +111,108 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->len++;
     }
 
-    //TODO: change to switch
-    /*
     switch (*(t->lexeme)) {
         case 'a':
-            if (t.len == 3 && strncmp("and", t.lexeme, 3) == 0)
+            if (t->len == 3 && strncmp("and", t->lexeme, 3) == 0)
                 t->type = VDBT_AND;
             break;
-    }*/
+        case 'b':
+            if (t->len == 4 && strncmp("bool", t->lexeme, 4) == 0)
+                t->type = VDBT_TYPE_BOOL;
+            break;
+        case 'c':
+            if (t->len == 5 && strncmp("close", t->lexeme, 5) == 0)
+                t->type = VDBT_CLOSE;
+            if (t->len == 6 && strncmp("create", t->lexeme, 6) == 0)
+                t->type = VDBT_CREATE;
+            if (t->len == 7 && strncmp("connect", t->lexeme, 7) == 0)
+                t->type = VDBT_CONNECT;
+            break;
+        case 'd':
+            if (t->len == 4 && strncmp("drop", t->lexeme, 4) == 0)
+                t->type = VDBT_DROP;
+            if (t->len == 6 && strncmp("delete", t->lexeme, 6) == 0)
+                t->type = VDBT_DELETE;
+            if (t->len == 8 && strncmp("describe", t->lexeme, 8) == 0)
+                t->type = VDBT_DESCRIBE;
+            if (t->len == 8 && strncmp("database", t->lexeme, 8) == 0)
+                t->type = VDBT_DATABASE;
+            if (t->len == 9 && strncmp("databases", t->lexeme, 9) == 0)
+                t->type = VDBT_DATABASES;
+            break;
+        case 'e':
+            if (t->len == 4 && strncmp("exit", t->lexeme, 4) == 0)
+                t->type = VDBT_EXIT;
+            if (t->len == 6 && strncmp("exists", t->lexeme, 6) == 0)
+                t->type = VDBT_EXISTS;
+            break;
+        case 'f':
+            if (t->len == 5 && strncmp("float", t->lexeme, 5) == 0)
+                t->type = VDBT_TYPE_FLOAT;
+            if (t->len == 5 && strncmp("false", t->lexeme, 5) == 0)
+                t->type = VDBT_FALSE;
+            if (t->len == 4 && strncmp("from", t->lexeme, 4) == 0)
+                t->type = VDBT_FROM;
+            break;
+        case 'i':
+            if (t->len == 3 && strncmp("int", t->lexeme, 3) == 0)
+                t->type = VDBT_TYPE_INT;
+            if (t->len == 4 && strncmp("into", t->lexeme, 4) == 0)
+                t->type = VDBT_INTO;
+            if (t->len == 6 && strncmp("insert", t->lexeme, 6) == 0)
+                t->type = VDBT_INSERT;
+            if (t->len == 2 && strncmp("if", t->lexeme, 2) == 0)
+                t->type = VDBT_IF;
+            if (t->len == 2 && strncmp("is", t->lexeme, 2) == 0)
+                t->type = VDBT_IS;
+            break;
+        case 'n':
+            if (t->len == 4 && strncmp("null", t->lexeme, 4) == 0)
+                t->type = VDBT_NULL;
+            if (t->len == 3 && strncmp("not", t->lexeme, 3) == 0)
+                t->type = VDBT_NOT;
+            break;
+        case 'o':
+            if (t->len == 4 && strncmp("open", t->lexeme, 4) == 0)
+                t->type = VDBT_OPEN;
+            if (t->len == 2 && strncmp("or", t->lexeme, 2) == 0)
+                t->type = VDBT_OR;
+            break;
+        case 's':
+            if (t->len == 6 && strncmp("string", t->lexeme, 6) == 0)
+                t->type = VDBT_TYPE_STR;
+            if (t->len == 6 && strncmp("select", t->lexeme, 6) == 0)
+                t->type = VDBT_SELECT;
+            if (t->len == 3 && strncmp("set", t->lexeme, 3) == 0)
+                t->type = VDBT_SET;
+            if (t->len == 4 && strncmp("show", t->lexeme, 4) == 0)
+                t->type = VDBT_SHOW;
+            break;
+        case 't':
+            if (t->len == 4 && strncmp("true", t->lexeme, 4) == 0)
+                t->type = VDBT_TRUE;
+            if (t->len == 5 && strncmp("table", t->lexeme, 5) == 0)
+                t->type = VDBT_TABLE;
+            if (t->len == 6 && strncmp("tables", t->lexeme, 6) == 0)
+                t->type = VDBT_TABLES;
+            break;
+        case 'u':
+            if (t->len == 6 && strncmp("update", t->lexeme, 6) == 0)
+                t->type = VDBT_UPDATE;
+            break;
+        case 'v':
+            if (t->len == 6 && strncmp("values", t->lexeme, 6) == 0)
+                t->type = VDBT_VALUES;
+            break;
+        case 'w':
+            if (t->len == 5 && strncmp("where", t->lexeme, 5) == 0)
+                t->type = VDBT_WHERE;
+            break;
+        default:
+            break;
+    }
 
+    /*
     if (strncmp(t->lexeme, "exit", 4) == 0) {
         t->type = VDBT_EXIT;
     } else if (strncmp(t->lexeme, "open", 4) == 0) {
@@ -188,7 +281,7 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         t->type = VDBT_OR;
     } else if (t->len == 2 && strncmp(t->lexeme, "is", 2) == 0) {
         t->type = VDBT_IS;
-    }
+    }*/
 
     return VDBRC_SUCCESS;
 }

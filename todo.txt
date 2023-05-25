@@ -52,13 +52,18 @@ Use sample data to make sure SQL kinda works
         create table comets
         create table asteroids
 
+Takes about 1:40 to lex/parse inserting 10,000 records
+Takes about 1:40 to execute the AST for 10,000 records
+
 *******************************TODO**************************************************
-    Need to be able to tokenize/parse scientific notation:
-        23e-232 is valid 
-        seems like strtod accepts this, so we just need to tokenize it
+    Aggreate functions (count, max, ave, etc)
+
+    Group by
+        requires hashing
+
+    Compiler may make insertion faster
 
     Load up a large database so that buffer pool can be tested
-        copy csv and scratch.py from windows to here
         generate script to:
             create database and table first (drop if existing)
             then add about 10 stars
@@ -111,10 +116,6 @@ Use sample data to make sure SQL kinda works
     User defined primary keys
         Need to make sure keys are unique
         Need to rewrite B-Tree to not always append at end
-
-    Aggreate functions (count, max, ave, etc)
-
-    Group by, etc
 
     Subqueries
 

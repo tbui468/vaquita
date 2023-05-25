@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define VDB_PAGE_SIZE 1024
+#define VDB_PAGE_SIZE 4096
 #define VDB_PAGE_HDR_SIZE 256
 
 struct VdbPage {

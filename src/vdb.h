@@ -62,6 +62,7 @@ void vdbcursor_free(struct VdbCursor* cursor);
 bool vdbcursor_on_final_record(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor);
 void vdbcursor_delete_record(struct VdbCursor* cursor);
+void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values);
 void vdbcursor_increment(struct VdbCursor* cursor);
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection);

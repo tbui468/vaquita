@@ -45,6 +45,7 @@ void vdb_treelist_free(struct VdbTreeList* tl);
 uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx);
 struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx);
 void vdbtree_leaf_delete_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx);
+void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, struct VdbTokenList* attrs, struct VdbValueList* vl);
 uint32_t vdbtree_meta_read_primary_key_counter(struct VdbTree* tree);
 uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t leaf_idx, uint32_t rec_idx);
 

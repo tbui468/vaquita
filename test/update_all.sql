@@ -23,9 +23,7 @@ values
         ("Earth", 5.97, 1, 1.0, false),
         ("Mars", 0.642, 2, 0.01, false);
 
-update planets set ring_system = true where number_of_moons = 2;
-update planets set name = "Earth 2" where name = "Earth";
-update planets set mass = 2.0, surface_pressure = 3.0, name = "Venus 2" where id = 1;
+update planets set mass = 2.0, surface_pressure = 3.0, name = "Venus 2", number_of_moons = 0, ring_system = true;
 
 select * from planets;
 close sol;

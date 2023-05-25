@@ -82,7 +82,7 @@ struct VdbStmt {
         } insert;
         struct {
             struct VdbTokenList* attributes;
-            struct VdbTokenList* values;
+            struct VdbExprList* values;
             struct VdbExpr* selection;
         } update;
         struct {

@@ -179,7 +179,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
                 int attr_count_without_id = stmt->as.insert.attributes->count;
 
-                //inserting 'id' as last column name (inserting actual key at end in vdb_insert_new)
+                //inserting 'id' as last column name (inserting id value at end in vdb_insert_new function)
                 struct VdbToken attr_token;
                 attr_token.type = VDBT_IDENTIFIER;
                 attr_token.lexeme = "id";
@@ -202,7 +202,25 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_UPDATE: {
-                //TODO
+                char* table_name = to_string(stmt->target);
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
+                while (true) {
+                    struct VdbRecord* rec = vdbcursor_read_record(cursor);
+                    if (rec) {
+                        if (vdbcursor_apply_selection(cursor, rec, stmt->as.update.selection)) {
+                            vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
+                        }
+                            
+                        vdb_record_free(rec);
+                    }
+
+                    if (vdbcursor_on_final_record(cursor))
+                        break;
+
+                    vdbcursor_increment(cursor);
+                }
+
+                vdbcursor_free(cursor);
                 break;
             }
             case VDBST_DELETE: {

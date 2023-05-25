@@ -28,6 +28,20 @@ struct VdbValue vdbvalue_init_string(char* start, int len) {
     return v;
 }
 
+struct VdbValue vdbvalue_copy(struct VdbValue v) {
+    if (v.type == VDBT_TYPE_STR) {
+        return vdbvalue_init_string(v.as.Str.start, v.as.Str.len);
+    }
+
+    return v;
+}
+
+void vdbvalue_free(struct VdbValue v) {
+    if (v.type == VDBT_TYPE_STR) {
+        free_w(v.as.Str.start, sizeof(char) * v.as.Str.len);
+    }
+}
+
 struct VdbValueList * vdbvaluelist_init() {
     struct VdbValueList* vl = malloc_w(sizeof(struct VdbValueList));
     vl->count = 0;

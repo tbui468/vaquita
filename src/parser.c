@@ -1015,14 +1015,14 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             vdbparser_consume_token(parser, VDBT_SET);
 
             stmt->as.update.attributes = vdbtokenlist_init();
-            stmt->as.update.values = vdbtokenlist_init();
+            stmt->as.update.values = vdbexprlist_init();
 
             while (true) {
                 struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
                 vdbparser_validate_attribute_name(parser, t);
                 vdbtokenlist_append_token(stmt->as.update.attributes, t);
                 vdbparser_consume_token(parser, VDBT_EQUALS);
-                vdbtokenlist_append_token(stmt->as.update.values, vdbparser_next_token(parser));
+                vdbexprlist_append_expr(stmt->as.update.values, vdbparser_parse_expr(parser));
 
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                     vdbparser_consume_token(parser, VDBT_COMMA);
@@ -1032,10 +1032,15 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 break;
             }
 
-            stmt->as.update.selection = NULL;
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
                 vdbparser_consume_token(parser, VDBT_WHERE);
                 stmt->as.update.selection = vdbparser_parse_expr(parser);
+            } else {
+                struct VdbToken t;
+                t.type = VDBT_TRUE;
+                t.lexeme = "true";
+                t.len = 4;
+                stmt->as.update.selection = vdbexpr_init_literal(t);
             }
 
             break;
@@ -1109,7 +1114,7 @@ void vdbstmt_free_fields(struct VdbStmt* stmt) {
             break;
         case VDBST_UPDATE:
             vdbtokenlist_free(stmt->as.update.attributes);
-            vdbtokenlist_free(stmt->as.update.values);
+            vdbexprlist_free(stmt->as.update.values);
             vdbexpr_free(stmt->as.update.selection);
             break;
         case VDBST_DELETE:
@@ -1198,8 +1203,9 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             printf("\tset:\n");
             for (int i = 0; i < stmt->as.update.attributes->count; i++) {
                 struct VdbToken attribute = stmt->as.update.attributes->tokens[i];
-                struct VdbToken value = stmt->as.update.values->tokens[i];
-                printf("\t\t[%.*s]: %.*s\n", attribute.len, attribute.lexeme, value.len, value.lexeme);
+                printf("\t\t[%.*s]: ", attribute.len, attribute.lexeme);
+                vdbexpr_print(stmt->as.update.values->exprs[i]);
+                printf("\n");
             }
             printf("\tcondition:\n");
             if (stmt->as.update.selection) {

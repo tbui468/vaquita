@@ -53,15 +53,17 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    update
-        struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
-        initialize a cursor at key
-        write record there
-
     tree.c/cursor (in vdb.c) needs a massive rewrite - it's too confusing now
         start with caching the schema instead of dynamically allocating/freeing it in every tree function
         abstraction between cursor and tree is fuzzy - what responsibility should each have?
         traverse_to_first_leaf is no longer necessary - remove it
+    
+        cursor functions are too light - it should really be calling most of the tree.c api to do what needs to be done
+            tree functions should mainly deal with nodes (which the cursor shouldn't know about)
+
+            abstraction layers: vm -> cursor -> tree -> node
+
+            need to pull some complexity out of tree.c and into cursor.c
 
         cursor abstraction:
             cursors are created when starting a new transaction, and destroyed when transaction ends (commit or not)

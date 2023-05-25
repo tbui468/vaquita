@@ -488,6 +488,19 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     vdbtree_leaf_delete_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 }
 
+void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbValueList* vl = vdbvaluelist_init();
+
+    for (int i = 0; i < values->count; i++) {
+        struct VdbValue v = vdbexpr_eval(values->exprs[i], NULL, NULL);
+        vdbvaluelist_append_value(vl, v);
+    }
+
+    vdbtree_leaf_update_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx, attributes, vl);
+
+    vdbvaluelist_free(vl);
+}
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);

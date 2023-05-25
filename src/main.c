@@ -380,7 +380,7 @@ int run_script(const char* path) {
         return -1;
     }
 
-    //vdbtokenlist_print(tokens);
+//    vdbtokenlist_print(tokens);
 
     struct VdbStmtList* stmts;
     struct VdbErrorList* parse_errors;

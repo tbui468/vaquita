@@ -53,6 +53,31 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
+    Need to be able to tokenize/parse scientific notation:
+        23e-232 is valid 
+        seems like strtod accepts this, so we just need to tokenize it
+
+    Load up a large database so that buffer pool can be tested
+        copy csv and scratch.py from windows to here
+        generate script to:
+            create database and table first (drop if existing)
+            then add about 10 stars
+            then 100
+            then 1000
+            then 10000
+            then entire file (10000s)
+
+    Eviction policy
+        make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
+        Or just manually limit number of pages allowed to hold at a time
+        Use O_DIRECT to bypass OS pager
+
+        implement LRU policy for now, but make it easy to swap algorithms (such as to clock policy or using a nn)
+        make a linked list of currently cached blocks
+        define MAX_BLOCKS 4
+        when we need a block, scan the list and look for it
+        if not found, remove last block (flush if necessary) and load in new block from disk 
+
     tree.c/cursor (in vdb.c) needs a massive rewrite - it's too confusing now
         start with caching the schema instead of dynamically allocating/freeing it in every tree function
         abstraction between cursor and tree is fuzzy - what responsibility should each have?
@@ -75,13 +100,6 @@ Use sample data to make sure SQL kinda works
             fetch - moves cursor to next record and returns that record
             delete - deletes record pointed to by cursor - moves cursor to next record after deletion
             update - updates records pointed to by cursor
-
-    Eviction policy
-        make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it
-        Or just manually limit number of pages allowed to hold at a time
-        Use O_DIRECT to bypass OS pager
-
-        implement LRU policy for now, but make it easy to swap algorithms (such as to clock policy or using a nn)
 
     allocated_memory variable show -52 bytes when runnging sol.sql
         I suspect that a non-wrapper allocation function is being called somewhere

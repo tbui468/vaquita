@@ -68,7 +68,10 @@ enum VdbReturnCode vdblexer_read_number(struct VdbLexer* lexer, struct VdbToken*
     bool is_decimal = *(t->lexeme) == '.';
    
     char c; 
-    while ((c = lexer->src[++lexer->cur]) != ' ' && c != EOF && c != '\0' && (is_numeric(c) || c == '.')) {
+    while ((c = lexer->src[++lexer->cur]) != ' ' && 
+            c != EOF && 
+            c != '\0' && 
+            (is_numeric(c) || c == '.' || c == 'e' || c =='-')) {
         if (lexer->src[lexer->cur] == '.')
             is_decimal = true;
         t->len++;

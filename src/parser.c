@@ -1044,10 +1044,16 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             stmt->type = VDBST_DELETE;
             vdbparser_consume_token(parser, VDBT_FROM);
             stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-            stmt->as.delete.selection = NULL;
+
             if (vdbparser_peek_token(parser).type == VDBT_WHERE) {
                 vdbparser_consume_token(parser, VDBT_WHERE);
                 stmt->as.delete.selection = vdbparser_parse_expr(parser);
+            } else {
+                struct VdbToken t;
+                t.type = VDBT_TRUE;
+                t.lexeme = "true";
+                t.len = 4;
+                stmt->as.delete.selection = vdbexpr_init_literal(t);
             }
             break;
         }

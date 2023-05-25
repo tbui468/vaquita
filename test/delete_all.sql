@@ -21,13 +21,11 @@ insert into planets (
 values
         ("Venus", 4.87, 0, 92.0, false),
         ("Earth", 5.97, 1, 1.0, false),
-        ("Mars", 0.642, 2, 0.01, false),
+        ("Mars", 0.642, 2, 0.01, false);
 
-update planets set ring_system = true where number_of_moons = 2;
-update planets set name = "Earth 2" where name = "Earth";
-update planets set mass = 2.0 where id = 1;
-
+delete from planets;
 select * from planets;
+
 close sol;
 drop database sol;
 exit;

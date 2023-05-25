@@ -53,10 +53,16 @@ Use sample data to make sure SQL kinda works
         create table asteroids
 
 *******************************TODO**************************************************
-    tree.c needs a massive rewrite - it's too confusing now
-        start with caching the schema instead of dynamically allocating/freeing it in every tree function
+    update
+        struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
+        initialize a cursor at key
+        write record there
 
-    Add update and delete statements:
+    tree.c/cursor (in vdb.c) needs a massive rewrite - it's too confusing now
+        start with caching the schema instead of dynamically allocating/freeing it in every tree function
+        abstraction between cursor and tree is fuzzy - what responsibility should each have?
+        traverse_to_first_leaf is no longer necessary - remove it
+
         cursor abstraction:
             cursors are created when starting a new transaction, and destroyed when transaction ends (commit or not)
             a cursor is associated with a table AND an ordering (eg, by which column the records are indexed)
@@ -67,16 +73,6 @@ Use sample data to make sure SQL kinda works
             fetch - moves cursor to next record and returns that record
             delete - deletes record pointed to by cursor - moves cursor to next record after deletion
             update - updates records pointed to by cursor
-
-        to update
-            struct VdbCursor* cursor = vdbcursor_init_at(h, table_name, key);
-            initialize a cursor at key
-            write record there
-
-        to delete
-            make sure increment skips deleted records
-            initialize a cursor at key
-            delete record there
 
     Eviction policy
         make db really big so that the program crashes because of too much memory allocated, then evict pages to fix it

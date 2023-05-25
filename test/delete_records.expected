@@ -1,0 +1,7 @@
+created database sol
+opened database sol
+created table planets
+inserted 8 record(s) into planets
+4, Mars, 0.642000, 2, 0.010000, false, 
+closed database sol
+dropped database sol

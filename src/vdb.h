@@ -25,6 +25,7 @@ struct VdbCursor {
     char* table_name;
     uint32_t cur_node_idx;
     uint32_t cur_rec_idx;
+    uint32_t row_idx;
 };
 
 struct Vdb* vdb_init();
@@ -60,6 +61,7 @@ struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t k
 void vdbcursor_free(struct VdbCursor* cursor);
 bool vdbcursor_on_final_record(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor);
+void vdbcursor_delete_record(struct VdbCursor* cursor);
 void vdbcursor_increment(struct VdbCursor* cursor);
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection);

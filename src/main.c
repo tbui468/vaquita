@@ -206,20 +206,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 break;
             }
             case VDBST_DELETE: {
-                //TODO
-                break;
-            }
-            case VDBST_SELECT: {
                 char* table_name = to_string(stmt->target);
-                struct VdbRecordSet* rs = vdbrecordset_init();
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
-
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
-                    if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
-                        vdbcursor_apply_projection(cursor, rec, stmt->as.select.projection);
-                        vdbrecordset_append_record(rs, rec);
-                    } else {
+                    if (rec) {
+                        if (vdbcursor_apply_selection(cursor, rec, stmt->as.delete.selection)) {
+                            vdbcursor_delete_record(cursor);
+                        }
+                            
                         vdb_record_free(rec);
                     }
 
@@ -229,7 +224,30 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     vdbcursor_increment(cursor);
                 }
 
-                //TODO: apply projections to record set - also need to reorder data
+                vdbcursor_free(cursor);
+                break;
+            }
+            case VDBST_SELECT: {
+                char* table_name = to_string(stmt->target);
+                struct VdbRecordSet* rs = vdbrecordset_init();
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
+
+                while (true) {
+                    struct VdbRecord* rec = vdbcursor_read_record(cursor);
+                    if (rec) {
+                        if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
+                            vdbcursor_apply_projection(cursor, rec, stmt->as.select.projection);
+                            vdbrecordset_append_record(rs, rec);
+                        } else {
+                            vdb_record_free(rec);
+                        }
+                    }
+
+                    if (vdbcursor_on_final_record(cursor))
+                        break;
+
+                    vdbcursor_increment(cursor);
+                }
 
                 for (uint32_t i = 0; i < rs->count; i++) {
                     vdbrecord_print(rs->records[i]);
@@ -362,6 +380,7 @@ int run_script(const char* path) {
         return -1;
     }
 
+    //TODO: uncomment later 
     /*
     for (int i = 0; i < stmts->count; i++) {
         vdbstmt_print(&stmts->stmts[i]);
@@ -381,7 +400,7 @@ int run_script(const char* path) {
 int main(int argc, char** argv) {
     if (argc > 1) {
         int result = run_script(argv[1]);
-        printf("allocated memory: %ld\n", allocated_memory);
+//        printf("allocated memory: %ld\n", allocated_memory);
         return result;
     } else {
         run_cli();

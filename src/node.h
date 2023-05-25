@@ -39,14 +39,16 @@ bool vdbnode_intern_can_fit_ptr(uint8_t* buf);
 uint32_t vdbnode_leaf_read_data_block(uint8_t* buf);
 uint32_t vdbnode_leaf_read_record_count(uint8_t* buf);
 uint32_t vdbnode_leaf_read_datacells_size(uint8_t* buf);
-uint8_t* vdbleaf_get_fixedlen_record_ptr(uint8_t* buf, uint32_t rec_idx);
 
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx);
 void vdbnode_leaf_write_record_count(uint8_t* buf, uint32_t count);
 void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size);
 
-uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx, uint32_t fixedlen_size);
+uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx);
 uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);
+
+uint32_t vdbleaf_read_record_occupied(uint8_t* buf, uint32_t rec_idx);
+void vdbleaf_write_record_occupied(uint8_t* buf, uint32_t rec_idx, bool occupied);
 
 //Data Node
 void vdbdata_init(uint8_t* buf, uint32_t parent_idx);

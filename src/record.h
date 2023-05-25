@@ -19,7 +19,7 @@ struct VdbRecordSet {
 
 
 //record
-//[next|size|data....]
+//[next|occupied|data....]
 
 struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data);
 void vdb_record_free(struct VdbRecord* rec);

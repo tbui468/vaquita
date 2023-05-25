@@ -14,7 +14,7 @@ struct VdbString {
 struct VdbValue {
     enum VdbTokenType type;
     union {
-        uint64_t Int;
+        int64_t Int;
         struct VdbString Str;
         bool Bool;
         double Float;

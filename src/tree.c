@@ -12,6 +12,7 @@ static struct VdbPtr vdbtree_intern_read_right_ptr(struct VdbTree* tree, uint32_
 static struct VdbPtr vdbtree_intern_read_ptr(struct VdbTree* tree, uint32_t idx, uint32_t ptr_idx);
 static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx);
 static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx);
+void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec);
 
 /*
  * Tree wrapper for generic node
@@ -337,7 +338,7 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     uint32_t rec_idx = vdbleaf_append_record_cell(page->buf, vdbschema_fixedlen_record_size(schema));
-    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx, vdbschema_fixedlen_record_size(schema));
+    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx);
     vdbrecord_write(buf, rec, schema);
 
     vdb_schema_free(schema);
@@ -356,7 +357,7 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     
-    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx, vdbschema_fixedlen_record_size(schema));
+    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx);
     vdbrecord_write(buf, rec, schema);
 
     vdb_schema_free(schema);
@@ -378,7 +379,7 @@ uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx, uint32
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    uint8_t* ptr = vdbleaf_get_fixedlen_record_ptr(page->buf, rec_idx);
+    uint8_t* ptr = vdbleaf_get_record_ptr(page->buf, rec_idx);
     struct VdbValue v = vdbrecord_read_value_at_idx(ptr, schema, 0);
     assert(v.type == VDBT_TYPE_INT);
     uint32_t key = v.as.Int;
@@ -389,12 +390,34 @@ uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx, uint32
     return key;
 }
 
-struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
+void vdbtree_leaf_delete_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    uint8_t* buf = vdbleaf_get_fixedlen_record_ptr(page->buf, rec_idx);
+    struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
+    vdbtree_leaf_free_varlen_data(tree, rec);
+    vdbleaf_write_record_occupied(page->buf, rec_idx, false);
+
+    vdb_schema_free(schema);
+    vdb_record_free(rec);
+    vdb_pager_unpin_page(page);
+}
+
+
+struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
+    assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+
+    //check if record idx is occupied (may be a freed record)
+    if (!vdbleaf_read_record_occupied(page->buf, rec_idx)) {
+        vdb_pager_unpin_page(page);
+        return NULL;
+    }
+
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    uint8_t* buf = vdbleaf_get_record_ptr(page->buf, rec_idx);
     struct VdbRecord* rec = vdbrecord_read(buf, schema);
 
     vdb_schema_free(schema);
@@ -426,7 +449,6 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
         }
 
     }
-
     vdb_pager_unpin_page(page);
     return rec;
 }
@@ -482,7 +504,7 @@ void vdbtree_leaf_write_record_key(struct VdbTree* tree, uint32_t idx, uint32_t 
     v.type = VDBT_TYPE_INT;
     v.as.Int = key;
 
-    uint8_t* ptr = vdbleaf_get_fixedlen_record_ptr(page->buf, rec_idx);
+    uint8_t* ptr = vdbleaf_get_record_ptr(page->buf, rec_idx);
     vdbrecord_write_value_at_idx(ptr, schema, 0, v);
 
     vdb_schema_free(schema);
@@ -561,6 +583,28 @@ void vdb_tree_close(struct VdbTree* tree) {
     fclose_w(tree->f);
     free_w(tree->name, sizeof(char) * (strlen(tree->name) + 1));
     free_w(tree, sizeof(struct VdbTree));
+}
+
+uint32_t vdbtree_traverse_to_first_leaf(struct VdbTree* tree, uint32_t idx) {
+    assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
+
+    if (vdbtree_intern_read_ptr_count(tree, idx) > 0) {
+        struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, 0);
+        if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF) {
+            return p.idx;
+        } else {
+            return vdbtree_traverse_to_first_leaf(tree, p.idx);
+        }
+    } else {
+        struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);
+
+        if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF) {
+            return p.idx;
+        } else {
+            return vdbtree_traverse_to_first_leaf(tree, p.idx);
+        }
+    }
+
 }
 
 uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) {
@@ -651,6 +695,7 @@ void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec) 
     }
 }
 
+/*
 bool vdbtree_delete_record(struct VdbTree* tree, uint32_t key) {
     if (key > vdbtree_meta_read_primary_key_counter(tree)) {
         return false;
@@ -672,7 +717,7 @@ bool vdbtree_delete_record(struct VdbTree* tree, uint32_t key) {
     }
 
     return false;
-}
+}*/
 
 bool vdbtree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
     if (rec->data[0].as.Int > vdbtree_meta_read_primary_key_counter(tree)) {

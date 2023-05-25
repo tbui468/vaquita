@@ -69,7 +69,7 @@ static uint32_t vdbrecord_seek_value(struct VdbSchema* schema, uint32_t idx) {
 
         switch (schema->types[j]) {
             case VDBT_TYPE_INT:
-                off += sizeof(uint64_t);
+                off += sizeof(int64_t);
                 break;
             case VDBT_TYPE_FLOAT:
                 off += sizeof(double);
@@ -98,11 +98,11 @@ static struct VdbValue vdbrecord_read_value(uint8_t* buf, enum VdbTokenType col_
     bool is_null = *((bool*)(buf + data_off));
     data_off += sizeof(bool);
 
-    //don't switch data type to null (if needed) since we need to get correct offset
+    //don't switch data type to null since we need to get correct offset
     switch (col_type) {
         case VDBT_TYPE_INT:
-            v.as.Int = *((uint64_t*)(buf + data_off));
-            data_off += sizeof(uint64_t);
+            v.as.Int = *((int64_t*)(buf + data_off));
+            data_off += sizeof(int64_t);
             break;
         case VDBT_TYPE_FLOAT:
             v.as.Float = *((double*)(buf + data_off));
@@ -138,8 +138,8 @@ static void vdbrecord_write_value(uint8_t* buf, struct VdbValue* v, enum VdbToke
 
     switch (col_type) {
         case VDBT_TYPE_INT:
-            *((uint64_t*)(buf + off)) = v->as.Int;
-            off += sizeof(uint64_t);
+            *((int64_t*)(buf + off)) = v->as.Int;
+            off += sizeof(int64_t);
             break;
         case VDBT_TYPE_FLOAT:
             *((double*)(buf + off)) = v->as.Float;

@@ -377,7 +377,16 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     return VDBRC_SUCCESS;
 }
 
+
 /*
+
+bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    return vdbtree_delete_record(tree, key);
+}
+
 void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
@@ -401,13 +410,6 @@ struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) 
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     return vdb_tree_fetch_record(tree, key);
-}
-
-bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    return vdbtree_delete_record(tree, key);
 }
 
 bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
@@ -436,18 +438,16 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     vdbtree_print(tree);
 }
 
-struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key) {
+struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t row) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
     cursor->db = (struct Vdb*)h;
     cursor->table_name = strdup_w(table_name);
 
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, table_name);
     uint32_t root_idx = vdbtree_meta_read_root(tree);
-    cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, key);
+    cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, row);
     cursor->cur_rec_idx = 0;
-    while (vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) != key) {
-        cursor->cur_rec_idx++;
-    }
+    cursor->row_idx = row;
 
     return cursor;
 }
@@ -457,26 +457,23 @@ void vdbcursor_free(struct VdbCursor* cursor) {
     free_w(cursor, sizeof(struct VdbCursor));
 }
 
-void vdbcursor_increment(struct VdbCursor* cursor) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    uint32_t key = vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
-
-    if (cursor->cur_rec_idx + 1 >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
-        uint32_t root_idx = vdbtree_meta_read_root(tree);
-        cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, key + 1);
-        cursor->cur_rec_idx = 0;
-        while (vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) != key + 1) {
-            cursor->cur_rec_idx++;
-        }
-    } else {
-        cursor->cur_rec_idx += 1;
-    }
-}
-
 bool vdbcursor_on_final_record(struct VdbCursor* cursor) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     uint32_t highest_key = vdbtree_meta_read_primary_key_counter(tree);
-    return vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) == highest_key;
+    return cursor->row_idx >= highest_key;
+}
+
+void vdbcursor_increment(struct VdbCursor* cursor) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+
+    if (cursor->cur_rec_idx + 1 >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
+        uint32_t root_idx = vdbtree_meta_read_root(tree);
+        cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, cursor->row_idx + 1);
+        cursor->cur_rec_idx = 0;
+    } else {
+        cursor->cur_rec_idx += 1;
+    }
+    cursor->row_idx++;
 }
 
 struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor) {
@@ -484,6 +481,11 @@ struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor) {
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
     return rec;
+}
+
+void vdbcursor_delete_record(struct VdbCursor* cursor) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    vdbtree_leaf_delete_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 }
 
 

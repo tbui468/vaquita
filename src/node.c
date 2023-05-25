@@ -118,16 +118,6 @@ uint32_t vdbnode_leaf_read_record_count(uint8_t* buf) {
     return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
 }
 
-uint8_t* vdbleaf_get_fixedlen_record_ptr(uint8_t* buf, uint32_t rec_idx) {
-    int off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * rec_idx;
-
-    uint32_t data_off;
-    read_u32(&data_off, buf, &off);
-    data_off += sizeof(uint32_t) * 2; //skip next and size fields
-
-    return buf + data_off;
-}
-
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = data_idx;
 }
@@ -140,15 +130,11 @@ void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
 }
 
-uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx, uint32_t fixedlen_size) {
+uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx) {
     int off = VDB_PAGE_HDR_SIZE + rec_idx * sizeof(uint32_t);
     int data_off = *((uint32_t*)(buf + off));
 
-    uint32_t next_field = 0;
-    write_u32(buf, next_field, &data_off);
-    write_u32(buf, fixedlen_size, &data_off);
-
-    return buf + data_off;
+    return buf + data_off + sizeof(uint32_t) * 2; //skip next and occcupied fields
 }
 
 uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size) {
@@ -159,7 +145,25 @@ uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size) {
     vdbnode_leaf_write_datacells_size(buf, new_datacells_size);
     vdbnode_leaf_write_record_count(buf, new_rec_idx + 1);
 
+    int idx_off = VDB_PAGE_HDR_SIZE + new_rec_idx * sizeof(uint32_t);
+    int datacell_off = *((uint32_t*)(buf + idx_off));
+    *((uint32_t*)(buf + datacell_off)) = 0; //next field
+    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = true; //occupied field
+
     return new_rec_idx;
+}
+
+uint32_t vdbleaf_read_record_occupied(uint8_t* buf, uint32_t rec_idx) {
+    int idx_off = VDB_PAGE_HDR_SIZE + rec_idx * sizeof(uint32_t);
+    int datacell_off = *((uint32_t*)(buf + idx_off));
+    return *((uint32_t*)(buf + datacell_off + sizeof(uint32_t)));
+}
+
+void vdbleaf_write_record_occupied(uint8_t* buf, uint32_t rec_idx, bool occupied) {
+    //TODO: these first two lines are used in a lot of functions - could make a function vdbleaf_idx_to_offset(idx) that returns datacell_off
+    int idx_off = VDB_PAGE_HDR_SIZE + rec_idx * sizeof(uint32_t);
+    int datacell_off = *((uint32_t*)(buf + idx_off));
+    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = occupied;
 }
 
 

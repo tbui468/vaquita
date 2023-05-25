@@ -610,7 +610,6 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
         }
         default: {
             assert(false && "invalid expression type");
-            //just to silence warnings - should never reach this path
             struct VdbValue d;
             d.type = VDBT_TYPE_BOOL;
             d.as.Bool = false;

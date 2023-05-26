@@ -505,7 +505,17 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    bool result = vdbexpr_eval(selection, rec, schema).as.Bool;
+
+    struct VdbValue v = vdbexpr_eval(selection, rec, schema);
+    bool result;
+    if (v.type == VDBT_TYPE_NULL) {
+        result = false;
+    } else if (v.type == VDBT_TYPE_BOOL) {
+        result = v.as.Bool;
+    } else {
+        assert(false && "condition is not boolean expression");
+    }
+
     vdb_schema_free(schema);
     return result;
 }

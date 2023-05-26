@@ -45,7 +45,7 @@ for f in files:
         else:
             failed += 1
 
-#names.sort()
+names.sort()
 for n in names:
     if results[n]:
         print(n.ljust(30, " "), GREEN + "passed" + ENDC)

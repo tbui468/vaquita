@@ -1,0 +1,12 @@
+created database sol
+opened database sol
+created table planets
+inserted 3 record(s) into planets
+Venus, 
+Venus, 
+Venus, 
+Mars, 
+Mars, 
+Mars, 
+closed database sol
+dropped database sol

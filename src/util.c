@@ -9,6 +9,30 @@
 
 uint64_t allocated_memory = 0;
 
+struct VdbIntList* vdbintlist_init() {
+    struct VdbIntList* il = malloc_w(sizeof(struct VdbIntList));
+    il->count = 0;
+    il->capacity = 8;
+    il->values = malloc_w(sizeof(int) * il->capacity);
+
+    return il;
+}
+
+void vdbintlist_free(struct VdbIntList* il) {
+    free_w(il->values, sizeof(int) * il->capacity);
+    free_w(il, sizeof(struct VdbIntList));
+}
+
+void vdbintlist_append_int(struct VdbIntList* il, int value) {
+    if (il->count + 1 > il->capacity) {
+        int old_cap = il->capacity;
+        il->capacity *= 2;
+        il->values = realloc_w(il->values, sizeof(int) * il->capacity, sizeof(int) * old_cap);
+    }
+
+    il->values[il->count++] = value;
+}
+
 int get_filename(FILE* f, char* buf, ssize_t max_len) {
     get_pathname(f, buf, max_len);
     char* end = strrchr(buf, '/');

@@ -8,6 +8,15 @@
 
 extern uint64_t allocated_memory;
 
+struct VdbIntList {
+    int* values;
+    int count;
+    int capacity;
+};
+
+struct VdbIntList* vdbintlist_init();
+void vdbintlist_free(struct VdbIntList* il);
+void vdbintlist_append_int(struct VdbIntList* il, int value);
 
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);

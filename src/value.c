@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 
 #include "value.h"
 #include "util.h"
@@ -34,6 +35,38 @@ struct VdbValue vdbvalue_copy(struct VdbValue v) {
     }
 
     return v;
+}
+
+int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2) {
+    assert(v1.type == v2.type && "value types must be the same to compared");
+    switch (v1.type) {
+        case VDBT_TYPE_STR:
+            return strncmp(v1.as.Str.start, v2.as.Str.start, v1.as.Str.len > v2.as.Str.len ? v1.as.Str.len : v2.as.Str.len);
+        case VDBT_TYPE_INT:
+            if (v1.as.Int < v2.as.Int)
+                return -1;
+            if (v1.as.Int > v2.as.Int)
+                return 1;
+            break;
+        case VDBT_TYPE_FLOAT:
+            if (v1.as.Float < v2.as.Float)
+                return -1;
+            if (v1.as.Float > v2.as.Float)
+                return 1;
+            break;
+        case VDBT_TYPE_BOOL:
+            if (v1.as.Bool < v2.as.Bool)
+                return -1;
+            if (v1.as.Bool > v2.as.Bool)
+                return 1;
+            break;
+        case VDBT_TYPE_NULL:
+            break;
+        default:
+            assert(false && "invalid value type");
+    }
+
+    return 0;
 }
 
 void vdbvalue_free(struct VdbValue v) {

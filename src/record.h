@@ -4,7 +4,7 @@
 #include <stdarg.h>
 
 #include "schema.h"
-//#include "parser.h"
+#include "util.h"
 
 struct VdbRecord {
     struct VdbValue* data;
@@ -30,6 +30,7 @@ struct VdbValue vdbrecord_read_value_at_idx(uint8_t* buf, struct VdbSchema* sche
 void vdbrecord_write_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx, struct VdbValue v);
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
 void vdbrecord_print(struct VdbRecord* record);
+int vdbrecord_compare(struct VdbRecord* rec1, struct VdbRecord* rec2, struct VdbIntList* idxs);
 
 struct VdbRecordSet* vdbrecordset_init();
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);

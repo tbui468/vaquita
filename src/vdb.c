@@ -543,3 +543,21 @@ void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec,
     }
 }
 
+struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbTokenList* ordering) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    struct VdbIntList* il = vdbintlist_init();
+    for (int i = 0; i < ordering->count; i++) {
+        for (uint32_t j = 0; j < schema->count; j++) {
+            if (strncmp(schema->names[j], ordering->tokens[i].lexeme, ordering->tokens[i].len) == 0) {
+                vdbintlist_append_int(il, j);
+            }
+        }
+    }
+
+    vdbintlist_append_int(il, 0); //always append unique 'id' field at end for now
+
+    return il;
+}
+

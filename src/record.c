@@ -201,6 +201,20 @@ bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     return false;
 }
 
+int vdbrecord_compare(struct VdbRecord* rec1, struct VdbRecord* rec2, struct VdbIntList* idxs) {
+    for (int i = 0; i < idxs->count; i++) {
+        int idx = idxs->values[i];
+        assert(rec1->data[idx].type == rec2->data[idx].type && "record value types don't match");
+
+        int result = vdbvalue_compare(rec1->data[idx], rec2->data[idx]);
+        if (result != 0) {
+            return result;
+        }
+    }
+
+    assert(false && "records must be compared using at least 1 unique key");
+}
+
 void vdbrecord_print(struct VdbRecord* r) {
     for (uint32_t j = 0; j < r->count; j++) {
         switch (r->data[j].type) {

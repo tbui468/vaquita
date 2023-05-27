@@ -12,6 +12,7 @@ set(Sources
     error.c
     token.c
     value.c
+    binarytree.c
     )
 
 set(Headers
@@ -27,6 +28,7 @@ set(Headers
     error.h
     token.h
     value.h
+    binarytree.h
     )
 
 add_executable(

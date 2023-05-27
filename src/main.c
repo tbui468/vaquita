@@ -8,6 +8,7 @@
 #include "util.h"
 #include "lexer.h"
 #include "parser.h"
+#include "binarytree.h"
 
 char* to_string(struct VdbToken t) {
     static char s[FILENAME_MAX];
@@ -247,15 +248,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_SELECT: {
                 char* table_name = to_string(stmt->target);
-                struct VdbRecordSet* rs = vdbrecordset_init();
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
+
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to beginning of table
+                struct VdbBinaryTree* bt = vdbbinarytree_init(vdbcursor_attrs_to_idxs(cursor, stmt->as.select.ordering));
 
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
                     if (rec) {
                         if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
-                            vdbcursor_apply_projection(cursor, rec, stmt->as.select.projection);
-                            vdbrecordset_append_record(rs, rec);
+                            vdbbinarytree_insert_node(bt, rec);
                         } else {
                             vdb_record_free(rec);
                         }
@@ -267,13 +268,19 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     vdbcursor_increment(cursor);
                 }
 
+                struct VdbRecordSet* rs = stmt->as.select.order_desc ? 
+                                          vdbbinarytree_flatten_desc(bt) : 
+                                          vdbbinarytree_flatten_asc(bt);
+
                 for (uint32_t i = 0; i < rs->count; i++) {
+                    vdbcursor_apply_projection(cursor, rs->records[i], stmt->as.select.projection);
                     vdbrecord_print(rs->records[i]);
                     printf("\n");
                 }
 
                 vdbcursor_free(cursor);
                 vdbrecordset_free(rs);
+                vdbbinarytree_free(bt);
 
                 break;
             }

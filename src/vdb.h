@@ -10,6 +10,7 @@
 #include "tree.h"
 #include "error.h"
 #include "parser.h"
+#include "util.h"
 
 
 typedef void* VDBHANDLE;
@@ -67,5 +68,6 @@ void vdbcursor_increment(struct VdbCursor* cursor);
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection);
 void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbTokenList* projection);
+struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbTokenList* ordering);
 
 #endif //VDB_H

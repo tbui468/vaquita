@@ -49,17 +49,51 @@ Takes about 1:40 to execute the AST for 10,000 records
     order by
         select * from stars where dist < 1000.0 order by dist asc/desc;
 
+        int vdbvalue_compare(struct VdbValue* v1, struct VdbValue* v2); <----implement this guy
+            !!!Isn't this the same code we have in expr_eval????
+
+        Tests fail because select order is not based on id numbers, and not random like before
+           (I'm guessing)
+           Check to make sure this is the case 
+
+
+    ***Big Rewrite***
+    Switch to new B-Tree format: have leaves hold ptrs to data blocks (which can now hold arbitrarily large records, so strings can fit)
+        This allows multiple indexes in the same file more easily since they can all reference same data blocks
+        For now, don't cluster data - just have it appended to currently free data blocks
+        Make indexes work correctly with primary key:
+            where id = 10, id != 10, id < 10, id > 10 
+                How do we optmize cursor postion for these?  Is there a general query plan for all these cases?
+                    Where does the cursor start?
+                    Where does it end?
+                    How many cursors do we need?
+
+            Since indexing only slows down inserts/updates/deletes, we could insert everything, and then
+                index ALL columns to speed up select queries
+
+    select distinct
+        select distinct con from stars; //standard constellation abbreviations
+        make a hash table using column values, and toss out duplicates
+            before ad
+
+        add a distinct field in for select statements
+        stmt.as.select.distinct (struct VdbTokenList*)
+
+        For hashing, concatenate all the 'distinct' values, and then hash
+        If there's a collision then compare all column values in distinct to see if it is indeed the same
+            any duplicates are thrown out
+
     limit
         select * form stars where dist < 1000.0 order by dist asc limit 10;
 
     min/max
         select max(dist) from stars where dist < 1000.0;
-
-    select distinct
-        select distinct con from stars; //standard constellation abbreviations
+        Toss these records into the binary tree used in 'order by' too - then just grab what we need at the end
 
     count/avg/sum
         select count(dist) from stars where dist < 1000.0;
+        Use a few variables to keep a running total of all count and sum
+        Then compute average at end if needed
 
     copy stmt
         *this should require the csv to be cleaned, but it'll be faster than parsing and executing SQL for all the inserts

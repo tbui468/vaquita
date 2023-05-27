@@ -1086,6 +1086,28 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 t.len = 4;
                 stmt->as.select.selection = vdbexpr_init_literal(t);
             }
+
+            stmt->as.select.ordering = vdbtokenlist_init();
+            if (vdbparser_peek_token(parser).type == VDBT_ORDER) {
+                vdbparser_consume_token(parser, VDBT_ORDER);
+                vdbparser_consume_token(parser, VDBT_BY);
+                while (true) {
+                    vdbtokenlist_append_token(stmt->as.select.ordering, vdbparser_next_token(parser));
+                    if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                        vdbparser_consume_token(parser, VDBT_COMMA);
+                        continue;
+                    }
+                    break;
+                }
+            }
+
+            if (vdbparser_peek_token(parser).type == VDBT_DESC) {
+                vdbparser_consume_token(parser, VDBT_DESC);
+                stmt->as.select.order_desc = true;
+            } else {
+                stmt->as.select.order_desc = false;
+            }
+
             break;
         }
         case VDBT_EXIT: {

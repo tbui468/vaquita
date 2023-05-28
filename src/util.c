@@ -33,6 +33,30 @@ void vdbintlist_append_int(struct VdbIntList* il, int value) {
     il->values[il->count++] = value;
 }
 
+struct VdbByteList* vdbbytelist_init() {
+    struct VdbByteList* bl = malloc_w(sizeof(struct VdbByteList));
+    bl->count = 0;
+    bl->capacity = 8;
+    bl->values = malloc_w(sizeof(uint8_t) * bl->capacity);
+
+    return bl;
+}
+
+void vdbbytelist_free(struct VdbByteList* bl) {
+    free_w(bl->values, sizeof(uint8_t) * bl->capacity);
+    free_w(bl, sizeof(struct VdbByteList));
+}
+
+void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte) {
+    if (bl->count + 1 > bl->capacity) {
+        int old_cap = bl->capacity;
+        bl->capacity *= 2;
+        bl->values = realloc_w(bl->values, sizeof(uint8_t) * bl->capacity, sizeof(uint8_t) * old_cap);
+    }
+
+    bl->values[bl->count++] = byte;
+}
+
 int get_filename(FILE* f, char* buf, ssize_t max_len) {
     get_pathname(f, buf, max_len);
     char* end = strrchr(buf, '/');

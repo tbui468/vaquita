@@ -14,9 +14,19 @@ struct VdbIntList {
     int capacity;
 };
 
+struct VdbByteList {
+    uint8_t* values;
+    int count;
+    int capacity;
+};
+
 struct VdbIntList* vdbintlist_init();
 void vdbintlist_free(struct VdbIntList* il);
 void vdbintlist_append_int(struct VdbIntList* il, int value);
+
+struct VdbByteList* vdbbytelist_init();
+void vdbbytelist_free(struct VdbByteList* bl);
+void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte);
 
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);

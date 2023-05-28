@@ -27,7 +27,10 @@
 
     handmade.network has cool mini projects (such as barebones OS with only a few thousand lines of C)
 
-    James Molloy has a good website for OS dev
+    OS
+        James Molloy has a good website for OS dev
+        use qemu
+        use OS dev so that we can set up skeleton project
 
     Look here for two star databases:
         https://github.com/astronexus/HYG-Database
@@ -46,16 +49,16 @@ Takes about 1:40 to lex/parse inserting 10,000 records
 Takes about 1:40 to execute the AST for 10,000 records
 
 *******************************TODO**************************************************
-    order by
-        select * from stars where dist < 1000.0 order by dist asc/desc;
+    group by
+        struct VdbIntList* il = vdbcursor_attrs_to_idxs(cursor, stmt->as.select.grouping);
+        struct VdbHashTable* ht = vdbhashtable_init(fcn, il); //accepts hash function as argument
+        //grab records that fit selection
+            vdbhashtable_insert_entry(ht, rec);
+        struct VdbRecordSet* rs = vdbhashtable_concat_tables(ht);
 
-        int vdbvalue_compare(struct VdbValue* v1, struct VdbValue* v2); <----implement this guy
-            !!!Isn't this the same code we have in expr_eval????
-
-        Tests fail because select order is not based on id numbers, and not random like before
-           (I'm guessing)
-           Check to make sure this is the case 
-
+    subqueries
+        select distinct name from (select * from planets order by name desc);
+        what other subqueries could we use as tests?
 
     ***Big Rewrite***
     Switch to new B-Tree format: have leaves hold ptrs to data blocks (which can now hold arbitrarily large records, so strings can fit)
@@ -70,18 +73,6 @@ Takes about 1:40 to execute the AST for 10,000 records
 
             Since indexing only slows down inserts/updates/deletes, we could insert everything, and then
                 index ALL columns to speed up select queries
-
-    select distinct
-        select distinct con from stars; //standard constellation abbreviations
-        make a hash table using column values, and toss out duplicates
-            before ad
-
-        add a distinct field in for select statements
-        stmt.as.select.distinct (struct VdbTokenList*)
-
-        For hashing, concatenate all the 'distinct' values, and then hash
-        If there's a collision then compare all column values in distinct to see if it is indeed the same
-            any duplicates are thrown out
 
     limit
         select * form stars where dist < 1000.0 order by dist asc limit 10;

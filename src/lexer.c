@@ -143,6 +143,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_DATABASE;
             if (t->len == 9 && strncmp("databases", t->lexeme, 9) == 0)
                 t->type = VDBT_DATABASES;
+            if (t->len == 8 && strncmp("distinct", t->lexeme, 8) == 0)
+                t->type = VDBT_DISTINCT;
             break;
         case 'e':
             if (t->len == 4 && strncmp("exit", t->lexeme, 4) == 0)

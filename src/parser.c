@@ -1064,6 +1064,12 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
         }
         case VDBT_SELECT:  {
             stmt->type = VDBST_SELECT;
+            if (vdbparser_peek_token(parser).type == VDBT_DISTINCT) {
+                vdbparser_consume_token(parser, VDBT_DISTINCT);
+                stmt->as.select.distinct = true; 
+            } else {
+                stmt->as.select.distinct = false;
+            }
             stmt->as.select.projection = vdbtokenlist_init();
             while (true) {
                 vdbtokenlist_append_token(stmt->as.select.projection, vdbparser_next_token(parser));

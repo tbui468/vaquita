@@ -31,6 +31,7 @@ void vdbrecord_write_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32
 bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
 void vdbrecord_print(struct VdbRecord* record);
 int vdbrecord_compare(struct VdbRecord* rec1, struct VdbRecord* rec2, struct VdbIntList* idxs);
+struct VdbByteList* vdbrecord_concat_values(struct VdbRecord* rec, struct VdbIntList* idxs);
 
 struct VdbRecordSet* vdbrecordset_init();
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);

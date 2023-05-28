@@ -93,6 +93,7 @@ struct VdbStmt {
             struct VdbExpr* selection;
             struct VdbTokenList* ordering;
             bool order_desc;
+            bool distinct;
         } select;
     } as;
 };

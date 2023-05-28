@@ -1,0 +1,9 @@
+created database sol
+opened database sol
+created table planets
+inserted 4 record(s) into planets
+Venus, true, 
+Venus, false, 
+Mars, true, 
+closed database sol
+dropped database sol

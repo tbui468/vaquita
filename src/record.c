@@ -215,6 +215,52 @@ int vdbrecord_compare(struct VdbRecord* rec1, struct VdbRecord* rec2, struct Vdb
     assert(false && "records must be compared using at least 1 unique key");
 }
 
+struct VdbByteList* vdbrecord_concat_values(struct VdbRecord* rec, struct VdbIntList* idxs) {
+    struct VdbByteList* bl = vdbbytelist_init();
+
+    for (int i = 0; i < idxs->count; i++) {
+        int idx = idxs->values[i];
+        struct VdbValue v = rec->data[idx];
+        switch (v.type) {
+            case VDBT_TYPE_STR: {
+                for (uint32_t j = 0; j < v.as.Str.len; j++) {
+                    vdbbytelist_append_byte(bl, *(v.as.Str.start + j));
+                }
+                break;
+            }
+            case VDBT_TYPE_INT: {
+                uint8_t* ptr = (uint8_t*)(&v.as.Int);
+                for (uint32_t j = 0; j < sizeof(uint64_t); j++) {
+                    vdbbytelist_append_byte(bl, *(ptr + j));
+                }
+                break;
+            }
+            case VDBT_TYPE_FLOAT: {
+                uint8_t* ptr = (uint8_t*)(&v.as.Float);
+                for (uint32_t j = 0; j < sizeof(double); j++) {
+                    vdbbytelist_append_byte(bl, *(ptr + j));
+                }
+                break;
+            }
+            case VDBT_TYPE_BOOL: {
+                uint8_t* ptr = (uint8_t*)(&v.as.Bool);
+                for (uint32_t j = 0; j < sizeof(bool); j++) {
+                    vdbbytelist_append_byte(bl, *(ptr + j));
+                }
+                break;
+            }
+            case VDBT_TYPE_NULL:
+                vdbbytelist_append_byte(bl, 0);
+                break;
+            default:
+                assert(false && "invalid data type");
+                break;
+        }
+    }
+
+    return bl;
+}
+
 void vdbrecord_print(struct VdbRecord* r) {
     for (uint32_t j = 0; j < r->count; j++) {
         switch (r->data[j].type) {

@@ -556,8 +556,6 @@ struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbT
         }
     }
 
-    vdbintlist_append_int(il, 0); //always append unique 'id' field at end for now
-
     return il;
 }
 

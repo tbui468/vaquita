@@ -9,6 +9,7 @@
 #include "lexer.h"
 #include "parser.h"
 #include "binarytree.h"
+#include "hashtable.h"
 
 char* to_string(struct VdbToken t) {
     static char s[FILENAME_MAX];
@@ -250,13 +251,25 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 char* table_name = to_string(stmt->target);
 
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to beginning of table
-                struct VdbBinaryTree* bt = vdbbinarytree_init(vdbcursor_attrs_to_idxs(cursor, stmt->as.select.ordering));
+
+                struct VdbIntList* order_idxs = vdbcursor_attrs_to_idxs(cursor, stmt->as.select.ordering);
+                vdbintlist_append_int(order_idxs, 0); //always append unique 'id' field at end for now
+                struct VdbBinaryTree* bt = vdbbinarytree_init(order_idxs);
+
+                struct VdbHashTable* ht = vdbhashtable_init(vdbcursor_attrs_to_idxs(cursor, stmt->as.select.projection));
 
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
                     if (rec) {
                         if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
-                            vdbbinarytree_insert_node(bt, rec);
+                            if (stmt->as.select.distinct) {
+                                if (!vdbhashtable_contains_entry(ht, rec)) {
+                                    vdbhashtable_insert_entry(ht, rec);
+                                    vdbbinarytree_insert_node(bt, rec);
+                                }
+                            } else {
+                                vdbbinarytree_insert_node(bt, rec);
+                            }
                         } else {
                             vdb_record_free(rec);
                         }

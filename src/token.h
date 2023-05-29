@@ -59,7 +59,8 @@ enum VdbTokenType {
     VDBT_ORDER,
     VDBT_BY,
     VDBT_DESC,
-    VDBT_DISTINCT
+    VDBT_DISTINCT,
+    VDBT_GROUP
 };
 
 struct VdbToken {

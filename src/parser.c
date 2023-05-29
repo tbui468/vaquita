@@ -1093,6 +1093,20 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 stmt->as.select.selection = vdbexpr_init_literal(t);
             }
 
+            stmt->as.select.grouping = vdbtokenlist_init();
+            if (vdbparser_peek_token(parser).type == VDBT_GROUP) {
+                vdbparser_consume_token(parser, VDBT_GROUP);
+                vdbparser_consume_token(parser, VDBT_BY);
+                while (true) {
+                    vdbtokenlist_append_token(stmt->as.select.grouping, vdbparser_next_token(parser));
+                    if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
+                        vdbparser_consume_token(parser, VDBT_COMMA);
+                        continue;
+                    }
+                    break;
+                }
+            }
+
             stmt->as.select.ordering = vdbtokenlist_init();
             if (vdbparser_peek_token(parser).type == VDBT_ORDER) {
                 vdbparser_consume_token(parser, VDBT_ORDER);

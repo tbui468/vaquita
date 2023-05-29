@@ -75,6 +75,44 @@ void vdbvalue_free(struct VdbValue v) {
     }
 }
 
+void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v) {
+    switch (v.type) {
+        case VDBT_TYPE_STR: {
+            for (uint32_t j = 0; j < v.as.Str.len; j++) {
+                vdbbytelist_append_byte(bl, *(v.as.Str.start + j));
+            }
+            break;
+        }
+        case VDBT_TYPE_INT: {
+            uint8_t* ptr = (uint8_t*)(&v.as.Int);
+            for (uint32_t j = 0; j < sizeof(uint64_t); j++) {
+                vdbbytelist_append_byte(bl, *(ptr + j));
+            }
+            break;
+        }
+        case VDBT_TYPE_FLOAT: {
+            uint8_t* ptr = (uint8_t*)(&v.as.Float);
+            for (uint32_t j = 0; j < sizeof(double); j++) {
+                vdbbytelist_append_byte(bl, *(ptr + j));
+            }
+            break;
+        }
+        case VDBT_TYPE_BOOL: {
+            uint8_t* ptr = (uint8_t*)(&v.as.Bool);
+            for (uint32_t j = 0; j < sizeof(bool); j++) {
+                vdbbytelist_append_byte(bl, *(ptr + j));
+            }
+            break;
+        }
+        case VDBT_TYPE_NULL:
+            vdbbytelist_append_byte(bl, 0);
+            break;
+        default:
+            assert(false && "invalid data type");
+            break;
+    }
+}
+
 struct VdbValueList * vdbvaluelist_init() {
     struct VdbValueList* vl = malloc_w(sizeof(struct VdbValueList));
     vl->count = 0;

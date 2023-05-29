@@ -7,12 +7,12 @@
 struct VdbHashTable* vdbhashtable_init(struct VdbIntList* idxs) {
     struct VdbHashTable* ht = malloc_w(sizeof(struct VdbHashTable));
     ht->idxs = idxs;
-    memset(ht->entries, 0, sizeof(struct VdbHashTableEntry) * VDB_MAX_BUCKETS);
+    memset(ht->entries, 0, sizeof(struct VdbRecordSet*) * VDB_MAX_BUCKETS);
     return ht;
 }
 
 void vdbhashtable_free(struct VdbHashTable* ht) {
-    //caller is reponsible for freeing ht->idxs
+    //TODO: who is reponsible for freeing ht->idxs and all the records/recordsets?
     free_w(ht, sizeof(struct VdbHashTable));
 }
 
@@ -34,54 +34,39 @@ bool vdbhashtable_contains_entry(struct VdbHashTable* ht, struct VdbRecord* rec)
     uint64_t hash = vdbhashtable_hash(bl);
     uint64_t bucket = hash % VDB_MAX_BUCKETS;
 
-    switch (ht->entries[bucket].type) {
-        case VDBTET_EMPTY:
-            ht->entries[bucket].type = VDBTET_RECSET;
-            ht->entries[bucket].as.rs = vdbrecordset_init();
-            vdbrecordset_append_record(ht->entries[bucket].as.rs, rec);
-            return false;
-        case VDBTET_RECSET: {
-            struct VdbRecordSet* rs = ht->entries[bucket].as.rs;
-            for (uint32_t i = 0; i < rs->count; i++) {
-                struct VdbRecord* r = rs->records[i];
-                if (memcmp(bl->values, vdbrecord_concat_values(r, ht->idxs)->values, bl->count) == 0) {
-                    return true;
-                }
-            }
+    struct VdbRecordSet* cur = ht->entries[bucket];
 
-            //not found
-            vdbrecordset_append_record(ht->entries[bucket].as.rs, rec);
-            return false;
+    while (cur) {
+        struct VdbByteList* other = vdbrecord_concat_values(cur->records[0], ht->idxs);
+        if (memcmp(bl->values, other->values, bl->count) == 0) {
+            return true;
         }
-        case VDBTET_HTABLE:
-            return vdbhashtable_contains_entry(ht->entries[bucket].as.ht, rec);
-        default:
-            assert(false && "invalid hash table entry type");
-            return false;
+
+        cur = cur->next;
     }
 
+    return false;
 }
 
 void vdbhashtable_insert_entry(struct VdbHashTable* ht, struct VdbRecord* rec) {
     struct VdbByteList* bl = vdbrecord_concat_values(rec, ht->idxs);
     uint64_t hash = vdbhashtable_hash(bl);
     uint64_t bucket = hash % VDB_MAX_BUCKETS;
+    struct VdbRecordSet* cur = ht->entries[bucket];
 
-    switch (ht->entries[bucket].type) {
-        case VDBTET_EMPTY:
-            ht->entries[bucket].type = VDBTET_RECSET;
-            ht->entries[bucket].as.rs = vdbrecordset_init();
-            vdbrecordset_append_record(ht->entries[bucket].as.rs, rec);
-            break;
-        case VDBTET_RECSET:
-            vdbrecordset_append_record(ht->entries[bucket].as.rs, rec);
-            break;
-        case VDBTET_HTABLE:
-            vdbhashtable_insert_entry(ht->entries[bucket].as.ht, rec);
-            break;
-        default:
-            assert(false && "invalid hash table entry type");
-            break;
+    while (cur) {
+        struct VdbByteList* other = vdbrecord_concat_values(cur->records[0], ht->idxs);
+        if (memcmp(bl->values, other->values, bl->count) == 0) {
+            vdbrecordset_append_record(cur, rec);
+            return;
+        }
+
+        cur = cur->next;
     }
 
+    struct VdbRecordSet* head = ht->entries[bucket];
+    ht->entries[bucket] = vdbrecordset_init();
+    ht->entries[bucket]->next = head;
+    vdbrecordset_append_record(ht->entries[bucket], rec);
 }
+

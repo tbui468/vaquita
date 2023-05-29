@@ -15,6 +15,7 @@ struct VdbRecordSet {
     struct VdbRecord** records;
     uint32_t count;
     uint32_t capacity;
+    struct VdbRecordSet* next;
 };
 
 

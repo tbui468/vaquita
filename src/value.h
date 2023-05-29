@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "token.h"
+#include "util.h"
 
 struct VdbString {
     char* start;
@@ -36,6 +37,7 @@ struct VdbValue vdbvalue_init_string(char* start, int len);
 struct VdbValue vdbvalue_copy(struct VdbValue v);
 int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2);
 void vdbvalue_free(struct VdbValue v);
+void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v);
 
 struct VdbValueList * vdbvaluelist_init();
 void vdbvaluelist_free(struct VdbValueList* vl);

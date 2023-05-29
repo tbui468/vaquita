@@ -91,6 +91,7 @@ struct VdbStmt {
         struct {
             struct VdbTokenList* projection;
             struct VdbExpr* selection;
+            struct VdbTokenList* grouping;
             struct VdbTokenList* ordering;
             bool order_desc;
             bool distinct;

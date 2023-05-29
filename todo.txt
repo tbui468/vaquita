@@ -49,6 +49,29 @@ Takes about 1:40 to lex/parse inserting 10,000 records
 Takes about 1:40 to execute the AST for 10,000 records
 
 *******************************TODO**************************************************
+    vdbhashtable_insert_entry_by_grouping(grouping_table, rec, 0) <---- IMPLEMENT THIS
+        currently has a HUGE bug - we are assuming NO collisions in hashes - but there's no reason for this to be true
+        rather than having a single terminal record set, need to check ALL groupby values and see if (use vdbrecord_concat_values)
+        they are truly the same.  If yes, insert into existing record set.  If not, need to create new record set.
+
+        How about this:
+            struct VdbRecordSet can hold either a struct VdbRecord or struct VdbRecordGroup
+                this will allow the terminal recordset to contain a list of records/record groups
+                but then binarytrees would need to be rewritten since they produce record sets when flattened
+
+
+        struct VdbTupleSet - final set of tuples.  The result of (sub)query with all projections/aggregates applied
+        struct VdbRecordSet - intermediate data before projection/aggregates applied
+        struct VdbRecordSetList - need this in hash table to store potentially multiple groups within same bucket (collisions)
+        ???Think about this some more.....
+
+        struct VdbRecordGroup {
+            struct VdbRecordSet* sets;
+            int count;
+            int capacity;
+        };
+
+
     group by
         struct VdbIntList* il = vdbcursor_attrs_to_idxs(cursor, stmt->as.select.grouping);
         struct VdbHashTable* ht = vdbhashtable_init(fcn, il); //accepts hash function as argument
@@ -56,9 +79,42 @@ Takes about 1:40 to execute the AST for 10,000 records
             vdbhashtable_insert_entry(ht, rec);
         struct VdbRecordSet* rs = vdbhashtable_concat_tables(ht);
 
+        The final level of the nested hash tables should hold a single record set fufilling group by requirements
+            just pick the first record for project, and use the entire record set for any aggregation
+
+        select * from stars group by moons;
+            this should return ONE record from each moon count
+            aggregates can then be used with ANy column
+            select avg(moons) from stars group by moons; //display number of moons, doesn't really do anything useful
+            select avg(gravity), max(mass), moons from stars group by moons;
+
+        distinct and group by don't really go well together...
+            select distinct age, name from students group by grade (but just do group by first)
+            group by should go first, and then apply the distinct projection
+
+        group by allows use of count/avg/sum/min/max on non-group columns
+            select avg(grade) from students group by gender;
+
+            min/max
+                select max(dist) from stars where dist < 1000.0;
+                Toss these records into the binary tree used in 'order by' too - then just grab what we need at the end
+
+            count/avg/sum
+                select count(dist) from stars where dist < 1000.0;
+                Use a few variables to keep a running total of all count and sum
+                Then compute average at end if needed
+
+        group by also allows having keyword (would this query work?)
+            where cannot be used with aggregates, so having was included
+            select name, grade from students group by gender having avg(grade) > 50;
+
     subqueries
         select distinct name from (select * from planets order by name desc);
         what other subqueries could we use as tests?
+
+        Records are tuples of data
+        A record is the entire tuple of data
+        A tuple is a (possible) subset of the record
 
     ***Big Rewrite***
     Switch to new B-Tree format: have leaves hold ptrs to data blocks (which can now hold arbitrarily large records, so strings can fit)
@@ -76,15 +132,6 @@ Takes about 1:40 to execute the AST for 10,000 records
 
     limit
         select * form stars where dist < 1000.0 order by dist asc limit 10;
-
-    min/max
-        select max(dist) from stars where dist < 1000.0;
-        Toss these records into the binary tree used in 'order by' too - then just grab what we need at the end
-
-    count/avg/sum
-        select count(dist) from stars where dist < 1000.0;
-        Use a few variables to keep a running total of all count and sum
-        Then compute average at end if needed
 
     copy stmt
         *this should require the csv to be cleaned, but it'll be faster than parsing and executing SQL for all the inserts

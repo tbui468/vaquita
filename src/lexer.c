@@ -115,6 +115,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         case 'a':
             if (t->len == 3 && strncmp("and", t->lexeme, 3) == 0)
                 t->type = VDBT_AND;
+            if (t->len == 3 && strncmp("avg", t->lexeme, 3) == 0)
+                t->type = VDBT_AVG;
             break;
         case 'b':
             if (t->len == 4 && strncmp("bool", t->lexeme, 4) == 0)
@@ -125,6 +127,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         case 'c':
             if (t->len == 5 && strncmp("close", t->lexeme, 5) == 0)
                 t->type = VDBT_CLOSE;
+            if (t->len == 5 && strncmp("count", t->lexeme, 5) == 0)
+                t->type = VDBT_COUNT;
             if (t->len == 6 && strncmp("create", t->lexeme, 6) == 0)
                 t->type = VDBT_CREATE;
             if (t->len == 7 && strncmp("connect", t->lexeme, 7) == 0)
@@ -176,6 +180,12 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
             if (t->len == 2 && strncmp("is", t->lexeme, 2) == 0)
                 t->type = VDBT_IS;
             break;
+        case 'm':
+            if (t->len == 3 && strncmp("max", t->lexeme, 3) == 0)
+                t->type = VDBT_MAX;
+            if (t->len == 3 && strncmp("min", t->lexeme, 3) == 0)
+                t->type = VDBT_MIN;
+            break;
         case 'n':
             if (t->len == 4 && strncmp("null", t->lexeme, 4) == 0)
                 t->type = VDBT_NULL;
@@ -197,6 +207,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_SELECT;
             if (t->len == 3 && strncmp("set", t->lexeme, 3) == 0)
                 t->type = VDBT_SET;
+            if (t->len == 3 && strncmp("sum", t->lexeme, 3) == 0)
+                t->type = VDBT_SUM;
             if (t->len == 4 && strncmp("show", t->lexeme, 4) == 0)
                 t->type = VDBT_SHOW;
             break;

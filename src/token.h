@@ -60,7 +60,12 @@ enum VdbTokenType {
     VDBT_BY,
     VDBT_DESC,
     VDBT_DISTINCT,
-    VDBT_GROUP
+    VDBT_GROUP,
+    VDBT_AVG,
+    VDBT_COUNT,
+    VDBT_SUM,
+    VDBT_MIN,
+    VDBT_MAX
 };
 
 struct VdbToken {

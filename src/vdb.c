@@ -520,7 +520,7 @@ bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, 
     return result;
 }
 
-struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbTokenList* projection, bool aggregate) {
+struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbExprList* projection, bool aggregate) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
@@ -531,15 +531,11 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
         uint32_t max = aggregate ? 1 : cur->count;
         for (uint32_t i = 0; i < max; i++) {
             struct VdbRecord* rec = cur->records[i];
-            if (projection->tokens[0].type != VDBT_STAR) {
+            struct VdbExpr* expr = projection->exprs[0];
+            if (expr->type != VDBET_IDENTIFIER || expr->as.identifier.token.type != VDBT_STAR) { //Skip if projection is *
                 struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
                 for (int i = 0; i < projection->count; i++) {
-                    for (uint32_t j = 0; j < rec->count; j++) {
-                        if (strncmp(schema->names[j], projection->tokens[i].lexeme, projection->tokens[i].len) == 0) {
-                            data[i] = rec->data[j];
-                            break;
-                        }
-                    }
+                    data[i] = vdbexpr_eval(projection->exprs[i], rec, schema);
                 }
 
                 free_w(rec->data, sizeof(struct VdbValue) * rec->count);
@@ -556,14 +552,14 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
     return final;
 }
 
-struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbTokenList* ordering) {
+struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbExprList* attrs) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     struct VdbIntList* il = vdbintlist_init();
-    for (int i = 0; i < ordering->count; i++) {
+    for (int i = 0; i < attrs->count; i++) {
         for (uint32_t j = 0; j < schema->count; j++) {
-            if (strncmp(schema->names[j], ordering->tokens[i].lexeme, ordering->tokens[i].len) == 0) {
+            if (strncmp(schema->names[j], attrs->exprs[i]->as.literal.token.lexeme, attrs->exprs[i]->as.literal.token.len) == 0) {
                 vdbintlist_append_int(il, j);
             }
         }

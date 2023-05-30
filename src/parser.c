@@ -76,6 +76,11 @@ void vdbexpr_print(struct VdbExpr* expr) {
             vdbexpr_print(expr->as.is_not_null.left);
             printf(" is not null )");
             break;
+        case VDBET_CALL:
+            printf("( %.*s ", expr->as.call.fcn_name.len, expr->as.call.fcn_name.lexeme);
+            vdbexpr_print(expr->as.call.arg);
+            printf(" )");
+            break;
     }
 }
 
@@ -90,6 +95,14 @@ struct VdbExpr* vdbexpr_init_identifier(struct VdbToken token) {
     struct VdbExpr* expr = malloc_w(sizeof(struct VdbExpr));
     expr->type = VDBET_IDENTIFIER; 
     expr->as.identifier.token = token;
+    return expr;
+}
+            
+struct VdbExpr* vdbexpr_init_fcn_call(struct VdbToken fcn_name, struct VdbExpr* arg) {
+    struct VdbExpr* expr = malloc_w(sizeof(struct VdbExpr));
+    expr->type = VDBET_CALL;
+    expr->as.call.fcn_name = fcn_name;
+    expr->as.call.arg = arg;
     return expr;
 }
 
@@ -756,12 +769,24 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
         case VDBT_NULL:
             return vdbexpr_init_literal(vdbparser_next_token(parser));
         case VDBT_IDENTIFIER:
-            return vdbexpr_init_identifier(vdbparser_consume_token(parser, VDBT_IDENTIFIER));
+        case VDBT_STAR:
+            return vdbexpr_init_identifier(vdbparser_next_token(parser));
         case VDBT_LPAREN:
             vdbparser_consume_token(parser, VDBT_LPAREN);
             struct VdbExpr* expr = vdbparser_parse_expr(parser);
             vdbparser_consume_token(parser, VDBT_RPAREN);
             return expr;
+        case VDBT_AVG:
+        case VDBT_COUNT:
+        case VDBT_MAX:
+        case VDBT_MIN:
+        case VDBT_SUM: {
+            struct VdbToken fcn_name = vdbparser_next_token(parser);
+            vdbparser_consume_token(parser, VDBT_LPAREN);
+            struct VdbExpr* expr = vdbexpr_init_fcn_call(fcn_name, vdbparser_parse_expr(parser));
+            vdbparser_consume_token(parser, VDBT_RPAREN);
+            return expr;
+        }
         default:
             assert(false && "invalid token type");
             return NULL;
@@ -1070,9 +1095,9 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             } else {
                 stmt->as.select.distinct = false;
             }
-            stmt->as.select.projection = vdbtokenlist_init();
+            stmt->as.select.projection = vdbexprlist_init();
             while (true) {
-                vdbtokenlist_append_token(stmt->as.select.projection, vdbparser_next_token(parser));
+                vdbexprlist_append_expr(stmt->as.select.projection, vdbparser_parse_expr(parser));
                 if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                     vdbparser_consume_token(parser, VDBT_COMMA);
                     continue;
@@ -1093,12 +1118,12 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 stmt->as.select.selection = vdbexpr_init_literal(t);
             }
 
-            stmt->as.select.grouping = vdbtokenlist_init();
+            stmt->as.select.grouping = vdbexprlist_init();
             if (vdbparser_peek_token(parser).type == VDBT_GROUP) {
                 vdbparser_consume_token(parser, VDBT_GROUP);
                 vdbparser_consume_token(parser, VDBT_BY);
                 while (true) {
-                    vdbtokenlist_append_token(stmt->as.select.grouping, vdbparser_next_token(parser));
+                    vdbexprlist_append_expr(stmt->as.select.grouping, vdbparser_parse_expr(parser));
                     if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                         vdbparser_consume_token(parser, VDBT_COMMA);
                         continue;
@@ -1107,12 +1132,12 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 }
             }
 
-            stmt->as.select.ordering = vdbtokenlist_init();
+            stmt->as.select.ordering = vdbexprlist_init();
             if (vdbparser_peek_token(parser).type == VDBT_ORDER) {
                 vdbparser_consume_token(parser, VDBT_ORDER);
                 vdbparser_consume_token(parser, VDBT_BY);
                 while (true) {
-                    vdbtokenlist_append_token(stmt->as.select.ordering, vdbparser_next_token(parser));
+                    vdbexprlist_append_expr(stmt->as.select.ordering, vdbparser_parse_expr(parser));
                     if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                         vdbparser_consume_token(parser, VDBT_COMMA);
                         continue;
@@ -1163,8 +1188,9 @@ void vdbstmt_free_fields(struct VdbStmt* stmt) {
             vdbexpr_free(stmt->as.delete.selection);
             break;
         case VDBST_SELECT:
-            vdbtokenlist_free(stmt->as.select.projection);
+            vdbexprlist_free(stmt->as.select.projection);
             vdbexpr_free(stmt->as.select.selection);
+            //TODO: free more fields
             break;
         default:
             //nothing to free
@@ -1271,8 +1297,9 @@ void vdbstmt_print(struct VdbStmt* stmt) {
             printf("<select record(s) from table [%.*s]>\n", stmt->target.len, stmt->target.lexeme);
             printf("\tcolumns:\n");
             for (int i = 0; i < stmt->as.select.projection->count; i++) {
-                struct VdbToken t = stmt->as.select.projection->tokens[i];
-                printf("\t\t[%.*s]\n", t.len, t.lexeme);
+                printf("\t\t");
+                vdbexpr_print(stmt->as.select.projection->exprs[i]);
+                printf("\n");
             }
             printf("\tcondition:\n");
             if (stmt->as.select.selection) {

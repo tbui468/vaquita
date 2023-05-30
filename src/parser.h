@@ -12,7 +12,8 @@ enum VdbExprType {
     VDBET_UNARY,
     VDBET_BINARY,
     VDBET_IS_NULL,
-    VDBET_IS_NOT_NULL
+    VDBET_IS_NOT_NULL,
+    VDBET_CALL
 };
 
 struct VdbExpr {
@@ -39,6 +40,10 @@ struct VdbExpr {
         struct {
             struct VdbExpr* left;
         } is_not_null;
+        struct {
+            struct VdbToken fcn_name;
+            struct VdbExpr* arg; //TODO: are multiple arguments used in SQL?
+        } call;
     } as;
 };
 
@@ -89,10 +94,10 @@ struct VdbStmt {
             struct VdbExpr* selection;
         } delete;
         struct {
-            struct VdbTokenList* projection;
+            struct VdbExprList* projection;
             struct VdbExpr* selection;
-            struct VdbTokenList* grouping;
-            struct VdbTokenList* ordering;
+            struct VdbExprList* grouping;
+            struct VdbExprList* ordering;
             bool order_desc;
             bool distinct;
         } select;

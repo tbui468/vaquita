@@ -49,16 +49,33 @@ Takes about 1:40 to lex/parse inserting 10,000 records
 Takes about 1:40 to execute the AST for 10,000 records
 
 *******************************TODO**************************************************
+    add 5 new keywords (DONE)
+        avg, sum, count, min, max
+    add new expr type: call (DONE)
+        return result of the function call
+    select statements should no longer just parser tokens for projection (DONE)
+        should parse expression (which could be an identifier, literal, call, etc)
+    run tests after switching from parsing tokens to expressions for projection (DONE)
+        make sure ALL tests pass before implementing parsing/execution of aggreate functions
     aggregate functions (min/max/avg/sum/count)
-        should be easy - just apply to the recordsets in vdbcursor_apply_projection
+        apply to the recordsets in vdbcursor_apply_projection
 
+        parser should not parser tokens for projection anymore:
+            need to parse an expression:
+                name
+                avg(mass)
+                sum(1) //should be the same as count([attr])
+                count(name)
+                min(mass)
+                max(mass) + 100
 
     Compile program in release mode
         compare how long it takes to execute query.sql
 
     'having' keyword
         where cannot be used with aggregates, so having was included
-        select name, grade from students group by gender having avg(grade) > 50;
+        select name, grade from students group by gender having avg(grade) > 50; ????
+        do some examples on pgexercises
 
     subqueries
         select distinct name from (select * from planets order by name desc);
@@ -87,6 +104,15 @@ Takes about 1:40 to execute the AST for 10,000 records
 
         how should multi-column keys work?  Here's one possible syntax:
             create table planets (id int key, name string, mass int key); //primary key is (id, mass)
+
+    ***Big feature***
+    joins
+        cross-join
+        inner-join (cross join with a condition)
+        outer joins
+
+        will need foreign keys here
+        
 
     copy stmt
         *this should require the csv to be cleaned, but it'll be faster than parsing and executing SQL for all the inserts

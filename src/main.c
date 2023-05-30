@@ -302,7 +302,6 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 struct VdbRecordSet* final = vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0);
 
                 for (uint32_t i = 0; i < final->count; i++) {
-                    //vdbcursor_apply_projection(cursor, rs->records[i], stmt->as.select.projection);
                     vdbrecord_print(final->records[i]);
                     printf("\n");
                 }

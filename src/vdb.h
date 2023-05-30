@@ -67,7 +67,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 void vdbcursor_increment(struct VdbCursor* cursor);
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection);
-struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbTokenList* projection, bool aggregate);
-struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbTokenList* ordering);
+struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbExprList* projection, bool aggregate);
+struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbExprList* attrs);
 
 #endif //VDB_H

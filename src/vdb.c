@@ -520,27 +520,40 @@ bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, 
     return result;
 }
 
-void vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbTokenList* projection) {
-    if (projection->tokens[0].type != VDBT_STAR) {
-        struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-        struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbTokenList* projection, bool aggregate) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-        struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
-        for (int i = 0; i < projection->count; i++) {
-            for (uint32_t j = 0; j < rec->count; j++) {
-                if (strncmp(schema->names[j], projection->tokens[i].lexeme, projection->tokens[i].len) == 0) {
-                    data[i] = rec->data[j];
-                    break;
+    struct VdbRecordSet* final = vdbrecordset_init();
+    struct VdbRecordSet* cur = head;
+
+    while (cur) {
+        uint32_t max = aggregate ? 1 : cur->count;
+        for (uint32_t i = 0; i < max; i++) {
+            struct VdbRecord* rec = cur->records[i];
+            if (projection->tokens[0].type != VDBT_STAR) {
+                struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
+                for (int i = 0; i < projection->count; i++) {
+                    for (uint32_t j = 0; j < rec->count; j++) {
+                        if (strncmp(schema->names[j], projection->tokens[i].lexeme, projection->tokens[i].len) == 0) {
+                            data[i] = rec->data[j];
+                            break;
+                        }
+                    }
                 }
+
+                free_w(rec->data, sizeof(struct VdbValue) * rec->count);
+                rec->data = data;
+                rec->count = projection->count;
             }
+            vdbrecordset_append_record(final, rec);
         }
 
-        free_w(rec->data, sizeof(struct VdbValue) * rec->count);
-        rec->data = data;
-        rec->count = projection->count;
-
-        vdb_schema_free(schema);
+        cur = cur->next;
     }
+
+    vdb_schema_free(schema);
+    return final;
 }
 
 struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbTokenList* ordering) {

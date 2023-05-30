@@ -10,13 +10,13 @@ struct VdbBinaryTree {
 };
 
 struct VdbBinaryNode {
-    struct VdbRecord* rec;
+    struct VdbRecordSet* rs;
     struct VdbBinaryNode* left;
     struct VdbBinaryNode* right;
 };
 
 struct VdbBinaryTree* vdbbinarytree_init(struct VdbIntList* idxs);
-void vdbbinarytree_insert_node(struct VdbBinaryTree* bt, struct VdbRecord* rec);
+void vdbbinarytree_insert_node(struct VdbBinaryTree* bt, struct VdbRecordSet* rs);
 void vdbbinarytree_free(struct VdbBinaryTree* bt);
 struct VdbRecordSet* vdbbinarytree_flatten_asc(struct VdbBinaryTree* bt);
 struct VdbRecordSet* vdbbinarytree_flatten_desc(struct VdbBinaryTree* bt);

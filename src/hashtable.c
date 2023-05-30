@@ -70,3 +70,14 @@ void vdbhashtable_insert_entry(struct VdbHashTable* ht, struct VdbRecord* rec) {
     vdbrecordset_append_record(ht->entries[bucket], rec);
 }
 
+void vdbhashtable_sort_entries(struct VdbHashTable* ht, struct VdbBinaryTree* bt) {
+    for (int i = 0; i < VDB_MAX_BUCKETS; i++) {
+        struct VdbRecordSet* cur = ht->entries[i];
+        while (cur) {
+            vdbbinarytree_insert_node(bt, cur);
+            cur = cur->next;
+        }
+    }
+}
+
+

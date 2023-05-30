@@ -268,10 +268,14 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                             } else if (stmt->as.select.distinct) {
                                 if (!vdbhashtable_contains_entry(ht, rec)) {
                                     vdbhashtable_insert_entry(ht, rec); //hashtable here to check for duplicates bc of 'distinct' keyword
-                                    vdbbinarytree_insert_node(bt, rec);
+                                    struct VdbRecordSet* rs = vdbrecordset_init();
+                                    vdbrecordset_append_record(rs, rec);
+                                    vdbbinarytree_insert_node(bt, rs);
                                 }
                             } else {
-                                vdbbinarytree_insert_node(bt, rec);
+                                struct VdbRecordSet* rs = vdbrecordset_init();
+                                vdbrecordset_append_record(rs, rec);
+                                vdbbinarytree_insert_node(bt, rs);
                             }
                         } else {
                             vdb_record_free(rec);
@@ -285,24 +289,26 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 }
 
                 if (stmt->as.select.grouping->count > 0) {
-                    //vdbhashtable_collect_first_of_groups(ht, bt);
-                    //if grouping, grab first element of reach terminal recordset and insert into bt* (reuse since it'll be empty if grouping)
-                    //apply aggregates to entire terminal record set if necessary
-                    //we need the entire group for projection later
+                    //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)
+                    vdbhashtable_sort_entries(grouping_table, bt);
                 }
 
-                struct VdbRecordSet* rs = stmt->as.select.order_desc ? 
+                //returns head of linked-list of recordsets
+                struct VdbRecordSet* head = stmt->as.select.order_desc ? 
                                             vdbbinarytree_flatten_desc(bt) : 
                                             vdbbinarytree_flatten_asc(bt);
 
-                for (uint32_t i = 0; i < rs->count; i++) {
-                    vdbcursor_apply_projection(cursor, rs->records[i], stmt->as.select.projection);
-                    vdbrecord_print(rs->records[i]);
+                //apply projections to each recordset in linked-list, and return final single recordset
+                struct VdbRecordSet* final = vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0);
+
+                for (uint32_t i = 0; i < final->count; i++) {
+                    //vdbcursor_apply_projection(cursor, rs->records[i], stmt->as.select.projection);
+                    vdbrecord_print(final->records[i]);
                     printf("\n");
                 }
 
                 vdbcursor_free(cursor);
-                vdbrecordset_free(rs);
+                vdbrecordset_free(final);
                 vdbbinarytree_free(bt);
 
                 break;

@@ -1,0 +1,9 @@
+created database sol
+opened database sol
+created table planets
+inserted 4 record(s) into planets
+1, Venus, 2.320000, 0, 92.000000, false, 
+2, Earth, null, 1, 1.000000, true, 
+3, Mars, 4.230000, 2, 0.010000, false, 
+closed database sol
+dropped database sol

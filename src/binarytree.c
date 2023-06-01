@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 
 #include "binarytree.h"
 #include "util.h"
@@ -19,15 +20,14 @@ static struct VdbBinaryNode* vdbbinarynode_init(struct VdbRecordSet* rs, struct 
     return n; 
 }
 
-struct VdbBinaryTree* vdbbinarytree_init(struct VdbIntList* idxs) {
+struct VdbBinaryTree* vdbbinarytree_init() {
     struct VdbBinaryTree* bt = malloc_w(sizeof(struct VdbBinaryTree));
     bt->root = NULL;
-    bt->idxs = idxs;
     return bt;
 }
 
 static void vdbbinarytree_do_insertion(struct VdbBinaryTree* bt, struct VdbBinaryNode* n, struct VdbRecordSet* rs) {
-    int result = vdbrecord_compare(rs->records[0], n->rs->records[0], bt->idxs);
+    int result = memcmp(rs->key->values, n->rs->key->values, sizeof(uint8_t) * rs->key->count);
 
     if (result < 0) {
         if (!n->left)
@@ -55,7 +55,6 @@ void vdbbinarytree_insert_node(struct VdbBinaryTree* bt, struct VdbRecordSet* rs
 }
 
 void vdbbinarytree_free(struct VdbBinaryTree* bt) {
-    vdbintlist_free(bt->idxs);
     if (bt->root)
         vdbbinarynode_free(bt->root);
     free_w(bt, sizeof(struct VdbBinaryTree));

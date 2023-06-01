@@ -252,28 +252,34 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to beginning of table
 
-                struct VdbIntList* order_idxs = vdbcursor_attrs_to_idxs(cursor, stmt->as.select.ordering);
-                vdbintlist_append_int(order_idxs, 0); //always append unique 'id' field at end for now
-                struct VdbBinaryTree* bt = vdbbinarytree_init(order_idxs);
+                //adding primary key to end of order to break any ties
+                struct VdbToken id_token = {VDBT_IDENTIFIER, "id", 2};
+                vdbexprlist_append_expr(stmt->as.select.ordering, vdbexpr_init_identifier(id_token));
+                struct VdbBinaryTree* bt = vdbbinarytree_init();
 
-                struct VdbHashTable* ht = vdbhashtable_init(vdbcursor_attrs_to_idxs(cursor, stmt->as.select.projection));
-                struct VdbHashTable* grouping_table = vdbhashtable_init(vdbcursor_attrs_to_idxs(cursor, stmt->as.select.grouping));
+                struct VdbHashTable* ht = vdbhashtable_init();
+                struct VdbHashTable* grouping_table = vdbhashtable_init();
 
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
                     if (rec) {
                         if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
                             if (stmt->as.select.grouping->count > 0) {
-                                vdbhashtable_insert_entry(grouping_table, rec);
+                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.grouping);
+                                vdbhashtable_insert_entry(grouping_table, key, rec);
                             } else if (stmt->as.select.distinct) {
-                                if (!vdbhashtable_contains_entry(ht, rec)) {
-                                    vdbhashtable_insert_entry(ht, rec); //hashtable here to check for duplicates bc of 'distinct' keyword
-                                    struct VdbRecordSet* rs = vdbrecordset_init();
+                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.projection);
+                                if (!vdbhashtable_contains_key(ht, key)) {
+                                    vdbhashtable_insert_entry(ht, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+                                    struct VdbByteList* order_by_key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.ordering);
+                                    struct VdbRecordSet* rs = vdbrecordset_init(order_by_key);
                                     vdbrecordset_append_record(rs, rec);
                                     vdbbinarytree_insert_node(bt, rs);
                                 }
                             } else {
-                                struct VdbRecordSet* rs = vdbrecordset_init();
+                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.ordering);
+                                struct VdbRecordSet* rs = vdbrecordset_init(key);
+                                //single record in record set - probably not the most efficient, but it works for now
                                 vdbrecordset_append_record(rs, rec);
                                 vdbbinarytree_insert_node(bt, rs);
                             }
@@ -288,9 +294,18 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     vdbcursor_increment(cursor);
                 }
 
+                //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)
+                //TODO: should not manually use hash table internals like this - error prone.  Should be done with hashtable interface
                 if (stmt->as.select.grouping->count > 0) {
-                    //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)
-                    vdbhashtable_sort_entries(grouping_table, bt);
+                    for (int i = 0; i < VDB_MAX_BUCKETS; i++) {
+                        struct VdbRecordSet* cur = grouping_table->entries[i];
+                        while (cur) {
+                            struct VdbByteList* ordering_key = vdbcursor_key_from_cols(cursor, cur->records[0], stmt->as.select.ordering);
+                            cur->key = ordering_key;
+                            vdbbinarytree_insert_node(bt, cur);
+                            cur = cur->next;
+                        }
+                    }
                 }
 
                 //returns head of linked-list of recordsets

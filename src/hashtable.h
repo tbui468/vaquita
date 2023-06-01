@@ -7,16 +7,13 @@
 #define VDB_MAX_BUCKETS 137
 
 struct VdbHashTable {
-    struct VdbIntList* idxs;
     struct VdbRecordSet* entries[VDB_MAX_BUCKETS];
 };
 
 
-struct VdbHashTable* vdbhashtable_init(struct VdbIntList* idxs);
+struct VdbHashTable* vdbhashtable_init();
 void vdbhashtable_free(struct VdbHashTable* ht);
-bool vdbhashtable_contains_entry(struct VdbHashTable* ht, struct VdbRecord* rec);
-void vdbhashtable_insert_entry(struct VdbHashTable* ht, struct VdbRecord* rec);
-void vdbhashtable_insert_entry_by_group(struct VdbHashTable* ht, struct VdbRecord* rec, int depth);
-void vdbhashtable_sort_entries(struct VdbHashTable* ht, struct VdbBinaryTree* bt);
+bool vdbhashtable_contains_key(struct VdbHashTable* ht, struct VdbByteList* key);
+void vdbhashtable_insert_entry(struct VdbHashTable* ht, struct VdbByteList* key, struct VdbRecord* rec);
 
 #endif //VDB_HASHTABLE_H

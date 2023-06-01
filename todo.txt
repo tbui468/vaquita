@@ -38,6 +38,9 @@
 
     valgrind --leak-check=full --show-leak-kinds=all --log-file="output.txt" -v ./../build/src/vdb sol.sql
 
+    Walkthrough of git source code (cool!) 
+        https://fabiensanglard.net/git_code_review/
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -49,14 +52,8 @@ Takes about 1:40 to lex/parse inserting 10,000 records
 Takes about 1:40 to execute the AST for 10,000 records
 
 *******************************TODO**************************************************
-    add 5 new keywords (DONE)
-        avg, sum, count, min, max
-    add new expr type: call (DONE)
-        return result of the function call
-    select statements should no longer just parser tokens for projection (DONE)
-        should parse expression (which could be an identifier, literal, call, etc)
-    run tests after switching from parsing tokens to expressions for projection (DONE)
-        make sure ALL tests pass before implementing parsing/execution of aggreate functions
+    If * is parsed, should remove it and fill in projections ExprList with all column names
+
     aggregate functions (min/max/avg/sum/count)
         apply to the recordsets in vdbcursor_apply_projection
 

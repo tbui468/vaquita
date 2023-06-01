@@ -524,7 +524,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    struct VdbRecordSet* final = vdbrecordset_init();
+    struct VdbRecordSet* final = vdbrecordset_init(NULL);
     struct VdbRecordSet* cur = head;
 
     while (cur) {
@@ -567,4 +567,20 @@ struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbE
 
     return il;
 }
+
+struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExprList* cols) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    struct VdbByteList* bl = vdbbytelist_init();
+
+    for (int i = 0; i < cols->count; i++) {
+        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rec, schema);
+        vdbvalue_to_bytes(bl, v);
+    }
+
+    vdb_schema_free(schema);
+    return bl;
+}
+
 

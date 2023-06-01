@@ -201,32 +201,6 @@ bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     return false;
 }
 
-int vdbrecord_compare(struct VdbRecord* rec1, struct VdbRecord* rec2, struct VdbIntList* idxs) {
-    for (int i = 0; i < idxs->count; i++) {
-        int idx = idxs->values[i];
-        assert(rec1->data[idx].type == rec2->data[idx].type && "record value types don't match");
-
-        int result = vdbvalue_compare(rec1->data[idx], rec2->data[idx]);
-        if (result != 0) {
-            return result;
-        }
-    }
-
-    assert(false && "records must be compared using at least 1 unique key");
-}
-
-struct VdbByteList* vdbrecord_concat_values(struct VdbRecord* rec, struct VdbIntList* idxs) {
-    struct VdbByteList* bl = vdbbytelist_init();
-
-    for (int i = 0; i < idxs->count; i++) {
-        int idx = idxs->values[i];
-        struct VdbValue v = rec->data[idx];
-        vdbvalue_to_bytes(bl, v);
-    }
-
-    return bl;
-}
-
 void vdbrecord_print(struct VdbRecord* r) {
     for (uint32_t j = 0; j < r->count; j++) {
         switch (r->data[j].type) {
@@ -256,12 +230,13 @@ void vdbrecord_print(struct VdbRecord* r) {
     }
 }
 
-struct VdbRecordSet* vdbrecordset_init() {
+struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key) {
     struct VdbRecordSet* rs = malloc_w(sizeof(struct VdbRecordSet));
     rs->count = 0;
     rs->capacity = 8; 
     rs->records = malloc_w(sizeof(struct VdbRecord*) * rs->capacity);
     rs->next = NULL;
+    rs->key = key;
     return rs;
 }
 
@@ -284,5 +259,6 @@ void vdbrecordset_free(struct VdbRecordSet* rs) {
     free_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
     free_w(rs, sizeof(struct VdbRecordSet));
     //TODO: Who should free next recordset in linked list ('next' field)
+    if (rs->key) vdbbytelist_free(rs->key);
 }
 

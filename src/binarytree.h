@@ -6,7 +6,6 @@
 
 struct VdbBinaryTree {
     struct VdbBinaryNode* root;
-    struct VdbIntList* idxs;
 };
 
 struct VdbBinaryNode {
@@ -15,7 +14,7 @@ struct VdbBinaryNode {
     struct VdbBinaryNode* right;
 };
 
-struct VdbBinaryTree* vdbbinarytree_init(struct VdbIntList* idxs);
+struct VdbBinaryTree* vdbbinarytree_init();
 void vdbbinarytree_insert_node(struct VdbBinaryTree* bt, struct VdbRecordSet* rs);
 void vdbbinarytree_free(struct VdbBinaryTree* bt);
 struct VdbRecordSet* vdbbinarytree_flatten_asc(struct VdbBinaryTree* bt);

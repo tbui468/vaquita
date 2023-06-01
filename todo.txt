@@ -52,23 +52,6 @@ Takes about 1:40 to lex/parse inserting 10,000 records
 Takes about 1:40 to execute the AST for 10,000 records
 
 *******************************TODO**************************************************
-    If * is parsed, should remove it and fill in projections ExprList with all column names
-
-    aggregate functions (min/max/avg/sum/count)
-        apply to the recordsets in vdbcursor_apply_projection
-
-        parser should not parser tokens for projection anymore:
-            need to parse an expression:
-                name
-                avg(mass)
-                sum(1) //should be the same as count([attr])
-                count(name)
-                min(mass)
-                max(mass) + 100
-
-    Compile program in release mode
-        compare how long it takes to execute query.sql
-
     'having' keyword
         where cannot be used with aggregates, so having was included
         select name, grade from students group by gender having avg(grade) > 50; ????

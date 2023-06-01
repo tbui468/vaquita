@@ -519,11 +519,146 @@ static struct VdbValue vdbexpr_eval_binary_minus(struct VdbValue* left, struct V
     return d;
 }
 
-static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
+static struct VdbValue vdbexpr_eval_arg(struct VdbExpr* arg, struct VdbRecord* rec, struct VdbSchema* schema) {
+    switch (arg->type) {
+        case VDBET_IDENTIFIER:
+            return vdbexpr_eval_identifier(arg->as.identifier.token, rec, schema);
+        case VDBET_LITERAL:
+            return vdbexpr_eval_literal(arg->as.literal.token);
+        default:
+            assert(false && "aggregate function argument must be an identifier or literal");
+            struct VdbValue d;
+            d.type = VDBT_TYPE_NULL;
+            return d;
+    }
+
+}
+
+static struct VdbValue vdbexpr_eval_call_sum(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
+    struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
+    if (first_value.type == VDBT_TYPE_INT) {
+        int64_t sum = 0;
+        for (uint32_t i = 0; i < rs->count; i++) {
+            struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
+            sum += v.as.Int;
+        }
+        struct VdbValue d;
+        d.type = VDBT_TYPE_INT;
+        d.as.Int = sum;
+        return d;
+    } else if (first_value.type == VDBT_TYPE_FLOAT) {
+        double sum = 0.0;
+        for (uint32_t i = 0; i < rs->count; i++) {
+            struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
+            sum += v.as.Float;
+        }
+        struct VdbValue d;
+        d.type = VDBT_TYPE_FLOAT;
+        d.as.Float = sum;
+        return d;
+    }
+
+    assert(false && "avg function needs to be used with columns of int or float type");
+    struct VdbValue d;
+    d.type = VDBT_TYPE_NULL;
+    return d;
+}
+
+static struct VdbValue vdbexpr_eval_call_avg(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema)  {
+    struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[0], schema);
+    struct VdbValue d;
+    d.type = VDBT_TYPE_FLOAT;
+    if (v.type == VDBT_TYPE_INT) {
+        d.as.Float = (double)(vdbexpr_eval_call_sum(arg, rs, schema).as.Int) / (double)(rs->count);
+        return d;
+    } else if (v.type == VDBT_TYPE_FLOAT) {
+        d.as.Float = vdbexpr_eval_call_sum(arg, rs, schema).as.Float / (double)(rs->count);
+        return d;
+    }
+
+    assert(false && "avg function needs to be used with columns of int or float type");
+    d.type = VDBT_TYPE_NULL;
+    return d;
+}
+
+static struct VdbValue vdbexpr_eval_call_count(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
+    arg = arg;
+    schema = schema;
+    struct VdbValue d;
+    d.type = VDBT_TYPE_INT;
+    d.as.Int = rs->count;
+    return d;
+}
+
+static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
+    struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
+    if (first_value.type == VDBT_TYPE_INT) {
+        int64_t max = first_value.as.Int;
+        for (uint32_t i = 1; i < rs->count; i++) {
+            struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
+            if (v.as.Int > max)
+                max = v.as.Int;
+        }
+        struct VdbValue d;
+        d.type = VDBT_TYPE_INT;
+        d.as.Int = max;
+        return d;
+    } else if (first_value.type == VDBT_TYPE_FLOAT) {
+        double max = first_value.as.Float;
+        for (uint32_t i = 1; i < rs->count; i++) {
+            struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
+            if (v.as.Float > max)
+                max = v.as.Float;
+        }
+        struct VdbValue d;
+        d.type = VDBT_TYPE_FLOAT;
+        d.as.Float = max;
+        return d;
+    }
+
+    assert(false && "max function needs to be used with columns of int or float type");
+    struct VdbValue d;
+    d.type = VDBT_TYPE_NULL;
+    return d;
+}
+
+static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
+    struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
+    if (first_value.type == VDBT_TYPE_INT) {
+        int64_t min = first_value.as.Int;
+        for (uint32_t i = 1; i < rs->count; i++) {
+            struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
+            if (v.as.Int < min)
+                min = v.as.Int;
+        }
+        struct VdbValue d;
+        d.type = VDBT_TYPE_INT;
+        d.as.Int = min;
+        return d;
+    } else if (first_value.type == VDBT_TYPE_FLOAT) {
+        double min = first_value.as.Float;
+        for (uint32_t i = 1; i < rs->count; i++) {
+            struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
+            if (v.as.Float < min)
+                min = v.as.Float;
+        }
+        struct VdbValue d;
+        d.type = VDBT_TYPE_FLOAT;
+        d.as.Float = min;
+        return d;
+    }
+
+    assert(false && "max function needs to be used with columns of int or float type");
+    struct VdbValue d;
+    d.type = VDBT_TYPE_NULL;
+    return d;
+}
+
+static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, struct VdbSchema* schema) {
     switch (expr->type) {
         case VDBET_BINARY: {
-            struct VdbValue left = vdbexpr_do_eval(expr->as.binary.left, rec, schema);
-            struct VdbValue right = vdbexpr_do_eval(expr->as.binary.right, rec, schema);
+            struct VdbValue left = vdbexpr_do_eval(expr->as.binary.left, rs, schema);
+            struct VdbValue right = vdbexpr_do_eval(expr->as.binary.right, rs, schema);
 
             struct VdbValue d;
             switch (expr->as.binary.op.type) {
@@ -573,7 +708,7 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
             return d;
         }
         case VDBET_UNARY: {
-            struct VdbValue right = vdbexpr_do_eval(expr->as.unary.right, rec, schema);
+            struct VdbValue right = vdbexpr_do_eval(expr->as.unary.right, rs, schema);
 
             if (vdbvalue_is_null(&right)) {
                 assert(false && "unary operator on null not implemented");
@@ -602,36 +737,49 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* r
             return d;
         }
         case VDBET_IDENTIFIER: {
-            return vdbexpr_eval_identifier(expr->as.identifier.token, rec, schema);
+            return vdbexpr_eval_identifier(expr->as.identifier.token, rs->records[0], schema);
         }
         case VDBET_LITERAL: {
             return vdbexpr_eval_literal(expr->as.literal.token);
         }
         case VDBET_IS_NULL: {
-            struct VdbValue left = vdbexpr_do_eval(expr->as.is_null.left, rec, schema);
+            struct VdbValue left = vdbexpr_do_eval(expr->as.is_null.left, rs, schema);
             struct VdbValue d;
             d.type = VDBT_TYPE_BOOL;
             d.as.Bool = vdbvalue_is_null(&left);
             return d;
         }
         case VDBET_IS_NOT_NULL: {
-            struct VdbValue left = vdbexpr_do_eval(expr->as.is_not_null.left, rec, schema);
+            struct VdbValue left = vdbexpr_do_eval(expr->as.is_not_null.left, rs, schema);
             struct VdbValue d;
             d.type = VDBT_TYPE_BOOL;
             d.as.Bool = !vdbvalue_is_null(&left);
             return d;
         }
+        case VDBET_CALL: {
+            switch (expr->as.call.fcn_name.type) {
+                case VDBT_AVG: return vdbexpr_eval_call_avg(expr->as.call.arg, rs, schema);
+                case VDBT_COUNT: return vdbexpr_eval_call_count(expr->as.call.arg, rs, schema);
+                case VDBT_MAX: return vdbexpr_eval_call_max(expr->as.call.arg, rs, schema);
+                case VDBT_MIN: return vdbexpr_eval_call_min(expr->as.call.arg, rs, schema);
+                case VDBT_SUM: return vdbexpr_eval_call_sum(expr->as.call.arg, rs, schema);
+                default: assert(false && "invalid function name"); break;
+            }
+            break;
+        }
         default: {
-            assert(false && "invalid expression type");
-            struct VdbValue d;
-            d.type = VDBT_TYPE_BOOL;
-            d.as.Bool = false;
-            return d;
+            break;
         }
     }
+
+    assert(false && "invalid expression type");
+    struct VdbValue d;
+    d.type = VDBT_TYPE_BOOL;
+    d.as.Bool = false;
+    return d;
 }
 
-struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
+struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, struct VdbSchema* schema) {
     if (!expr) {
         struct VdbValue d;
         d.type = VDBT_TYPE_BOOL;
@@ -639,7 +787,7 @@ struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct
         return d;
     }
 
-    return vdbexpr_do_eval(expr, rec, schema);
+    return vdbexpr_do_eval(expr, rs, schema);
 }
 
 void vdbexpr_free(struct VdbExpr* expr) {

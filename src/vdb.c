@@ -502,11 +502,11 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
     vdbvaluelist_free(vl);
 }
 
-bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection) {
+bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* selection) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    struct VdbValue v = vdbexpr_eval(selection, rec, schema);
+    struct VdbValue v = vdbexpr_eval(selection, rs, schema);
     bool result;
     if (v.type == VDBT_TYPE_NULL) {
         result = false;
@@ -514,6 +514,7 @@ bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, 
         result = v.as.Bool;
     } else {
         assert(false && "condition is not boolean expression");
+        result = false;
     }
 
     vdb_schema_free(schema);
@@ -535,7 +536,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
             if (expr->type != VDBET_IDENTIFIER || expr->as.identifier.token.type != VDBT_STAR) { //Skip if projection is *
                 struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
                 for (int i = 0; i < projection->count; i++) {
-                    data[i] = vdbexpr_eval(projection->exprs[i], rec, schema);
+                    data[i] = vdbexpr_eval(projection->exprs[i], cur, schema);
                 }
 
                 free_w(rec->data, sizeof(struct VdbValue) * rec->count);
@@ -552,6 +553,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
     return final;
 }
 
+/*
 struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbExprList* attrs) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
@@ -566,16 +568,16 @@ struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbE
     }
 
     return il;
-}
+}*/
 
-struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExprList* cols) {
+struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExprList* cols) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     struct VdbByteList* bl = vdbbytelist_init();
 
     for (int i = 0; i < cols->count; i++) {
-        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rec, schema);
+        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, schema);
         vdbvalue_to_bytes(bl, v);
     }
 

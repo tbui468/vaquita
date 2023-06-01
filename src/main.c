@@ -209,11 +209,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
                     if (rec) {
-                        if (vdbcursor_apply_selection(cursor, rec, stmt->as.update.selection)) {
+                        struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+                        vdbrecordset_append_record(rs, rec);
+                        if (vdbcursor_apply_selection(cursor, rs, stmt->as.update.selection)) {
                             vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
                         }
                             
-                        vdb_record_free(rec);
+                        vdbrecordset_free(rs);
                     }
 
                     if (vdbcursor_on_final_record(cursor))
@@ -231,11 +233,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
                     if (rec) {
-                        if (vdbcursor_apply_selection(cursor, rec, stmt->as.delete.selection)) {
+                        struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+                        vdbrecordset_append_record(rs, rec);
+                        if (vdbcursor_apply_selection(cursor, rs, stmt->as.delete.selection)) {
                             vdbcursor_delete_record(cursor);
                         }
                             
-                        vdb_record_free(rec);
+                        vdbrecordset_free(rs);
                     }
 
                     if (vdbcursor_on_final_record(cursor))
@@ -263,28 +267,30 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 while (true) {
                     struct VdbRecord* rec = vdbcursor_read_record(cursor);
                     if (rec) {
-                        if (vdbcursor_apply_selection(cursor, rec, stmt->as.select.selection)) {
-                            if (stmt->as.select.grouping->count > 0) {
-                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.grouping);
-                                vdbhashtable_insert_entry(grouping_table, key, rec);
-                            } else if (stmt->as.select.distinct) {
-                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.projection);
-                                if (!vdbhashtable_contains_key(ht, key)) {
-                                    vdbhashtable_insert_entry(ht, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
-                                    struct VdbByteList* order_by_key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.ordering);
-                                    struct VdbRecordSet* rs = vdbrecordset_init(order_by_key);
-                                    vdbrecordset_append_record(rs, rec);
+                        struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+                        vdbrecordset_append_record(rs, rec);
+                        if (stmt->as.select.grouping->count == 0) {
+                            if (vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
+                                if (stmt->as.select.distinct) {
+                                    struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
+                                    if (!vdbhashtable_contains_key(ht, key)) {
+                                        vdbhashtable_insert_entry(ht, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+                                        rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
+                                        vdbbinarytree_insert_node(bt, rs);
+                                    }
+                                } else {
+                                    rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
+                                    //single record in record set - probably not the most efficient, but it works for now
                                     vdbbinarytree_insert_node(bt, rs);
                                 }
                             } else {
-                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rec, stmt->as.select.ordering);
-                                struct VdbRecordSet* rs = vdbrecordset_init(key);
-                                //single record in record set - probably not the most efficient, but it works for now
-                                vdbrecordset_append_record(rs, rec);
-                                vdbbinarytree_insert_node(bt, rs);
+                                vdbrecordset_free(rs);
                             }
                         } else {
-                            vdb_record_free(rec);
+                            //not applying selection if 'group by' is used
+                            //will apply 'having' clause later after aggregates can be applied to entire group
+                            struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.grouping);
+                            vdbhashtable_insert_entry(grouping_table, key, rec);
                         }
                     }
 
@@ -300,7 +306,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     for (int i = 0; i < VDB_MAX_BUCKETS; i++) {
                         struct VdbRecordSet* cur = grouping_table->entries[i];
                         while (cur) {
-                            struct VdbByteList* ordering_key = vdbcursor_key_from_cols(cursor, cur->records[0], stmt->as.select.ordering);
+                            struct VdbByteList* ordering_key = vdbcursor_key_from_cols(cursor, cur, stmt->as.select.ordering);
                             cur->key = ordering_key;
                             vdbbinarytree_insert_node(bt, cur);
                             cur = cur->next;

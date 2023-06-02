@@ -306,9 +306,12 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     for (int i = 0; i < VDB_MAX_BUCKETS; i++) {
                         struct VdbRecordSet* cur = grouping_table->entries[i];
                         while (cur) {
-                            struct VdbByteList* ordering_key = vdbcursor_key_from_cols(cursor, cur, stmt->as.select.ordering);
-                            cur->key = ordering_key;
-                            vdbbinarytree_insert_node(bt, cur);
+                            //eval 'having' clause, and only insert into bt if true
+                            if (vdbcursor_apply_having(cursor, cur, stmt->as.select.having)) {
+                                struct VdbByteList* ordering_key = vdbcursor_key_from_cols(cursor, cur, stmt->as.select.ordering);
+                                cur->key = ordering_key;
+                                vdbbinarytree_insert_node(bt, cur);
+                            }
                             cur = cur->next;
                         }
                     }

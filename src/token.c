@@ -88,6 +88,7 @@ void vdbtoken_print(struct VdbToken t) {
         case VDBT_COUNT: printf("VDBT_COUNT\n"); break;
         case VDBT_MIN: printf("VDBT_MIN\n"); break;
         case VDBT_MAX: printf("VDBT_MAX\n"); break;
+        case VDBT_HAVING: printf("VDBT_HAVING\n"); break;
         default: printf("not implemented\n"); break;
     }
 }

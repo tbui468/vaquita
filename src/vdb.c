@@ -553,6 +553,16 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
     return final;
 }
 
+bool vdbcursor_apply_having(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+
+    struct VdbValue result = vdbexpr_eval(expr, rs, schema);
+
+    vdb_schema_free(schema);
+    return result.as.Bool;
+}
+
 /*
 struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbExprList* attrs) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);

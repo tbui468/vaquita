@@ -34,7 +34,7 @@
 
     Look here for two star databases:
         https://github.com/astronexus/HYG-Database
-        One has around 100,000 stars, one has about 200,000 stars/objects and one database has over 2.5 billion(!) stars
+        One has around 100,000 stars, one has about 200,000 stars/objects and one database has over 2.5 million(!) stars
 
     valgrind --leak-check=full --show-leak-kinds=all --log-file="output.txt" -v ./../build/src/vdb sol.sql
 
@@ -47,15 +47,26 @@ Major components
 Todos
 
 *************************Performance***************
-
-Takes about 1:40 to lex/parse inserting 10,000 records
-Takes about 1:40 to execute the AST for 10,000 records
+In debug mode:
+    Takes about 1:40 to lex/parse inserting 10,000 records
+    Takes about 1:40 to insert 10,000 records
+In release mode:
+    ~1:40 to lex/parse 10,000 records
+    ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    'having' keyword
-        where cannot be used with aggregates, so having was included
-        select name, grade from students group by gender having avg(grade) > 50; ????
-        do some examples on pgexercises
+    Draw some dots in SDL using x/y coordinates of stars (hard code some values for now)
+        once it works, write a basic tcp client to connect to database
+        write a basic tcp server that accepts SQL statements and returns tuples
+
+    server
+        open port to listen for connections
+        server.c listens for connections and processes requests
+
+    client
+        header file that other programs can include
+        sends sql string, and receives a recordset back to process
+        client.c
 
     subqueries
         select distinct name from (select * from planets order by name desc);
@@ -63,7 +74,7 @@ Takes about 1:40 to execute the AST for 10,000 records
 
         Records are tuples of data
         A record is the entire tuple of data
-        A tuple is a (possible) subset of the record
+        A tuple is a subset of the record data (could possible be the entire thing too)
 
     limit
         select * form stars where dist < 1000.0 order by dist asc limit 10;
@@ -93,10 +104,10 @@ Takes about 1:40 to execute the AST for 10,000 records
 
         will need foreign keys here
         
-
     copy stmt
         *this should require the csv to be cleaned, but it'll be faster than parsing and executing SQL for all the inserts
         copy stars(id, proper, dist) from "hyb_30.csv" delimiter ',' csv header;
+        Essentially just make the AST for insert once, and then substitute
 
     Compiler may make insertion faster
         codegen.c - spits out bytecode

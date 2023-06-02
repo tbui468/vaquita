@@ -98,6 +98,7 @@ struct VdbStmt {
             struct VdbExpr* selection;
             struct VdbExprList* grouping;
             struct VdbExprList* ordering;
+            struct VdbExpr* having;
             bool order_desc;
             bool distinct;
         } select;

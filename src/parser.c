@@ -1243,6 +1243,7 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             } else {
                 stmt->as.select.distinct = false;
             }
+
             stmt->as.select.projection = vdbexprlist_init();
             while (true) {
                 vdbexprlist_append_expr(stmt->as.select.projection, vdbparser_parse_expr(parser));
@@ -1259,10 +1260,7 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 vdbparser_consume_token(parser, VDBT_WHERE);
                 stmt->as.select.selection = vdbparser_parse_expr(parser);
             } else {
-                struct VdbToken t;
-                t.type = VDBT_TRUE;
-                t.lexeme = "true";
-                t.len = 4;
+                struct VdbToken t = { VDBT_TRUE, "true", 4 };
                 stmt->as.select.selection = vdbexpr_init_literal(t);
             }
 
@@ -1278,6 +1276,14 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                     }
                     break;
                 }
+            }
+
+            if (vdbparser_peek_token(parser).type == VDBT_HAVING) {
+                vdbparser_consume_token(parser, VDBT_HAVING);
+                stmt->as.select.having = vdbparser_parse_expr(parser);
+            } else {
+                struct VdbToken t = { VDBT_TRUE, "true", 4 };
+                stmt->as.select.having = vdbexpr_init_literal(t);
             }
 
             stmt->as.select.ordering = vdbexprlist_init();

@@ -168,6 +168,10 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
             if (t->len == 5 && strncmp("group", t->lexeme, 5) == 0)
                 t->type = VDBT_GROUP;
             break;
+        case 'h':
+            if (t->len == 6 && strncmp("having", t->lexeme, 6) == 0)
+                t->type = VDBT_HAVING;
+            break;
         case 'i':
             if (t->len == 3 && strncmp("int", t->lexeme, 3) == 0)
                 t->type = VDBT_TYPE_INT;

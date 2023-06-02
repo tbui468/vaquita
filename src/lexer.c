@@ -184,6 +184,10 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
             if (t->len == 2 && strncmp("is", t->lexeme, 2) == 0)
                 t->type = VDBT_IS;
             break;
+        case 'l':
+            if (t->len == 5 && strncmp("limit", t->lexeme, 5) == 0)
+                t->type = VDBT_LIMIT;
+            break;
         case 'm':
             if (t->len == 3 && strncmp("max", t->lexeme, 3) == 0)
                 t->type = VDBT_MAX;

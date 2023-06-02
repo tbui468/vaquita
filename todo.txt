@@ -76,9 +76,6 @@ In release mode:
         A record is the entire tuple of data
         A tuple is a subset of the record data (could possible be the entire thing too)
 
-    limit
-        select * form stars where dist < 1000.0 order by dist asc limit 10;
-
     ***Big Rewrite***
     Switch to new B-Tree format: have leaves hold ptrs to data blocks (which can now hold arbitrarily large records, so strings can fit)
         This allows multiple indexes in the same file more easily since they can all reference same data blocks

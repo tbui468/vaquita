@@ -1,0 +1,18 @@
+created database sol
+opened database sol
+created table planets
+inserted 4 record(s) into planets
+inserted 3 record(s) into planets
+1, Neptune, 20, false, 
+2, Mars, 10, true, 
+3, Venus, 10, false, 
+4, Earth, 10, true, 
+5, Mercury, 5, true, 
+7, Saturn, 323, false, 
+6, Jupiter, 100, true, 
+5, Mercury, 5, true, 
+4, Earth, 10, true, 
+3, Venus, 10, false, 
+dropped table planets
+closed database sol
+dropped database sol

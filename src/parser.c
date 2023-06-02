@@ -1307,6 +1307,13 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 stmt->as.select.order_desc = false;
             }
 
+            if (vdbparser_peek_token(parser).type == VDBT_LIMIT) {
+                vdbparser_consume_token(parser, VDBT_LIMIT);
+                stmt->as.select.limit = vdbparser_parse_expr(parser);
+            } else {
+                stmt->as.select.limit = NULL;
+            }
+
             break;
         }
         case VDBT_EXIT: {

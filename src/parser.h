@@ -101,6 +101,7 @@ struct VdbStmt {
             struct VdbExpr* having;
             bool order_desc;
             bool distinct;
+            struct VdbExpr* limit;
         } select;
     } as;
 };

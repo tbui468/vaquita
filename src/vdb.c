@@ -563,6 +563,25 @@ bool vdbcursor_apply_having(struct VdbCursor* cursor, struct VdbRecordSet* rs, s
     return result.as.Bool;
 }
 
+void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    if (expr == NULL)
+        return;
+
+    struct VdbValue limit = vdbexpr_eval(expr, rs, schema);
+    vdb_schema_free(schema);
+
+    if (limit.as.Int >= rs->count)
+        return;
+
+    for (uint32_t i = limit.as.Int; i < rs->count; i++) {
+        vdb_record_free(rs->records[i]);
+    }
+
+    rs->count = limit.as.Int;
+}
+
 /*
 struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbExprList* attrs) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);

@@ -325,6 +325,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 //apply projections to each recordset in linked-list, and return final single recordset
                 struct VdbRecordSet* final = vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0);
 
+                //apply limits
+                vdbcursor_apply_limit(cursor, final, stmt->as.select.limit);
+
                 for (uint32_t i = 0; i < final->count; i++) {
                     vdbrecord_print(final->records[i]);
                     printf("\n");

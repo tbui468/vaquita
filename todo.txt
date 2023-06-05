@@ -67,15 +67,55 @@ In release mode:
         sends sql string, and receives a recordset back to process
         client.c
 
-    ***Big Rewrite***
+    Refactor node.h/c to use same function to access pointer to fields
+        refactor data nodes and common node functions
+
+    Rewrite tree like this:
+        Meta block holds a ptr to first data block
+            use this ptr to defrag and find free space if needed
+
+        Internal nodes are the same as before
+        
+        Leaf nodes only hold ptrs to data
+            not longer need a data block for each leaf
+
+        Data nodes hold records + variable length data
+            don't allow overflow for now to keep it simple - if not enough space in a data block to fit entire record, just allocate a new one
+
+
+    Creating/dropping indexes:
+        Indexes require multiple trees - we need to take records out of leaves and put them in own data blocks that
+            all indices can refer to.  Could keep data nodes for variable length data, and make record nodes for fixed len record data
+
+            Still 4 types of nodes:
+                internal
+                leaf
+                record
+                data
+
+            in leaf, each index refers to record ptr (datacell).  Each record ptr has the node idx and idxcell idx.
+            currently records are: [next|occupied|data...]
+            new record data in leaf: [next|occupied|node_idx|idxcell_idx]
+
+            datacell in data node: [next|
+
         Rewrite B-Tree so that:
+            create index x_coords on planets.x; //only allow single indexing for now, so don't need planets(x) syntax
+            drop index x_coords on planets;
+
             Any data type can be used as keys (string, int, (float as a key is stupid, but allow it), bool)
             leaves now only hold references to data blocks
             data blocks hold record data (including variable length data)
             data blocks can now be defragged if enough spac
             Need to be able to index by cartesian coordinates (x, y, z) so tha star app works
 
-    ***Big feature***
+    Inserting records with out of order keys don't order them correctly in B-Tree (skip for now since B-Tree requires rewrite anyway)
+        insert into planets (id, name, mass, atmosphere) values (5, "Neptune", 20, false), (1, "Mars", 10, true), (3, "Venus", 10, false);
+        select * from planets;
+
+        This should return Mars, Venus and then Neptune.  But it returns insertion order
+        this will be need to change with rewriting of B-Tree, so just skip this for now
+
     joins
         cross-join
         inner-join (cross join with a condition)

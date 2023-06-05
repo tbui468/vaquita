@@ -10,11 +10,6 @@
 
 struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser);
 
-void vdbparser_validate_attribute_name(struct VdbParser* parser, struct VdbToken t) {
-    if (strncmp(t.lexeme, "id", 2) == 0)
-        vdberrorlist_append_error(parser->errors, 1, "'id' cannot be used as attribute name");
-}
-
 enum VdbReturnCode vdbparser_parse(struct VdbTokenList* tokens, struct VdbStmtList** stmts, struct VdbErrorList** errors) {
     *stmts = vdbstmtlist_init();
     *errors = vdberrorlist_init();
@@ -1043,7 +1038,6 @@ void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenL
     vdbparser_consume_token(parser, VDBT_LPAREN);
     while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
         struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-        vdbparser_validate_attribute_name(parser, t);
         vdbtokenlist_append_token(tl, t);
         if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
             vdbparser_consume_token(parser, VDBT_COMMA);
@@ -1082,25 +1076,17 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 stmt->target = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
                 stmt->as.create.attributes = vdbtokenlist_init();
                 stmt->as.create.types = vdbtokenlist_init();
-
-                struct VdbToken attr_token;
-                attr_token.type = VDBT_IDENTIFIER;
-                attr_token.lexeme = "id";
-                attr_token.len = 2;
-                vdbtokenlist_append_token(stmt->as.create.attributes, attr_token);
-
-                struct VdbToken type_token;
-                type_token.type = VDBT_TYPE_INT;
-                type_token.lexeme = "int";
-                type_token.len = 3;
-                vdbtokenlist_append_token(stmt->as.create.types, type_token);
+                stmt->as.create.key_idx = -1;
 
                 vdbparser_consume_token(parser, VDBT_LPAREN);
                 while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
                     struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-                    vdbparser_validate_attribute_name(parser, t);
                     vdbtokenlist_append_token(stmt->as.create.attributes, t);
                     vdbtokenlist_append_token(stmt->as.create.types, vdbparser_next_token(parser));
+                    if (vdbparser_peek_token(parser).type == VDBT_KEY) {
+                        vdbparser_consume_token(parser, VDBT_KEY);
+                        stmt->as.create.key_idx = stmt->as.create.types->count - 1;
+                    }
 
                     if (vdbparser_peek_token(parser).type == VDBT_COMMA) {
                         vdbparser_consume_token(parser, VDBT_COMMA);
@@ -1109,6 +1095,10 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                     }
                 }
                 vdbparser_consume_token(parser, VDBT_RPAREN);
+
+                if (stmt->as.create.key_idx == -1) {
+                    vdberrorlist_append_error(parser->errors, 1, "'create table' requires exactly one 'key' constraint");
+                }
             }
             break;
         }
@@ -1192,7 +1182,6 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
 
             while (true) {
                 struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
-                vdbparser_validate_attribute_name(parser, t);
                 vdbtokenlist_append_token(stmt->as.update.attributes, t);
                 vdbparser_consume_token(parser, VDBT_EQUALS);
                 vdbexprlist_append_expr(stmt->as.update.values, vdbparser_parse_expr(parser));

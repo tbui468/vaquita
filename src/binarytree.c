@@ -34,13 +34,11 @@ static void vdbbinarytree_do_insertion(struct VdbBinaryTree* bt, struct VdbBinar
             n->left = vdbbinarynode_init(rs, NULL, NULL);
         else
             vdbbinarytree_do_insertion(bt, n->left, rs);
-    } else if (result > 0) {
+    } else {
         if (!n->right)
             n->right = vdbbinarynode_init(rs, NULL, NULL);
         else
             vdbbinarytree_do_insertion(bt, n->right, rs);
-    } else {
-        assert(false && "records cannot be equal when inserting into binary tree");
     }
 
 }

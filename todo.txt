@@ -41,6 +41,9 @@
     Walkthrough of git source code (cool!) 
         https://fabiensanglard.net/git_code_review/
 
+    wyag.thb.lt
+        writing version control software like git (pretty cool)
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -55,10 +58,6 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Draw some dots in SDL using x/y coordinates of stars (hard code some values for now)
-        once it works, write a basic tcp client to connect to database
-        write a basic tcp server that accepts SQL statements and returns tuples
-
     server
         open port to listen for connections
         server.c listens for connections and processes requests
@@ -68,30 +67,17 @@ In release mode:
         sends sql string, and receives a recordset back to process
         client.c
 
-    subqueries
-        select distinct name from (select * from planets order by name desc);
-        what other subqueries could we use as tests?
-
-        Records are tuples of data
-        A record is the entire tuple of data
-        A tuple is a subset of the record data (could possible be the entire thing too)
-
     ***Big Rewrite***
-    Switch to new B-Tree format: have leaves hold ptrs to data blocks (which can now hold arbitrarily large records, so strings can fit)
-        This allows multiple indexes in the same file more easily since they can all reference same data blocks
-        For now, don't cluster data - just have it appended to currently free data blocks
-        Make indexes work correctly with primary key:
-            where id = 10, id != 10, id < 10, id > 10 
-                How do we optmize cursor postion for these?  Is there a general query plan for all these cases?
-                    Where does the cursor start?
-                    Where does it end?
-                    How many cursors do we need?
+        Make a new directory with new tests:
+            start to copy over tests one at a time to make sure nothing breaks 
+            as we remove references to 'id'
 
-            Since indexing only slows down inserts/updates/deletes, we could insert everything, and then
-                index ALL columns to speed up select queries
-
-        how should multi-column keys work?  Here's one possible syntax:
-            create table planets (id int key, name string, mass int key); //primary key is (id, mass)
+        Rewrite B-Tree so that:
+            user MUST specify key when creating table
+            use that tree to index records
+            leaves now only hold references to data blocks
+            data blocks hold record data (including variable length data)
+            data blocks can now be defragged if enough spac
 
     ***Big feature***
     joins
@@ -100,6 +86,14 @@ In release mode:
         outer joins
 
         will need foreign keys here
+
+    subqueries - seems like this is useful only with multiple tables (foreign keys may be needed too)
+        select distinct name from (select * from planets order by name desc);
+        what other subqueries could we use as tests?
+
+        Records are tuples of data
+        A record is the entire tuple of data
+        A tuple is a subset of the record data (could possible be the entire thing too)
         
     copy stmt
         *this should require the csv to be cleaned, but it'll be faster than parsing and executing SQL for all the inserts

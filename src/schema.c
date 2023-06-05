@@ -5,26 +5,13 @@
 #include "schema.h"
 #include "util.h"
 
-//TODO: should remove this function since we have vdbschema_alloc now
-struct VdbSchema* vdb_schema_alloc(int count, va_list args) {
+
+struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types, int key_idx) {
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
     schema->count = count;
     schema->types = malloc_w(sizeof(enum VdbTokenType) * count);
     schema->names = malloc_w(sizeof(char*) * count);
-
-    for (int i = 0; i < count; i++) {
-        schema->types[i] = va_arg(args, int);
-        schema->names[i] = strdup_w(va_arg(args, const char*));
-    }
-
-    return schema;
-}
-
-struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types) {
-    struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
-    schema->count = count;
-    schema->types = malloc_w(sizeof(enum VdbTokenType) * count);
-    schema->names = malloc_w(sizeof(char*) * count);
+    schema->key_idx = key_idx;
 
     for (int i = 0; i < count; i++) {
         schema->types[i] = types->tokens[i].type;
@@ -51,6 +38,7 @@ struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {
     s->count = schema->count;
     s->types = malloc_w(sizeof(enum VdbTokenType) * s->count);
     s->names = malloc_w(sizeof(char*) * s->count);
+    s->key_idx = schema->key_idx;
 
     memcpy(s->types, schema->types, sizeof(enum VdbTokenType) * s->count);
 
@@ -62,41 +50,54 @@ struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {
 }
 
 void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema) {
-    //TODO: remove these two
-    int i = 0;
-    int* off = &i;
+    int off = 0;
 
-    write_u32(buf, schema->count, off);
+    *((uint32_t*)(buf + off)) = schema->key_idx;
+    off += sizeof(uint32_t);
+
+    *((uint32_t*)(buf + off)) = schema->count;
+    off += sizeof(uint32_t);
+
     for (uint32_t i = 0; i < schema->count; i++) {
-        enum VdbTokenType f = schema->types[i];
-        write_u32(buf, f, off);
-        uint32_t len = strlen(schema->names[i]);
-        write_u32(buf, len, off);
-        memcpy(buf + *off, schema->names[i], len);
-        *off += len;
+        *((uint32_t*)(buf + off)) = (uint32_t)schema->types[i];
+        off += sizeof(uint32_t);
+
+        *((uint32_t*)(buf + off)) = (uint32_t)strlen(schema->names[i]);
+        off += sizeof(uint32_t);
+
+        int len = strlen(schema->names[i]);
+        memcpy(buf + off, schema->names[i], len);
+        off += len;
     }
 }
 
 struct VdbSchema* vdbschema_deserialize(uint8_t* buf) {
-    //TODO: remove these two
-    int i = 0;
-    int* off = &i;
+    int off = 0;
 
     struct VdbSchema* schema = malloc_w(sizeof(struct VdbSchema));
-    read_u32(&schema->count, buf, off);
+
+    schema->key_idx = *((uint32_t*)(buf + off));
+    off += sizeof(uint32_t);
+
+    schema->count = *((uint32_t*)(buf + off));
+    off += sizeof(uint32_t);
+
     schema->types = malloc_w(sizeof(enum VdbTokenType) * schema->count);
     schema->names = malloc_w(sizeof(char*) * schema->count);
+
     for (uint32_t i = 0; i < schema->count; i++) {
-        uint32_t type;
-        read_u32(&type, buf, off);
-        schema->types[i] = type;
-        uint32_t len;
-        read_u32(&len, buf, off);
+        schema->types[i] = *((uint32_t*)(buf + off));
+        off += sizeof(uint32_t);
+
+        int len = *((uint32_t*)(buf + off));
+        off += sizeof(uint32_t);
+
         schema->names[i] = malloc_w(sizeof(char) * len + 1);
-        memcpy(schema->names[i], buf + *off, len);
+        memcpy(schema->names[i], buf + off, len);
         schema->names[i][len] = '\0';
-        *off += len;
+        off += len;
     }
+
     return schema;
 }
 

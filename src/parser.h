@@ -80,6 +80,7 @@ struct VdbStmt {
         struct {
             struct VdbTokenList* attributes;
             struct VdbTokenList* types;
+            int key_idx;
         } create;
         struct {
             struct VdbTokenList* attributes;

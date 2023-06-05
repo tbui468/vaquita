@@ -180,17 +180,6 @@ char* vdb_dbname(VDBHANDLE h) {
     return db->name;
 }
 
-struct VdbSchema* vdb_alloc_schema(int count, ...) {
-    
-    va_list args;
-    va_start(args, count);
-    struct VdbSchema* schema = vdb_schema_alloc(count, args);
-    va_end(args);
-
-    return schema;
-
-}
-
 void vdb_free_schema(struct VdbSchema* schema) {
     vdb_schema_free(schema);
 }
@@ -351,17 +340,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
-
-    //append key to end of values list
-    struct VdbToken key_token;
-    key_token.type = VDBT_INT;
-    char s[64];
-    sprintf(s, "%d", key);
-    key_token.lexeme = s;
-    key_token.len = strlen(s);
-    struct VdbExpr* key_expr = vdbexpr_init_literal(key_token);
-    vdbexprlist_append_expr(values, key_expr);
+//    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
 
     struct VdbValue data[schema->count];
     vdb_assign_column_values(data, schema, cols, values);
@@ -372,64 +351,11 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
 
     vdb_tree_insert_record(tree, rec);
     vdb_record_free(rec);
-    vdbexpr_free(key_expr);
 
     return VDBRC_SUCCESS;
 }
 
 
-/*
-
-bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    return vdbtree_delete_record(tree, key);
-}
-
-void vdb_insert_record(VDBHANDLE h, const char* name, ...) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    va_list args;
-    va_start(args, name);
-
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
-    struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
-    vdb_schema_free(schema);
-
-    va_end(args);
-
-    vdb_tree_insert_record(tree, rec);
-    vdb_record_free(rec);
-}
-
-struct VdbRecord* vdb_fetch_record(VDBHANDLE h, const char* name, uint32_t key) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    return vdb_tree_fetch_record(tree, key);
-}
-
-bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    va_list args;
-    va_start(args, key);
-
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    struct VdbRecord* rec = vdb_record_alloc(key, schema, args);
-    vdb_schema_free(schema);
-
-    va_end(args);
-
-    bool result = vdbtree_update_record(tree, rec);
-    vdb_record_free(rec);
-
-    return result;
-}*/
 
 void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     struct Vdb* db = (struct Vdb*)h;
@@ -457,28 +383,20 @@ void vdbcursor_free(struct VdbCursor* cursor) {
     free_w(cursor, sizeof(struct VdbCursor));
 }
 
-bool vdbcursor_on_final_record(struct VdbCursor* cursor) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    uint32_t highest_key = vdbtree_meta_read_primary_key_counter(tree);
-    return cursor->row_idx >= highest_key;
-}
-
-void vdbcursor_increment(struct VdbCursor* cursor) {
+struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
 
-    if (cursor->cur_rec_idx + 1 >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
-        uint32_t root_idx = vdbtree_meta_read_root(tree);
-        cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, cursor->row_idx + 1);
-        cursor->cur_rec_idx = 0;
-    } else {
-        cursor->cur_rec_idx += 1;
+    if (cursor->cur_node_idx == 0) {
+        return NULL;
     }
-    cursor->row_idx++;
-}
 
-struct VdbRecord* vdbcursor_read_record(struct VdbCursor* cursor) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+
+    cursor->cur_rec_idx++;
+    if (cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
+        cursor->cur_rec_idx = 0;
+        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(tree, cursor->cur_node_idx);
+    }
 
     return rec;
 }
@@ -581,23 +499,6 @@ void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, st
 
     rs->count = limit.as.Int;
 }
-
-/*
-struct VdbIntList* vdbcursor_attrs_to_idxs(struct VdbCursor* cursor, struct VdbExprList* attrs) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-
-    struct VdbIntList* il = vdbintlist_init();
-    for (int i = 0; i < attrs->count; i++) {
-        for (uint32_t j = 0; j < schema->count; j++) {
-            if (strncmp(schema->names[j], attrs->exprs[i]->as.literal.token.lexeme, attrs->exprs[i]->as.literal.token.len) == 0) {
-                vdbintlist_append_int(il, j);
-            }
-        }
-    }
-
-    return il;
-}*/
 
 struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExprList* cols) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);

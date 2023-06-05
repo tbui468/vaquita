@@ -67,7 +67,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_CREATE_TAB: {
                 int count = stmt->as.create.attributes->count;
 
-                struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types);
+                struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types, stmt->as.create.key_idx);
 
                 char* table_name = to_string(stmt->target);
                 if (vdb_create_table(*h, table_name, schema)) {
@@ -179,19 +179,11 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_INSERT: {
                 char* table_name = to_string(stmt->target);
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
-                int attr_count_without_id = stmt->as.insert.attributes->count;
-
-                //inserting 'id' as last column name (inserting id value at end in vdb_insert_new function)
-                struct VdbToken attr_token;
-                attr_token.type = VDBT_IDENTIFIER;
-                attr_token.lexeme = "id";
-                attr_token.len = 2;
-                vdbtokenlist_append_token(stmt->as.insert.attributes, attr_token);
 
                 for (int i = 0; i < rec_count; i++) {
                     struct VdbExprList* el = vdbexprlist_init();
-                    int off = i * attr_count_without_id;
-                    for (int j = off; j < off + attr_count_without_id; j++) {
+                    int off = i * stmt->as.insert.attributes->count;
+                    for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
                         vdbexprlist_append_expr(el, stmt->as.insert.values->exprs[j]);
                     }
                     vdb_insert_new(*h, table_name, stmt->as.insert.attributes, el);
@@ -206,22 +198,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_UPDATE: {
                 char* table_name = to_string(stmt->target);
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
-                while (true) {
-                    struct VdbRecord* rec = vdbcursor_read_record(cursor);
-                    if (rec) {
-                        struct VdbRecordSet* rs = vdbrecordset_init(NULL);
-                        vdbrecordset_append_record(rs, rec);
-                        if (vdbcursor_apply_selection(cursor, rs, stmt->as.update.selection)) {
-                            vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
-                        }
-                            
-                        vdbrecordset_free(rs);
+                struct VdbRecord* rec;
+                while ((rec = vdbcursor_fetch_record(cursor))) {
+                    struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+                    vdbrecordset_append_record(rs, rec);
+                    if (vdbcursor_apply_selection(cursor, rs, stmt->as.update.selection)) {
+                        vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
                     }
-
-                    if (vdbcursor_on_final_record(cursor))
-                        break;
-
-                    vdbcursor_increment(cursor);
+                        
+                    vdbrecordset_free(rs);
                 }
 
                 vdbcursor_free(cursor);
@@ -230,22 +215,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_DELETE: {
                 char* table_name = to_string(stmt->target);
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
-                while (true) {
-                    struct VdbRecord* rec = vdbcursor_read_record(cursor);
-                    if (rec) {
-                        struct VdbRecordSet* rs = vdbrecordset_init(NULL);
-                        vdbrecordset_append_record(rs, rec);
-                        if (vdbcursor_apply_selection(cursor, rs, stmt->as.delete.selection)) {
-                            vdbcursor_delete_record(cursor);
-                        }
-                            
-                        vdbrecordset_free(rs);
+                struct VdbRecord* rec;
+                while ((rec = vdbcursor_fetch_record(cursor))) {
+                    struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+                    vdbrecordset_append_record(rs, rec);
+                    if (vdbcursor_apply_selection(cursor, rs, stmt->as.delete.selection)) {
+                        vdbcursor_delete_record(cursor);
                     }
-
-                    if (vdbcursor_on_final_record(cursor))
-                        break;
-
-                    vdbcursor_increment(cursor);
+                        
+                    vdbrecordset_free(rs);
                 }
 
                 vdbcursor_free(cursor);
@@ -256,48 +234,38 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to beginning of table
 
-                //adding primary key to end of order to break any ties
-                struct VdbToken id_token = {VDBT_IDENTIFIER, "id", 2};
-                vdbexprlist_append_expr(stmt->as.select.ordering, vdbexpr_init_identifier(id_token));
                 struct VdbBinaryTree* bt = vdbbinarytree_init();
-
                 struct VdbHashTable* ht = vdbhashtable_init();
                 struct VdbHashTable* grouping_table = vdbhashtable_init();
 
-                while (true) {
-                    struct VdbRecord* rec = vdbcursor_read_record(cursor);
-                    if (rec) {
-                        struct VdbRecordSet* rs = vdbrecordset_init(NULL);
-                        vdbrecordset_append_record(rs, rec);
-                        if (stmt->as.select.grouping->count == 0) {
-                            if (vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
-                                if (stmt->as.select.distinct) {
-                                    struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
-                                    if (!vdbhashtable_contains_key(ht, key)) {
-                                        vdbhashtable_insert_entry(ht, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
-                                        rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
-                                        vdbbinarytree_insert_node(bt, rs);
-                                    }
-                                } else {
+                struct VdbRecord* rec;
+
+                while ((rec = vdbcursor_fetch_record(cursor))) {
+                    struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+                    vdbrecordset_append_record(rs, rec);
+                    if (stmt->as.select.grouping->count == 0) {
+                        if (vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
+                            if (stmt->as.select.distinct) {
+                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
+                                if (!vdbhashtable_contains_key(ht, key)) {
+                                    vdbhashtable_insert_entry(ht, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
                                     rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
-                                    //single record in record set - probably not the most efficient, but it works for now
                                     vdbbinarytree_insert_node(bt, rs);
                                 }
                             } else {
-                                vdbrecordset_free(rs);
+                                rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
+                                //single record in record set - probably not the most efficient, but it works for now
+                                vdbbinarytree_insert_node(bt, rs);
                             }
                         } else {
-                            //not applying selection if 'group by' is used
-                            //will apply 'having' clause later after aggregates can be applied to entire group
-                            struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.grouping);
-                            vdbhashtable_insert_entry(grouping_table, key, rec);
+                            vdbrecordset_free(rs);
                         }
+                    } else {
+                        //not applying selection if 'group by' is used
+                        //will apply 'having' clause later after aggregates can be applied to entire group
+                        struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.grouping);
+                        vdbhashtable_insert_entry(grouping_table, key, rec);
                     }
-
-                    if (vdbcursor_on_final_record(cursor))
-                        break;
-
-                    vdbcursor_increment(cursor);
                 }
 
                 //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)

@@ -39,10 +39,12 @@ bool vdbnode_intern_can_fit_ptr(uint8_t* buf);
 uint32_t vdbnode_leaf_read_data_block(uint8_t* buf);
 uint32_t vdbnode_leaf_read_record_count(uint8_t* buf);
 uint32_t vdbnode_leaf_read_datacells_size(uint8_t* buf);
+uint32_t vdbleaf_read_next_leaf(uint8_t* buf);
 
 void vdbnode_leaf_write_data_block(uint8_t* buf, uint32_t data_idx);
 void vdbnode_leaf_write_record_count(uint8_t* buf, uint32_t count);
 void vdbnode_leaf_write_datacells_size(uint8_t* buf, uint32_t size);
+void vdbleaf_write_next_leaf(uint8_t* buf, uint32_t next_idx);
 
 uint8_t* vdbleaf_get_record_ptr(uint8_t* buf, uint32_t rec_idx);
 uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);

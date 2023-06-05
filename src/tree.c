@@ -226,6 +226,7 @@ static uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
     vdbnode_leaf_write_data_block(page->buf, 0);
     vdbnode_leaf_write_record_count(page->buf, 0);
     vdbnode_leaf_write_datacells_size(page->buf, 0);
+    vdbleaf_write_next_leaf(page->buf, 0);
 
     vdb_pager_unpin_page(page);
 
@@ -380,7 +381,7 @@ uint32_t vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx, uint32
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     uint8_t* ptr = vdbleaf_get_record_ptr(page->buf, rec_idx);
-    struct VdbValue v = vdbrecord_read_value_at_idx(ptr, schema, 0);
+    struct VdbValue v = vdbrecord_read_value_at_idx(ptr, schema, schema->key_idx);
     assert(v.type == VDBT_TYPE_INT);
     uint32_t key = v.as.Int;
 
@@ -512,9 +513,22 @@ static uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, uint32_t 
     struct VdbPtr new_right = {new_leaf, new_right_key};
     vdbtree_intern_write_right_ptr(tree, parent, new_right);
 
+    vdbleaf_write_next_leaf(page->buf, new_leaf);
+    page->dirty = true;
+
     vdb_pager_unpin_page(page);
 
     return new_leaf;
+}
+
+uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx) {
+    assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
+    uint32_t next_leaf_idx = vdbleaf_read_next_leaf(page->buf);
+
+    vdb_pager_unpin_page(page);
+
+    return next_leaf_idx;
 }
 
 void vdbtree_leaf_write_record_key(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, uint32_t key) {
@@ -669,7 +683,8 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
     assert(rec->data[0].type == VDBT_TYPE_INT);
-    uint32_t key = rec->data[0].as.Int;
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    uint32_t key = rec->data[schema->key_idx].as.Int;
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
 
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx)) {
@@ -677,26 +692,9 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     }
 
     vdbtree_leaf_append_record(tree, leaf_idx, rec);
+    vdb_schema_free(schema);
 }
 
-struct VdbRecord* vdb_tree_fetch_record(struct VdbTree* tree, uint32_t key) {
-    if (key > vdbtree_meta_read_primary_key_counter(tree) || key < 1) {
-        return NULL;
-    }
-
-    uint32_t root_idx = vdbtree_meta_read_root(tree);
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
-
-    //TODO: switch from linear to binary search
-    for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
-        uint32_t cur_key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
-        if (cur_key == key) {
-            return vdbtree_leaf_read_record(tree, leaf_idx, i);
-        }
-    }
-
-    return NULL;
-}
 
 void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
@@ -718,52 +716,6 @@ void vdbtree_leaf_free_varlen_data(struct VdbTree* tree, struct VdbRecord* rec) 
     }
 }
 
-/*
-bool vdbtree_delete_record(struct VdbTree* tree, uint32_t key) {
-    if (key > vdbtree_meta_read_primary_key_counter(tree)) {
-        return false;
-    }
-
-    uint32_t root_idx = vdbtree_meta_read_root(tree);
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
-
-    //TODO: switch from linear to binary search
-    for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
-        uint32_t cur_key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
-        if (cur_key == key) {
-            struct VdbRecord* rec = vdbtree_leaf_read_record(tree, leaf_idx, i);
-            vdbtree_leaf_free_varlen_data(tree, rec);
-            vdbtree_leaf_write_record_key(tree, leaf_idx, i, 0);
-            vdb_record_free(rec);
-            return true;
-        }
-    }
-
-    return false;
-}*/
-
-bool vdbtree_update_record(struct VdbTree* tree, struct VdbRecord* rec) {
-    if (rec->data[0].as.Int > vdbtree_meta_read_primary_key_counter(tree)) {
-        return false;
-    }
-
-    uint32_t root_idx = vdbtree_meta_read_root(tree);
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, rec->data[0].as.Int);
-
-    //TODO: switch from linear to binary search
-    for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
-        uint32_t cur_key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
-        if (cur_key == rec->data[0].as.Int) {
-            struct VdbRecord* old_rec = vdbtree_leaf_read_record(tree, leaf_idx, i);
-            vdbtree_leaf_free_varlen_data(tree, old_rec);
-            vdb_record_free(old_rec);
-            vdbtree_leaf_write_record(tree, leaf_idx, i, rec);
-            return true;
-        }
-    }
-
-    return false;
-}
 
 struct VdbTreeList* vdb_treelist_init() {
     struct VdbTreeList* tl = malloc_w(sizeof(struct VdbTreeList));

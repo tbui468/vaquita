@@ -3,6 +3,7 @@ create database sol;
 open sol;
 
 create table planets (
+                        id int key,
                         name string, 
                         mass float, 
                         number_of_moons int,
@@ -11,6 +12,7 @@ create table planets (
                     );
 
 insert into planets (
+                        id,
                         name, 
                         mass, 
                         number_of_moons, 
@@ -19,9 +21,9 @@ insert into planets (
                     ) 
 
 values
-        ("Venus", 4.87, 0, 92.0, false),
-        ("Earth", 5.97, 1, 1.0, false),
-        ("Mars", 0.642, 2, 0.01, false);
+        (1, "Venus", 4.87, 0, 92.0, false),
+        (2, "Earth", 5.97, 1, 1.0, false),
+        (3, "Mars", 0.642, 2, 0.01, false);
 
 delete from planets;
 select * from planets;

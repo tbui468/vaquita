@@ -3,6 +3,7 @@ create database sol;
 open sol;
 
 create table planets (
+                        id int key,
                         name string, 
                         mass float, 
                         moons int,
@@ -10,6 +11,7 @@ create table planets (
                     );
 
 insert into planets (
+                        id,
                         name, 
                         mass, 
                         moons,
@@ -17,10 +19,10 @@ insert into planets (
                     ) 
 
 values
-        ("Venus", 2.32, 0, false),
-        ("Earth", 5.0, 1, true),
-        ("Mars", 4.23, 2, true),
-        ("Saturn", 3.23, 2, true);
+        (1, "Venus", 2.32, 0, false),
+        (2, "Earth", 5.0, 1, true),
+        (3, "Mars", 4.23, 2, true),
+        (4, "Saturn", 3.23, 2, true);
 
 select ring_system, min(mass) from planets group by ring_system having min(mass) < 3.0;
 select ring_system, min(mass) from planets group by ring_system having min(mass) > 3.0;

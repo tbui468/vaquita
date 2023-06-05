@@ -68,8 +68,6 @@ In release mode:
         client.c
 
     ***Big Rewrite***
-        Fix tests so that they require explicity field for id: id int key <---------START HERE
-
         Rewrite B-Tree so that:
             Any data type can be used as keys (string, int, (float as a key is stupid, but allow it), bool)
             leaves now only hold references to data blocks

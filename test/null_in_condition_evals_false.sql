@@ -3,6 +3,7 @@ create database sol;
 open sol;
 
 create table planets (
+                        id int key,
                         name string, 
                         mass float, 
                         moons int,
@@ -10,6 +11,7 @@ create table planets (
                     );
 
 insert into planets (
+                        id,
                         name, 
                         mass, 
                         moons, 
@@ -17,9 +19,9 @@ insert into planets (
                     ) 
 
 values
-        ("Venus", 10.0, 1, true),
-        ("Earth", null, null, null),
-        ("Mars", 0.0, 2, false);
+        (1, "Venus", 10.0, 1, true),
+        (2, "Earth", null, null, null),
+        (3, "Mars", 0.0, 2, false);
 
 select name from planets where mass > 5.0;
 select name from planets where moons = 1;

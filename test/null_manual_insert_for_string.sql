@@ -1,8 +1,8 @@
 create database sol;
 open sol;
 
-create table planets (name string, rings bool);
-insert into planets (name, rings) values (null, false);
+create table planets (id int key, name string, rings bool);
+insert into planets (id, name, rings) values (1, null, false);
 select * from planets;
 
 close sol;

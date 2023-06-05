@@ -1,7 +1,7 @@
 create database sol;
 open sol;
 
-create table planets (name string, moons int, gravity float, atmosphere bool);
+create table planets (id int key, name string, moons int, gravity float, atmosphere bool);
 drop table planets;
 
 close sol;

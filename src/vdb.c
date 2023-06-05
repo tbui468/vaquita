@@ -364,16 +364,22 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     vdbtree_print(tree);
 }
 
-struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t row) {
+struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
     cursor->db = (struct Vdb*)h;
     cursor->table_name = strdup_w(table_name);
 
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, table_name);
     uint32_t root_idx = vdbtree_meta_read_root(tree);
-    cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, row);
+    cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, key);
     cursor->cur_rec_idx = 0;
-    cursor->row_idx = row;
+    cursor->prev_node_idx = cursor->cur_node_idx;
+    cursor->prev_rec_idx = cursor->cur_rec_idx;
+
+    while (vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) < key) {
+        cursor->prev_rec_idx = cursor->cur_rec_idx;
+        cursor->cur_rec_idx++;
+    }
 
     return cursor;
 }
@@ -392,21 +398,23 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
+    cursor->prev_rec_idx = cursor->cur_rec_idx;
     cursor->cur_rec_idx++;
     if (cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
         cursor->cur_rec_idx = 0;
+        cursor->prev_node_idx = cursor->cur_node_idx;
         cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(tree, cursor->cur_node_idx);
     }
 
     return rec;
 }
 
-void vdbcursor_delete_record(struct VdbCursor* cursor) {
+void vdbcursor_delete_prev_record(struct VdbCursor* cursor) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    vdbtree_leaf_delete_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+    vdbtree_leaf_delete_record(tree, cursor->prev_node_idx, cursor->prev_rec_idx);
 }
 
-void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values) {
+void vdbcursor_update_prev_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     struct VdbValueList* vl = vdbvaluelist_init();
 
@@ -415,7 +423,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
         vdbvaluelist_append_value(vl, v);
     }
 
-    vdbtree_leaf_update_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx, attributes, vl);
+    vdbtree_leaf_update_record(tree, cursor->prev_node_idx, cursor->prev_rec_idx, attributes, vl);
 
     vdbvaluelist_free(vl);
 }

@@ -26,7 +26,8 @@ struct VdbCursor {
     char* table_name;
     uint32_t cur_node_idx;
     uint32_t cur_rec_idx;
-    uint32_t row_idx;
+    uint32_t prev_node_idx;
+    uint32_t prev_rec_idx;
 };
 
 struct Vdb* vdb_init();
@@ -59,8 +60,8 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name);
 struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key);
 void vdbcursor_free(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor);
-void vdbcursor_delete_record(struct VdbCursor* cursor);
-void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values);
+void vdbcursor_delete_prev_record(struct VdbCursor* cursor);
+void vdbcursor_update_prev_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values);
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* selection);
 struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbExprList* projection, bool aggregate);

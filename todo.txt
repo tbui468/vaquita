@@ -68,16 +68,14 @@ In release mode:
         client.c
 
     ***Big Rewrite***
-        Make a new directory with new tests:
-            start to copy over tests one at a time to make sure nothing breaks 
-            as we remove references to 'id'
+        Fix tests so that they require explicity field for id: id int key <---------START HERE
 
         Rewrite B-Tree so that:
-            user MUST specify key when creating table
-            use that tree to index records
+            Any data type can be used as keys (string, int, (float as a key is stupid, but allow it), bool)
             leaves now only hold references to data blocks
             data blocks hold record data (including variable length data)
             data blocks can now be defragged if enough spac
+            Need to be able to index by cartesian coordinates (x, y, z) so tha star app works
 
     ***Big feature***
     joins

@@ -197,13 +197,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_UPDATE: {
                 char* table_name = to_string(stmt->target);
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 0); //cursor to begining of table
                 struct VdbRecord* rec;
                 while ((rec = vdbcursor_fetch_record(cursor))) {
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
                     if (vdbcursor_apply_selection(cursor, rs, stmt->as.update.selection)) {
-                        vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
+                        vdbcursor_update_prev_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
                     }
                         
                     vdbrecordset_free(rs);
@@ -214,13 +214,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_DELETE: {
                 char* table_name = to_string(stmt->target);
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to begining of table
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 0); //cursor to begining of table
                 struct VdbRecord* rec;
                 while ((rec = vdbcursor_fetch_record(cursor))) {
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
                     if (vdbcursor_apply_selection(cursor, rs, stmt->as.delete.selection)) {
-                        vdbcursor_delete_record(cursor);
+                        vdbcursor_delete_prev_record(cursor);
                     }
                         
                     vdbrecordset_free(rs);
@@ -232,7 +232,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_SELECT: {
                 char* table_name = to_string(stmt->target);
 
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 1); //cursor to beginning of table
+                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 0); //cursor to beginning of table
 
                 struct VdbBinaryTree* bt = vdbbinarytree_init();
                 struct VdbHashTable* ht = vdbhashtable_init();

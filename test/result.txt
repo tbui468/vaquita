@@ -1,0 +1,1 @@
+error [1]: 'create table' requires exactly one 'key' constraint

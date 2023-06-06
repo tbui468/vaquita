@@ -58,22 +58,20 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    server
-        open port to listen for connections
-        server.c listens for connections and processes requests
+    Split execution code into own vm.c file
 
-    client
-        header file that other programs can include
-        sends sql string, and receives a recordset back to process
-        client.c
+    Priority: connect to star view client
+        server
+            open port to listen for connections
+            server.c listens for connections and processes requests
 
-    Refactor node.h/c to use same function to access pointer to fields for writing/reading
-        refactor data nodes and common node functions
-        could the same refactor be used for tree functions (reading / writing)?
-            the only real difference is that pages need to be marked dirty if writing
-            but vdb and cursor don't have access to the page - but it should.
-            tree currently has access to the pager, but it should belong to vdb (since we can have multiple cursors)
-            Then vdb can use page + tree (any index) to get page, perform operation and then mark page as dirty
+        client
+            header file that other programs can include
+            sends sql string, and receives a recordset back to process
+            client.c
+
+    Insertions with out-of-order keys doesn't order them properly in B-Tree
+        should fixed this soon too, otherwise indexing is pointless
 
     Rewrite tree like this:
         Meta block holds a ptr to first data block

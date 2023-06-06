@@ -6,7 +6,7 @@ RED = '\033[31m'
 ENDC = '\033[0m'
 
 def test(filename):
-    cmd = "./../build/src/vdb ./" + filename + ".sql"
+    cmd = "./../server/build/src/vdb ./" + filename + ".sql"
     #cmd += " > /dev/null"
     cmd += " > result.txt"
 

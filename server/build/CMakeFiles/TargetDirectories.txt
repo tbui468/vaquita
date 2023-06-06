@@ -1,0 +1,5 @@
+/home/thomas/vaquita/server/build/CMakeFiles/rebuild_cache.dir
+/home/thomas/vaquita/server/build/CMakeFiles/edit_cache.dir
+/home/thomas/vaquita/server/build/src/CMakeFiles/rebuild_cache.dir
+/home/thomas/vaquita/server/build/src/CMakeFiles/edit_cache.dir
+/home/thomas/vaquita/server/build/src/CMakeFiles/vdb.dir

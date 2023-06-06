@@ -804,6 +804,9 @@ void vdbexpr_free(struct VdbExpr* expr) {
         case VDBET_IS_NOT_NULL:
             vdbexpr_free(expr->as.is_not_null.left);
             break;
+        case VDBET_CALL:
+            vdbexpr_free(expr->as.call.arg);
+            break;
         default:
             assert(false && "expr type not freed");
             break;

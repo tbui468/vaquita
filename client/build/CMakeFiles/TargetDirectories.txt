@@ -1,0 +1,5 @@
+/home/thomas/vaquita/client/build/CMakeFiles/rebuild_cache.dir
+/home/thomas/vaquita/client/build/CMakeFiles/edit_cache.dir
+/home/thomas/vaquita/client/build/src/CMakeFiles/rebuild_cache.dir
+/home/thomas/vaquita/client/build/src/CMakeFiles/edit_cache.dir
+/home/thomas/vaquita/client/build/src/CMakeFiles/vdbclient.dir

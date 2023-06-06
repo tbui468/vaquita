@@ -3,11 +3,125 @@
 #include <string.h>
 #include <stdlib.h>
 
+//network includes
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <errno.h>
+
+#define PORT "3333"
+#define BACKLOG 10
+//end network stuff
+
 #include "vdb.h"
 #include "lexer.h"
 #include "parser.h"
 #include "vm.h"
 
+void sigchld_handler(int s) {
+    s = s; //silence warning
+
+    int saved_errno = errno;
+
+    while (waitpid(-1, NULL, WNOHANG) > 0);
+
+    errno = saved_errno;
+}
+
+void* get_in_addr(struct sockaddr* sa) {
+    //ipv4
+    if (sa->sa_family == AF_INET) {
+        return &(((struct sockaddr_in*)sa)->sin_addr);
+    } 
+
+    //ipv6
+    return &(((struct sockaddr_in6*)sa)->sin6_addr);
+}
+
+int serve() {
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE; //use local ip address
+
+    struct addrinfo* servinfo;
+    if (getaddrinfo(NULL, PORT, &hints, &servinfo) != 0) {
+        return 1;
+    }
+
+    //loop through results for getaddrinfo and bind to first one we can
+    struct addrinfo* p;
+    int sockfd;
+    int yes = 1;
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+            continue;
+
+        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+            exit(1);
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            continue;
+        }
+
+        break;
+    }
+
+    freeaddrinfo(servinfo);
+
+    //failed to bind
+    if (p == NULL) {
+        exit(1);
+    }
+
+    if (listen(sockfd, BACKLOG) == -1) {
+        exit(1);
+    }
+
+    struct sigaction sa;
+    sa.sa_handler = sigchld_handler;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_RESTART;
+    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
+        exit(1);
+    }
+
+    //main accept loop
+    socklen_t sin_size;
+    struct sockaddr_storage their_addr;
+    int new_fd;
+    char s[INET6_ADDRSTRLEN];
+
+    while (true) {
+        sin_size = sizeof(struct sockaddr_storage);
+        new_fd = accept(sockfd, (struct sockaddr*)&their_addr, &sin_size);
+        if (new_fd == -1)
+            continue;
+
+        //inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr*)&their_addr), s, sizeof(s));
+
+        if (!fork()) {
+            //this is child process
+            close(sockfd); //child doesn't need listener
+            if (send(new_fd, "Hello, world!\n", 14, 0) == -1) {
+                //deal with error
+            }
+            close(new_fd);
+            exit(0);
+        }
+
+        //parent doesn't need this
+        close(new_fd);
+    } 
+
+    return 0;
+}
 
 void run_cli() {
     char* line = NULL; //not including this in memory allocation tracker
@@ -137,7 +251,8 @@ int main(int argc, char** argv) {
 //        printf("allocated memory: %ld\n", allocated_memory);
         return result;
     } else {
-        run_cli();
+        serve();
+        //run_cli();
     }
 
 

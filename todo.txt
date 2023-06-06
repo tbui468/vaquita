@@ -58,8 +58,6 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Split execution code into own vm.c file
-
     Priority: connect to star view client
         server
             open port to listen for connections
@@ -69,6 +67,8 @@ In release mode:
             header file that other programs can include
             sends sql string, and receives a recordset back to process
             client.c
+            Beej's website has a link where someone else wrote a windows version
+                will need this version if we want to use it in sdl_game
 
     Insertions with out-of-order keys doesn't order them properly in B-Tree
         should fixed this soon too, otherwise indexing is pointless

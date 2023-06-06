@@ -67,8 +67,13 @@ In release mode:
         sends sql string, and receives a recordset back to process
         client.c
 
-    Refactor node.h/c to use same function to access pointer to fields
+    Refactor node.h/c to use same function to access pointer to fields for writing/reading
         refactor data nodes and common node functions
+        could the same refactor be used for tree functions (reading / writing)?
+            the only real difference is that pages need to be marked dirty if writing
+            but vdb and cursor don't have access to the page - but it should.
+            tree currently has access to the pager, but it should belong to vdb (since we can have multiple cursors)
+            Then vdb can use page + tree (any index) to get page, perform operation and then mark page as dirty
 
     Rewrite tree like this:
         Meta block holds a ptr to first data block

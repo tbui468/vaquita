@@ -43,23 +43,20 @@ uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);
 
 //data node
 void vdbdata_init(uint8_t* buf, uint32_t parent_idx);
-uint32_t vdbdata_read_next(uint8_t* buf);
-uint32_t vdbdata_read_idx_count(uint8_t* buf);
-uint32_t vdbdata_get_free_space(uint8_t* buf);
-uint8_t* vdbdata_get_varlen_value_ptr(uint8_t* buf, uint32_t idxcell_idx);
+uint32_t* vdbdata_next_ptr(uint8_t* buf);
+uint32_t* vdbdata_idx_count_ptr(uint8_t* buf);
 
-void vdbdata_write_next(uint8_t* buf, uint32_t next_idx);
-void vdbdata_write_idx_count(uint8_t* buf, uint32_t count);
+uint32_t vdbdata_get_free_space(uint8_t* buf);
+uint8_t* vdbdata_datacell_ptr(uint8_t* buf, uint32_t idxcell_idx);
+
 uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_len, uint32_t* allocated_len);
-uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
+uint8_t* vdbdata_string_ptr(uint8_t* buf, uint32_t idxcell_idx);
 void vdbdata_free_cells(uint8_t* buf, uint32_t idxcell_idx, uint32_t* overflow_block_idx, uint32_t* overflow_idxcell_idx);
 void vdbdata_data_write_overflow(uint8_t* buf, uint32_t idxcell_idx, uint32_t of_block_idx, uint32_t of_idxcell_idx);
 
 
-//other
-enum VdbNodeType vdbnode_read_type(uint8_t* buf);
-void vdbnode_write_type(uint8_t* buf, enum VdbNodeType type);
-uint32_t vdbnode_read_parent(uint8_t* buf);
-void vdbnode_write_parent(uint8_t* buf, uint32_t parent);
+//shared node functions
+enum VdbNodeType* vdbnode_type(uint8_t* buf);
+uint32_t* vdbnode_parent(uint8_t* buf);
 
 #endif //VDB_NODE_H

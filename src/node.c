@@ -148,31 +148,40 @@ static uint32_t vdbdata_datacell_header_size(void) {
     return sizeof(uint32_t) * 3;
 }
 
-static uint32_t vdbdata_read_datacells_size(uint8_t* buf) {
-    return *((uint32_t*)(buf + sizeof(uint32_t) * 4));
+uint32_t* vdbdata_next_ptr(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
 }
 
-static void vdbdata_write_datacells_size(uint8_t* buf, uint32_t size) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = size;
+uint32_t* vdbdata_idx_count_ptr(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
 }
 
-uint32_t vdbdata_read_next(uint8_t* buf) {
-    return *((uint32_t*)(buf + sizeof(uint32_t) * 2));
+static uint32_t* vdbdata_datacells_size_ptr(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
 }
 
-uint32_t vdbdata_read_idx_count(uint8_t* buf) {
-    return *((uint32_t*)(buf + sizeof(uint32_t) * 3));
+static uint32_t* vdbdata_idxcell_freelist_ptr(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 5);
 }
 
-uint8_t* vdbdata_get_varlen_value_ptr(uint8_t* buf, uint32_t idxcell_idx) {
+static uint32_t* vdbdata_datacell_freelist_ptr(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 6);
+}
+
+static uint32_t* vdbdata_idxcell_ptr(uint8_t* buf, uint32_t idx) {
+    return (uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t));
+}
+
+uint8_t* vdbdata_datacell_ptr(uint8_t* buf, uint32_t idxcell_idx) {
     uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t)));
 
     return buf + off;
 }
 
 static void vdbdata_defrag(uint8_t* buf) {
-    uint32_t free_data_off = *((uint32_t*)(buf + sizeof(uint32_t) * 6));
-    *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = 0;
+    uint32_t free_data_off = *vdbdata_datacell_freelist_ptr(buf);
+    *vdbdata_datacell_freelist_ptr(buf) = 0;
+
     while (free_data_off) {
         //caching free_data_off to use in the rest of loop since its
         //values will be overwritten when shifting right with memmove
@@ -182,56 +191,47 @@ static void vdbdata_defrag(uint8_t* buf) {
         uint32_t datum_size = *((uint32_t*)(buf + cached_free_data_off + sizeof(uint32_t) * 2));
         uint32_t right_shift_size = vdbdata_datacell_header_size() + datum_size;
 
-        uint32_t start_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * vdbdata_read_idx_count(buf);
+        uint32_t start_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * *vdbdata_idx_count_ptr(buf);
         uint8_t* src = buf + start_off;
         assert(cached_free_data_off >= start_off);
         memmove(src + right_shift_size, src, cached_free_data_off - start_off);
 
         //if idxcells refer to any offset that was shifted right, increment those idxcell values to realign
-        uint32_t end_of_idxcells = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * vdbdata_read_idx_count(buf);
-        for (uint32_t i = 0; i < vdbdata_read_idx_count(buf); i++) {
-            uint32_t off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * i));
+        uint32_t end_of_idxcells = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * *vdbdata_idx_count_ptr(buf);
+        for (uint32_t i = 0; i < *vdbdata_idx_count_ptr(buf); i++) {
+            uint32_t off = *vdbdata_idxcell_ptr(buf, i);
             if (end_of_idxcells <= off && off < cached_free_data_off) {
-                *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * i)) += right_shift_size;
+                *vdbdata_idxcell_ptr(buf, i) += right_shift_size;
             }
         }
 
         //idxcells can be reused but not freed, so don't modify idxcells_count field
-        uint32_t prev_datacells_size = vdbdata_read_datacells_size(buf);
-        vdbdata_write_datacells_size(buf, prev_datacells_size - right_shift_size);
+        uint32_t prev_datacells_size = *vdbdata_datacells_size_ptr(buf);
+        *vdbdata_datacells_size_ptr(buf) = prev_datacells_size - right_shift_size;
     }
 }
 
 uint32_t vdbdata_get_free_space(uint8_t* buf) {
     vdbdata_defrag(buf);
     //TODO: split this line into multiple lines
-    return VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - vdbdata_read_datacells_size(buf) - vdbdata_datacell_header_size() - vdbdata_read_idx_count(buf) * sizeof(uint32_t);
-}
-
-void vdbdata_write_next(uint8_t* buf, uint32_t next_idx) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 2)) = next_idx;
-}
-
-void vdbdata_write_idx_count(uint8_t* buf, uint32_t count) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 3)) = count;
+    return VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - *vdbdata_datacells_size_ptr(buf) - vdbdata_datacell_header_size() - *vdbdata_idx_count_ptr(buf) * sizeof(uint32_t);
 }
 
 uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_len, uint32_t* allocated_len) {
 
-    //get free idxcell - either reuse an existing free one or allocate new one
     uint32_t free = vdbdata_get_free_space(buf);
-    uint32_t idxcell_off = *((uint32_t*)(buf + sizeof(uint32_t) * 5));
+    uint32_t idxcell_off = *vdbdata_idxcell_freelist_ptr(buf);
     uint32_t idxcell_idx;
     if (idxcell_off > 0) { //reuse unused idxcell
         idxcell_idx = (idxcell_off - VDB_PAGE_HDR_SIZE) / sizeof(uint32_t);
-        *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = *((uint32_t*)(buf + idxcell_off));
+        *vdbdata_idxcell_freelist_ptr(buf) = *((uint32_t*)(buf + idxcell_off));
     } else { //create new idxcell
-        idxcell_idx = vdbdata_read_idx_count(buf);
+        idxcell_idx = *vdbdata_idx_count_ptr(buf);
         free -= sizeof(uint32_t);
-        vdbdata_write_idx_count(buf, idxcell_idx + 1);
+        *vdbdata_idx_count_ptr(buf) = idxcell_idx + 1;
     }
 
-    uint32_t datacells_size = vdbdata_read_datacells_size(buf);
+    uint32_t datacells_size = *vdbdata_datacells_size_ptr(buf);
     uint32_t header_size = vdbdata_datacell_header_size();
 
     uint32_t can_fit = free < requested_len ? free : requested_len;
@@ -243,15 +243,15 @@ uint32_t vdbdata_allocate_new_string_space(uint8_t* buf, uint32_t requested_len,
 
     *allocated_len = can_fit;
 
-    vdbdata_write_datacells_size(buf, datacells_size + header_size + can_fit);
+    *vdbdata_datacells_size_ptr(buf) = datacells_size + header_size + can_fit;
 
-    *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = off;
+    *vdbdata_idxcell_ptr(buf, idxcell_idx) = off;
 
     return idxcell_idx;
 }
 
-uint8_t* vdbdata_get_string_ptr(uint8_t* buf, uint32_t idxcell_idx) {
-    uint32_t data_off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t)));
+uint8_t* vdbdata_string_ptr(uint8_t* buf, uint32_t idxcell_idx) {
+    uint32_t data_off = *vdbdata_idxcell_ptr(buf, idxcell_idx);
     data_off += sizeof(uint32_t) * 3; //skip overflow block_idx, overflow idxcell_idx and size
     return buf + data_off;
 }
@@ -264,19 +264,16 @@ void vdbdata_free_cells(uint8_t* buf, uint32_t idxcell_idx, uint32_t* overflow_b
     *overflow_block_idx = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0));
     *overflow_idxcell_idx = *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 1));
 
-    //put idxcell at head of idxcell freelist
-    uint32_t idxcell_freelist_head = *((uint32_t*)(buf + sizeof(uint32_t) * 5));
-    *((uint32_t*)(buf + idxcell_off)) = idxcell_freelist_head;
-    *((uint32_t*)(buf + sizeof(uint32_t) * 5)) = idxcell_off;
+    //insert freed cells into freelists
+    *((uint32_t*)(buf + idxcell_off)) = *vdbdata_idxcell_freelist_ptr(buf);
+    *vdbdata_idxcell_freelist_ptr(buf) = idxcell_off;
 
-    //put datacell into datacell freelist
-    uint32_t datacell_freelist_head = *((uint32_t*)(buf + sizeof(uint32_t) * 6));
-    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = datacell_freelist_head;
-    *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = datacell_off;
+    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = *vdbdata_datacell_freelist_ptr(buf);
+    *vdbdata_datacell_freelist_ptr(buf) = datacell_off;
 }
 
 void vdbdata_data_write_overflow(uint8_t* buf, uint32_t idxcell_idx, uint32_t of_block_idx, uint32_t of_idxcell_idx) {
-    uint32_t data_off = *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * idxcell_idx));
+    uint32_t data_off = *vdbdata_idxcell_ptr(buf, idxcell_idx);
 
     *((uint32_t*)(buf + data_off + sizeof(uint32_t) * 0)) = of_block_idx;
     *((uint32_t*)(buf + data_off + sizeof(uint32_t) * 1)) = of_idxcell_idx;
@@ -284,21 +281,14 @@ void vdbdata_data_write_overflow(uint8_t* buf, uint32_t idxcell_idx, uint32_t of
 
 
 /*
- * Other functions
+ * Shared node functions
  */
-enum VdbNodeType vdbnode_read_type(uint8_t* buf) {
-    return *((uint32_t*)(buf)); 
+enum VdbNodeType* vdbnode_type(uint8_t* buf) {
+    return (enum VdbNodeType*)(buf);
 }
 
-void vdbnode_write_type(uint8_t* buf, enum VdbNodeType type) {
-    *((uint32_t*)(buf)) = (uint32_t)type;
+uint32_t* vdbnode_parent(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t));
 }
 
-uint32_t vdbnode_read_parent(uint8_t* buf) {
-    return *((uint32_t*)(buf + sizeof(uint32_t)));
-}
-
-void vdbnode_write_parent(uint8_t* buf, uint32_t parent) {
-    *((uint32_t*)(buf + sizeof(uint32_t))) = parent;
-}
 

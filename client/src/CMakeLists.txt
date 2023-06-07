@@ -1,6 +1,5 @@
 set(Sources
     main.c
-    client.c
     )
 
 set(Headers

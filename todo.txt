@@ -58,6 +58,12 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
+    Change client api to use an opaque handle
+        this will also make it easier to hide WIN32 stuff inside the implementation using preprocessor ifdef else endif
+
+    Server should not require opaque handle anymore since user doesn't have direct access
+        anymore
+
     Client functionality
         Opening multiple clients does NOT update database properly
             Each node is opening its own database handle with its own pager

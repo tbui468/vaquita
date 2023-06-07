@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include "client.h"
 
+#include "client.h"
 
 char* load_file(const char* path) {
     FILE* f = fopen(path, "r");
@@ -21,23 +21,18 @@ char* load_file(const char* path) {
 }
 
 int main(int argc, char** argv) {
+    VDBHANDLE h = vdbclient_connect("localhost", "3333");
+    char buf[MAXDATASIZE];
+
     if (argc > 1) {
-        int sockfd = connect_to_server("localhost", "3333");
-
-        char buf[MAXDATASIZE];
-
         char* queries = load_file(argv[1]);
 
-        send_request(sockfd, queries, buf);
+        vdbclient_execute_query(h, queries, buf);
         printf("%s", buf);
 
         free(queries);
 
-        disconnect_from_server(sockfd);
     } else if (argc == 1) {
-        int sockfd = connect_to_server("localhost", "3333");
-        char buf[MAXDATASIZE];
-
         char* line = NULL; //not including this in memory allocation tracker
         size_t len = 0;
         ssize_t nread;
@@ -49,7 +44,7 @@ int main(int argc, char** argv) {
                 break;
             line[strlen(line) - 1] = '\0'; //get rid of newline
 
-            send_request(sockfd, line, buf); //this needs to loop
+            vdbclient_execute_query(h, line, buf); //this needs to loop
             if (strncmp(buf, "disconnecting", strlen("disconnecting")) == 0) {
                 break;
             }
@@ -58,10 +53,9 @@ int main(int argc, char** argv) {
 
         free(line);
 
-        disconnect_from_server(sockfd);
     }
 
-
+    vdbclient_disconnect(h);
 
     return 0;
 }

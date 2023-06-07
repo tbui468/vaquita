@@ -22,6 +22,50 @@
 #include "parser.h"
 #include "vm.h"
 
+bool execute_query(VDBHANDLE* h, char* query) {
+    struct VdbTokenList* tokens;
+    struct VdbErrorList* lex_errors;
+
+    if (vdblexer_lex(query, &tokens, &lex_errors) == VDBRC_ERROR) {
+        for (int i = 0; i < 1; i++) {
+            struct VdbError e = lex_errors->errors[i];
+            printf("error [%d]: %s\n", e.line, e.msg);
+        }
+        vdbtokenlist_free(tokens);
+        vdberrorlist_free(lex_errors);
+        return true;
+    }
+
+    struct VdbStmtList* stmts;
+    struct VdbErrorList* parse_errors;
+
+    if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
+        for (int i = 0; i < 1; i++) {
+            struct VdbError e = parse_errors->errors[i];
+            printf("error [%d]: %s\n", e.line, e.msg);
+        }
+        vdbtokenlist_free(tokens);
+        vdberrorlist_free(lex_errors);
+        vdbstmtlist_free(stmts);
+        vdberrorlist_free(parse_errors);
+        return true;
+    }
+
+    bool end = vdb_execute(stmts, h);
+
+    vdbtokenlist_free(tokens);
+    vdberrorlist_free(lex_errors);
+    vdbstmtlist_free(stmts);
+    vdberrorlist_free(parse_errors);
+
+    if (end) {
+        return true;
+    }
+
+    return false;
+}
+
+
 void sigchld_handler(int s) {
     s = s; //silence warning
 
@@ -109,9 +153,31 @@ int serve() {
         if (!fork()) {
             //this is child process
             close(sockfd); //child doesn't need listener
-            if (send(new_fd, "Hello, world!\n", 14, 0) == -1) {
-                //deal with error
+
+            int numbytes;
+            char buf[1000];
+            VDBHANDLE h = NULL;
+
+            while (true) {
+                if ((numbytes = recv(new_fd, buf, 999, 0)) == -1) {
+                    printf("error with recv\n");
+                    exit(1);
+                }
+
+                if (numbytes == 0) {
+                    printf("client disconnected\n");
+                    break;
+                }
+
+                buf[numbytes] = '\0';
+                printf("received: %s\n", buf);
+                bool end = execute_query(&h, buf);
+
+                send(new_fd, "ok", 2, 0);
+
+                if (end) break;
             }
+
             close(new_fd);
             exit(0);
         }

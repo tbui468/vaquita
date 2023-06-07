@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
 #include "client.h"
 
 
@@ -32,9 +34,31 @@ int main(int argc, char** argv) {
         free(queries);
 
         disconnect_from_server(sockfd);
-    } else {
-        printf("usage: vdbclient <script>\n");
-        return 0;
+    } else if (argc == 1) {
+        int sockfd = connect_to_server("localhost", "3333");
+        char buf[MAXDATASIZE];
+
+        char* line = NULL; //not including this in memory allocation tracker
+        size_t len = 0;
+        ssize_t nread;
+
+        while (true) {
+            printf(" > ");
+            nread = getline(&line, &len, stdin);
+            if (nread == -1)
+                break;
+            line[strlen(line) - 1] = '\0'; //get rid of newline
+
+            send_request(sockfd, line, buf); //this needs to loop
+            if (strncmp(buf, "disconnecting", strlen("disconnecting")) == 0) {
+                break;
+            }
+            printf("%s", buf);
+        }
+
+        free(line);
+
+        disconnect_from_server(sockfd);
     }
 
 

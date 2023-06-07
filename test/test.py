@@ -5,9 +5,10 @@ GREEN = '\033[32m'
 RED = '\033[31m'
 ENDC = '\033[0m'
 
+#server must be started first before tests can be run
+
 def test(filename):
-    cmd = "./../server/build/src/vdb ./" + filename + ".sql"
-    #cmd += " > /dev/null"
+    cmd = "./../client/build/src/vdbclient ./" + filename + ".sql"
     cmd += " > result.txt"
 
     return_code = subprocess.call(cmd, shell=True)

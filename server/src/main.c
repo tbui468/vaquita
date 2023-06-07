@@ -176,13 +176,15 @@ int serve() {
                 buf[numbytes] = '\0';
                 //printf("received: %s\n", buf);
                 bool end = execute_query(&h, buf, &s);
+                if (end)
+                    vdbstring_concat(&s, "disconnecting\n");
+
                 send(new_fd, s.start, s.len, 0);
                 free_w(s.start, s.len);
                 s.start = NULL;
                 s.len = 0;
 
                 if (end) {
-                    send(new_fd, "disconnecting", strlen("disconnecting"), 0);
                     break;
                 }
             }

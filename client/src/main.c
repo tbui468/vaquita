@@ -5,6 +5,12 @@
 
 #include "client.h"
 
+/*
+ * Sample client program using client.h
+ * Also used to run tests
+ *
+ */
+
 char* load_file(const char* path) {
     FILE* f = fopen(path, "r");
 
@@ -28,6 +34,10 @@ int main(int argc, char** argv) {
         char* queries = load_file(argv[1]);
 
         vdbclient_execute_query(h, queries, buf);
+
+        //removing 'disconnecting' from output so tests pass
+        int len = strlen(buf);
+        buf[len - strlen("disconnecting\n")] = '\0';
         printf("%s", buf);
 
         free(queries);
@@ -45,7 +55,7 @@ int main(int argc, char** argv) {
             line[strlen(line) - 1] = '\0'; //get rid of newline
 
             vdbclient_execute_query(h, line, buf); //this needs to loop
-            if (strncmp(buf, "disconnecting", strlen("disconnecting")) == 0) {
+            if (strncmp(buf, "disconnecting\n", strlen("disconnecting\n")) == 0) {
                 break;
             }
             printf("%s", buf);

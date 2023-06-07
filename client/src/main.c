@@ -1,26 +1,43 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "client.h"
 
-int main() {
-    int sockfd = connect_to_server("localhost", "3333");
 
-    char buf[MAXDATASIZE];
+char* load_file(const char* path) {
+    FILE* f = fopen(path, "r");
 
-    send_request(sockfd, "if exists drop database sol;", buf);
-    printf("response 1: %s\n", buf);
+    fseek(f, 0, SEEK_END);
+    long fsize = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char* buf = malloc(sizeof(char) * (fsize)); //will put null terminator on eof character
+    fread(buf, fsize, sizeof(char), f);
+    buf[fsize - 1] = '\0';
 
-    send_request(sockfd, "create database sol;", buf);
-    printf("response 1: %s\n", buf);
+    fclose(f);
 
-    send_request(sockfd, "open sol;", buf);
-    printf("response 2: %s\n", buf);
+    return buf;
+}
 
-    send_request(sockfd, "close sol;", buf);
-    printf("response 3: %s\n", buf);
+int main(int argc, char** argv) {
+    if (argc > 1) {
+        int sockfd = connect_to_server("localhost", "3333");
 
-    send_request(sockfd, "exit;", buf);
-    printf("response 4: %s\n", buf);
+        char buf[MAXDATASIZE];
 
-    disconnect_from_server(sockfd);
+        char* queries = load_file(argv[1]);
+
+        send_request(sockfd, queries, buf);
+        printf("%s", buf);
+
+        free(queries);
+
+        disconnect_from_server(sockfd);
+    } else {
+        printf("usage: vdbclient <script>\n");
+        return 0;
+    }
+
+
+
     return 0;
 }

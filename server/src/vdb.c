@@ -14,7 +14,6 @@ struct Vdb* vdb_init(const char* name) {
     db->pager = vdb_pager_alloc();
     db->trees = vdb_treelist_init();
     db->name = strdup_w(name);
-
     return db;
 }
 

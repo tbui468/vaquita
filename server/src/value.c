@@ -1,5 +1,6 @@
 #include <string.h>
 #include <assert.h>
+#include <stdarg.h>
 
 #include "value.h"
 #include "util.h"
@@ -27,6 +28,27 @@ struct VdbValue vdbvalue_init_string(char* start, int len) {
     v.as.Str.start = malloc_w(sizeof(char) * len);
     memcpy(v.as.Str.start, start, len);
     return v;
+}
+
+struct VdbString vdbstring_init(char* value) {
+    struct VdbString s;
+    s.start = malloc_w(sizeof(char) * strlen(value));
+    s.len = strlen(value);
+    memcpy(s.start, value, s.len);
+    return s;
+}
+
+void vdbstring_concat(struct VdbString* s, const char* fmt, ...) {
+    char buf[1024]; 
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf_w(buf, 1024, fmt, ap);
+    va_end(ap);
+
+    int new_len = s->len + strlen(buf);
+    s->start = realloc_w(s->start, sizeof(char) * new_len, sizeof(char) * s->len);
+    memcpy(s->start + s->len, buf, strlen(buf));
+    s->len = new_len;
 }
 
 struct VdbValue vdbvalue_copy(struct VdbValue v) {

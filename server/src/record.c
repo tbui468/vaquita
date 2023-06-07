@@ -201,27 +201,27 @@ bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
     return false;
 }
 
-void vdbrecord_print(struct VdbRecord* r) {
+void vdbrecord_print(struct VdbString* s, struct VdbRecord* r) {
     for (uint32_t j = 0; j < r->count; j++) {
         switch (r->data[j].type) {
             case VDBT_TYPE_STR:
-                printf("%.*s, ", r->data[j].as.Str.len, r->data[j].as.Str.start); 
+                vdbstring_concat(s, "%.*s, ", r->data[j].as.Str.len, r->data[j].as.Str.start); 
                 break;
             case VDBT_TYPE_INT:
-                printf("%ld, ", r->data[j].as.Int);
+                vdbstring_concat(s, "%ld, ", r->data[j].as.Int);
                 break;
             case VDBT_TYPE_FLOAT:
-                printf("%f, ", r->data[j].as.Float);
+                vdbstring_concat(s, "%f, ", r->data[j].as.Float);
                 break;
             case VDBT_TYPE_BOOL:
                 if (r->data[j].as.Bool) {
-                    printf("true, ");
+                    vdbstring_concat(s, "true, ");
                 } else {
-                    printf("false, ");
+                    vdbstring_concat(s, "false, ");
                 }
                 break;
              case VDBT_TYPE_NULL:
-                printf("null, ");
+                vdbstring_concat(s, "null, ");
                 break;
              default:
                 assert(false && "token is not valid data type");

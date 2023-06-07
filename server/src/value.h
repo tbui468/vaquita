@@ -43,4 +43,7 @@ struct VdbValueList * vdbvaluelist_init();
 void vdbvaluelist_free(struct VdbValueList* vl);
 void vdbvaluelist_append_value(struct VdbValueList* vl, struct VdbValue v);
 
+struct VdbString vdbstring_init(char* s);
+void vdbstring_concat(struct VdbString* s, const char* fmt, ...);
+
 #endif //VDB_VALUE_H

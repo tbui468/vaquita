@@ -22,7 +22,7 @@
 #include "parser.h"
 #include "vm.h"
 
-bool execute_query(VDBHANDLE* h, char* query) {
+bool execute_query(VDBHANDLE* h, char* query, struct VdbString* output) {
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
 
@@ -51,7 +51,7 @@ bool execute_query(VDBHANDLE* h, char* query) {
         return true;
     }
 
-    bool end = vdb_execute(stmts, h);
+    bool end = vdb_execute(stmts, h, output);
 
     vdbtokenlist_free(tokens);
     vdberrorlist_free(lex_errors);
@@ -158,6 +158,10 @@ int serve() {
             char buf[1000];
             VDBHANDLE h = NULL;
 
+            //struct VdbString s = vdbstring_init("connected to localhost:3333\n");
+            struct VdbString s;
+            s.start = NULL;
+            s.len = 0;
             while (true) {
                 if ((numbytes = recv(new_fd, buf, 999, 0)) == -1) {
                     printf("error with recv\n");
@@ -170,13 +174,15 @@ int serve() {
                 }
 
                 buf[numbytes] = '\0';
-                printf("received: %s\n", buf);
-                bool end = execute_query(&h, buf);
+                //printf("received: %s\n", buf);
+                bool end = execute_query(&h, buf, &s);
+                send(new_fd, s.start, s.len, 0);
 
-                send(new_fd, "ok", 2, 0);
-
-                if (end) break;
+                if (end) {
+                    break;
+                }
             }
+            free_w(s.start, s.len);
 
             close(new_fd);
             exit(0);
@@ -234,7 +240,8 @@ void run_cli() {
             continue;
         }
 
-        bool end = vdb_execute(stmts, &h);
+        struct VdbString output;
+        bool end = vdb_execute(stmts, &h, &output);
 
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
@@ -300,7 +307,8 @@ int run_script(const char* path) {
         vdbstmt_print(&stmts->stmts[i]);
     }*/
 
-    vdb_execute(stmts, &h);
+    struct VdbString output;
+    vdb_execute(stmts, &h, &output);
 
     vdbtokenlist_free(tokens);
     vdberrorlist_free(lex_errors);

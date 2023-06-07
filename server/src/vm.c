@@ -15,7 +15,7 @@ static char* to_static_string(struct VdbToken t) {
 
 //TODO: need an generator that converst the stmtlist to bytecode
 //Should go in vm.c
-bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
+bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output) {
     for (int i = 0; i < sl->count; i++) {
         struct VdbStmt* stmt = &sl->stmts[i];
         switch (stmt->type) {
@@ -27,35 +27,35 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_SHOW_DBS: {
                 struct VdbValueList* vl;
                 if (vdb_show_dbs(&vl) == VDBRC_SUCCESS) {
-                    printf("databases:\n");
+                    vdbstring_concat(output, "databases:\n");
                     for (int i = 0; i < vl->count; i++) {
-                        printf("\t%.*s\n", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
+                        vdbstring_concat(output, "\t%.*s\n", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
                     }
                     vdbvaluelist_free(vl);
                 } else {
-                    printf("execution error: cannot show databases\n");
+                    vdbstring_concat(output, "execution error: cannot show databases\n");
                 }
                 break;
             }
             case VDBST_SHOW_TABS: {
                 struct VdbValueList* vl;
                 if (vdb_show_tabs(*h, &vl) == VDBRC_SUCCESS) {
-                    printf("tables:\n");
+                    vdbstring_concat(output, "tables:\n");
                     for (int i = 0; i < vl->count; i++) {
-                        printf("\t%.*s\n", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
+                        vdbstring_concat(output, "\t%.*s\n", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
                     }
                     vdbvaluelist_free(vl);
                 } else {
-                    printf("execution error: cannot show tables\n");
+                    vdbstring_concat(output, "execution error: cannot show tables\n");
                 }
                 break;
             }
             case VDBST_CREATE_DB: {
                 char* db_name = to_static_string(stmt->target);
                 if (vdb_create_db(db_name) == VDBRC_SUCCESS) {
-                    printf("created database %s\n", db_name);
+                    vdbstring_concat(output, "created database %s\n", db_name);
                 } else {
-                    printf("failed to create database %s\n", db_name);
+                    vdbstring_concat(output, "failed to create database %s\n", db_name);
                 }
                 break;
             }
@@ -66,9 +66,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 
                 char* table_name = to_static_string(stmt->target);
                 if (vdb_create_table(*h, table_name, schema)) {
-                    printf("created table %s\n", table_name);
+                    vdbstring_concat(output, "created table %s\n", table_name);
                 } else {
-                    printf("failed to create table %s\n", table_name);
+                    vdbstring_concat(output, "failed to create table %s\n", table_name);
                 }
 
                 vdb_free_schema(schema);
@@ -88,9 +88,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 
                     if (found) {
                         if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
-                            printf("dropped database %s\n", db_name);
+                            vdbstring_concat(output, "dropped database %s\n", db_name);
                         } else {
-                            printf("failed to drop database %s\n", db_name);
+                            vdbstring_concat(output, "failed to drop database %s\n", db_name);
                         }
                     }
                 }
@@ -110,9 +110,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
 
                     if (found) {
                         if (vdb_drop_table(*h, tab_name) == VDBRC_SUCCESS) {
-                            printf("dropped table %s\n", tab_name);
+                            vdbstring_concat(output, "dropped table %s\n", tab_name);
                         } else {
-                            printf("failed to drop table %s\n", tab_name);
+                            vdbstring_concat(output, "failed to drop table %s\n", tab_name);
                         }
                     }
                 }
@@ -121,37 +121,37 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             case VDBST_DROP_DB: {
                 char* db_name = to_static_string(stmt->target);
                 if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
-                    printf("dropped database %s\n", db_name);
+                    vdbstring_concat(output, "dropped database %s\n", db_name);
                 } else {
-                    printf("failed to drop database %s\n", db_name);
+                    vdbstring_concat(output, "failed to drop database %s\n", db_name);
                 }
                 break;
             }
             case VDBST_DROP_TAB: {
                 char* table_name = to_static_string(stmt->target);
                 if (vdb_drop_table(*h, table_name) == VDBRC_SUCCESS) {
-                    printf("dropped table %s\n", table_name);
+                    vdbstring_concat(output, "dropped table %s\n", table_name);
                 } else {
-                    printf("failed to drop table %s\n", table_name);
+                    vdbstring_concat(output, "failed to drop table %s\n", table_name);
                 }
                 break;
             }
             case VDBST_OPEN: {
                 char* db_name = to_static_string(stmt->target);
                 if ((*h = vdb_open_db(db_name))) {
-                    printf("opened database %s\n", db_name);
+                    vdbstring_concat(output, "opened database %s\n", db_name);
                 } else {
-                    printf("failed to open database %s\n", db_name);
+                    vdbstring_concat(output, "failed to open database %s\n", db_name);
                 }
                 break;
             }
             case VDBST_CLOSE: {
                 char* db_name = to_static_string(stmt->target);
                 if (vdb_close(*h)) {
-                    printf("closed database %s\n", db_name);
+                    vdbstring_concat(output, "closed database %s\n", db_name);
                     *h = NULL;
                 } else {
-                    printf("failed to close database %s\n", db_name);
+                    vdbstring_concat(output, "failed to close database %s\n", db_name);
                 }
                 break;
             }
@@ -159,15 +159,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 char* table_name = to_static_string(stmt->target);
                 struct VdbValueList* vl;
                 if (vdb_describe_table(*h, table_name, &vl) == VDBRC_SUCCESS) {
-                    printf("%s:\n", table_name);
+                    vdbstring_concat(output, "%s:\n", table_name);
                     for (int i = 0; i < vl->count; i += 2) {
                         struct VdbValue attr = vl->values[i];
                         struct VdbValue type = vl->values[i + 1];
-                        printf("\t%.*s: %.*s\n", attr.as.Str.len, attr.as.Str.start, type.as.Str.len, type.as.Str.start);
+                        vdbstring_concat(output, "\t%.*s: %.*s\n", attr.as.Str.len, attr.as.Str.start, type.as.Str.len, type.as.Str.start);
                     }
                     vdbvaluelist_free(vl);
                 } else {
-                    printf("failed to describe table %s\n", table_name);
+                    vdbstring_concat(output, "failed to describe table %s\n", table_name);
                 }
                 break;
             }
@@ -187,7 +187,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                     free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
                     free_w(el, sizeof(struct VdbExprList));
                 }
-                printf("inserted %d record(s) into %s\n", rec_count, table_name);
+                vdbstring_concat(output, "inserted %d record(s) into %s\n", rec_count, table_name);
                 break;
             }
             case VDBST_UPDATE: {
@@ -292,8 +292,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
                 vdbcursor_apply_limit(cursor, final, stmt->as.select.limit);
 
                 for (uint32_t i = 0; i < final->count; i++) {
-                    vdbrecord_print(final->records[i]);
-                    printf("\n");
+                    vdbrecord_print(output, final->records[i]);
+                    vdbstring_concat(output, "\n");
                 }
 
                 vdbcursor_free(cursor);
@@ -304,7 +304,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h) {
             }
             case VDBST_EXIT: {
                 if (*h) {
-                    printf("close database %s before exiting\n", vdb_dbname(*h));
+                    vdbstring_concat(output, "close database %s before exiting\n", vdb_dbname(*h));
                     return false;
                 } else {
                     return true;

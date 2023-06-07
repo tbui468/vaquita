@@ -58,11 +58,20 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
+    Get response sent to client rather than printing out
+        vdb_append_query_result(*h, "opened database %s\n", db_name) <--- add this function (header and implementation)
+            will need an vdbstring_append(s, new_stuff); 
+
+    Move run_cli() from server-side to client-side.
+
     Need to be able to run tests:
         Have client usable in 2 ways: command line, or load in script
         Server should not be able to take in script now - it's just a server
         Have server send response back to client, which prints it out to result.txt
         Then compare result.txt with expected
+
+        explicity require client to connect with hostname and port number
+            connect localhost 3333; //this is NOT part of the server - just clientside parsing and running
 
     Connect sdl_app and vaquita in the easiest way possible
         just have sdl_app send sql to vaquita, get a response, and print out the response on sdl_app side

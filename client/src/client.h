@@ -138,18 +138,53 @@ void vdbclient_disconnect(VDBHANDLE h) {
 
 #endif // defined (__WIN32__)
 
+void vdbclient_send(struct VdbClient* c, char* buf, int len) {
+    ssize_t written = 0;
+    ssize_t n;
+
+    while (written < len) {
+        if ((n = send(c->sockfd, buf + written, len - written, 0)) <= 0) {
+            if (n < 0 && errno == EINTR) //interrupted but not error, so we need to try again
+                n = 0;
+            else {
+                exit(1); //real error
+            }
+        }
+
+        written += n;
+    }
+}
+
+void vdbclient_recv(struct VdbClient* c, char* buf, int len) {
+    ssize_t nread = 0;
+    ssize_t n;
+    while (nread < len) {
+        if ((n = recv(c->sockfd, buf + nread, len - nread, 0)) < 0) {
+            if (n < 0 && errno == EINTR)
+                n = 0;
+            else
+                exit(1);
+        } else if (n == 0) {
+            //connection ended
+            break;
+        }
+
+        nread += n;
+    }
+}
+
 void vdbclient_execute_query(VDBHANDLE h, char* request, char* response) {
     struct VdbClient* c = (struct VdbClient*)h;
 
-    if (send(c->sockfd, request, strlen(request), 0) == -1) {
-        //deal with error
-    }
-    
-    int numbytes;
-    if ((numbytes = recv(c->sockfd, response, MAXDATASIZE -1, 0)) == -1)
-        exit(1);
+    int32_t l = strlen(request);
+    vdbclient_send(c, (char*)&l, sizeof(int32_t));
+    vdbclient_send(c, request, l);
 
-    response[numbytes] = '\0';
+    printf("send request\n");
+    int32_t recv_len;
+    vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t));
+    vdbclient_recv(c, response, recv_len);
+    response[recv_len] = '\0';
 }
 
 

@@ -22,6 +22,42 @@
 #include "parser.h"
 #include "vm.h"
 
+
+void vdbserver_send(int sockfd, char* buf, int len) {
+    ssize_t written = 0;
+    ssize_t n;
+
+    while (written < len) {
+        if ((n = send(sockfd, buf + written, len - written, 0)) <= 0) {
+            if (n < 0 && errno == EINTR) //interrupted but not error, so we need to try again
+                n = 0;
+            else {
+                exit(1); //real error
+            }
+        }
+
+        written += n;
+    }
+}
+
+void vdbserver_recv(int sockfd, char* buf, int len) {
+    ssize_t nread = 0;
+    ssize_t n;
+    while (nread < len) {
+        if ((n = recv(sockfd, buf + nread, len - nread, 0)) < 0) {
+            if (n < 0 && errno == EINTR)
+                n = 0;
+            else
+                exit(1);
+        } else if (n == 0) {
+            //connection ended
+            break;
+        }
+
+        nread += n;
+    }
+}
+
 bool execute_query(VDBHANDLE* h, char* query, struct VdbString* output) {
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
@@ -163,6 +199,11 @@ int serve() {
             s.start = NULL;
             s.len = 0;
             while (true) {
+                int32_t request_len;
+                vdbserver_recv(new_fd, (char*)&request_len, sizeof(int32_t));
+                vdbserver_recv(new_fd, buf, request_len);
+                buf[request_len] = '\0';
+                /*
                 if ((numbytes = recv(new_fd, buf, 999, 0)) == -1) {
                     printf("error with recv\n");
                     exit(1);
@@ -173,13 +214,19 @@ int serve() {
                     break;
                 }
 
-                buf[numbytes] = '\0';
-                //printf("received: %s\n", buf);
+                buf[numbytes] = '\0';*/
                 bool end = execute_query(&h, buf, &s);
                 if (end)
                     vdbstring_concat(&s, "disconnecting\n");
 
+                int32_t res_len = s.len;
+                vdbserver_send(new_fd, (char*)&res_len, sizeof(int32_t));
+                vdbserver_send(new_fd, s.start, res_len);
+/*
                 send(new_fd, s.start, s.len, 0);
+                send(new_fd, '\0', 1, 0);
+                printf("server sent response\n");*/
+
                 free_w(s.start, s.len);
                 s.start = NULL;
                 s.len = 0;

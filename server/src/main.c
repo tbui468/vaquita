@@ -192,7 +192,6 @@ int serve() {
             //this is child process
             close(sockfd); //child doesn't need listener
 
-            char buf[1000];
             VDBHANDLE h = NULL;
 
             //struct VdbString s = vdbstring_init("connected to localhost:3333\n");
@@ -205,6 +204,7 @@ int serve() {
                     printf("client disconnected\n");
                     break;
                 }
+                char buf[request_len + 1];
                 if (!vdbserver_recv(new_fd, buf, request_len)) {
                     printf("client disconnected\n");
                     break;
@@ -226,6 +226,7 @@ int serve() {
                     break;
                 }
             }
+
             free_w(s.start, s.len);
 
             close(new_fd);

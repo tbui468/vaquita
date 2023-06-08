@@ -14,9 +14,13 @@ typedef void* VDBHANDLE;
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <bool.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
 
 struct VdbClient {
     SOCKET sockfd;

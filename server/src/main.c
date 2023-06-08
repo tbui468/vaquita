@@ -40,7 +40,7 @@ void vdbserver_send(int sockfd, char* buf, int len) {
     }
 }
 
-void vdbserver_recv(int sockfd, char* buf, int len) {
+bool vdbserver_recv(int sockfd, char* buf, int len) {
     ssize_t nread = 0;
     ssize_t n;
     while (nread < len) {
@@ -51,11 +51,13 @@ void vdbserver_recv(int sockfd, char* buf, int len) {
                 exit(1);
         } else if (n == 0) {
             //connection ended
-            break;
+            return false;
         }
 
         nread += n;
     }
+
+    return true;
 }
 
 bool execute_query(VDBHANDLE* h, char* query, struct VdbString* output) {
@@ -190,7 +192,6 @@ int serve() {
             //this is child process
             close(sockfd); //child doesn't need listener
 
-            int numbytes;
             char buf[1000];
             VDBHANDLE h = NULL;
 
@@ -200,38 +201,28 @@ int serve() {
             s.len = 0;
             while (true) {
                 int32_t request_len;
-                vdbserver_recv(new_fd, (char*)&request_len, sizeof(int32_t));
-                vdbserver_recv(new_fd, buf, request_len);
-                buf[request_len] = '\0';
-                /*
-                if ((numbytes = recv(new_fd, buf, 999, 0)) == -1) {
-                    printf("error with recv\n");
-                    exit(1);
-                }
-
-                if (numbytes == 0) {
+                if (!vdbserver_recv(new_fd, (char*)&request_len, sizeof(int32_t))) {
                     printf("client disconnected\n");
                     break;
                 }
+                if (!vdbserver_recv(new_fd, buf, request_len)) {
+                    printf("client disconnected\n");
+                    break;
+                }
+                buf[request_len] = '\0';
 
-                buf[numbytes] = '\0';*/
                 bool end = execute_query(&h, buf, &s);
-                if (end)
-                    vdbstring_concat(&s, "disconnecting\n");
 
                 int32_t res_len = s.len;
                 vdbserver_send(new_fd, (char*)&res_len, sizeof(int32_t));
                 vdbserver_send(new_fd, s.start, res_len);
-/*
-                send(new_fd, s.start, s.len, 0);
-                send(new_fd, '\0', 1, 0);
-                printf("server sent response\n");*/
 
                 free_w(s.start, s.len);
                 s.start = NULL;
                 s.len = 0;
 
                 if (end) {
+                    printf("client released database handle\n");
                     break;
                 }
             }

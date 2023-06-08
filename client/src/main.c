@@ -33,11 +33,9 @@ int main(int argc, char** argv) {
     if (argc > 1) {
         char* queries = load_file(argv[1]);
 
-        vdbclient_execute_query(h, queries, buf);
+        if (!vdbclient_execute_query(h, queries, buf))
+            printf("server disconnected\n");
 
-        //removing 'disconnecting' from output so tests pass
-        int len = strlen(buf);
-        buf[len - strlen("disconnecting\n")] = '\0';
         printf("%s", buf);
 
         free(queries);
@@ -54,10 +52,15 @@ int main(int argc, char** argv) {
                 break;
             line[strlen(line) - 1] = '\0'; //get rid of newline
 
-            vdbclient_execute_query(h, line, buf); //this needs to loop
-            if (strncmp(buf, "disconnecting\n", strlen("disconnecting\n")) == 0) {
+            if (!vdbclient_execute_query(h, line, buf)) {
+                printf("server disconnected\n");
                 break;
             }
+
+            if (strncmp(line, "exit;", strlen("exit;")) == 0) { 
+                break;
+            }
+
             printf("%s", buf);
         }
 

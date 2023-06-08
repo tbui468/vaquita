@@ -155,7 +155,7 @@ void vdbclient_send(struct VdbClient* c, char* buf, int len) {
     }
 }
 
-void vdbclient_recv(struct VdbClient* c, char* buf, int len) {
+bool vdbclient_recv(struct VdbClient* c, char* buf, int len) {
     ssize_t nread = 0;
     ssize_t n;
     while (nread < len) {
@@ -166,25 +166,30 @@ void vdbclient_recv(struct VdbClient* c, char* buf, int len) {
                 exit(1);
         } else if (n == 0) {
             //connection ended
-            break;
+            return false;
         }
 
         nread += n;
     }
+
+    return true;
 }
 
-void vdbclient_execute_query(VDBHANDLE h, char* request, char* response) {
+bool vdbclient_execute_query(VDBHANDLE h, char* request, char* response) {
     struct VdbClient* c = (struct VdbClient*)h;
 
     int32_t l = strlen(request);
     vdbclient_send(c, (char*)&l, sizeof(int32_t));
     vdbclient_send(c, request, l);
 
-    printf("send request\n");
     int32_t recv_len;
-    vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t));
-    vdbclient_recv(c, response, recv_len);
+    if (!vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t)))
+        return false;
+    if (!vdbclient_recv(c, response, recv_len))
+        return false;
     response[recv_len] = '\0';
+
+    return true;
 }
 
 

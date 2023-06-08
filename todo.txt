@@ -60,6 +60,7 @@ In release mode:
 *******************************TODO**************************************************
     Should have server and client allocate buffer size for messages so that we can fit entire seed_db.sql queries
         then test to see if seed_db.sql works with client/server
+        run regular tests and make sure they pass too
 
     Server should not require opaque handle anymore since user doesn't have direct access
         anymore

@@ -58,12 +58,16 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
+    query database is failing with 'realloc' failed - I suspect running out of memory for pages
+        Look at valgrind output
+            invalid reads
+            10 total items for lost memory when running select_all.sql
+                recordsets, exprlists, bytelists, etc
+
     select * from planets; //this should report error since there is no table called planets in universe db
         this was causing problems since I kept typing the wrong table name in (this shouldn't happend again)
 
     If table name is omitted, also report error
-
-    query database is failing with 'realloc' failed - I suspect running out of memory for pages
 
     sdl_game should use a separate thread to connect to db
         don't want star viewer to freeze when selection regions

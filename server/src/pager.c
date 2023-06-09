@@ -102,8 +102,22 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, 
     //not cached, so read from disk
     if (!page) {
         //TODO: evict here if necessary before loading page.  Only evict a page if pin_count == 0
-        page = _vdb_pager_load_page(name, f, idx);
-        _vdb_pagelist_append_page(pager->pages, page);
+        /*
+        if (pager->pages->count >= 8) {
+            for (uint32_t i = 0; i < pager->pages->count; i++) {
+                struct VdbPage* p = pager->pages->pages[i];
+                if (p->pin_count == 0) {
+                    _vdb_pager_flush_page(p);
+                    _vdb_pager_free_page(p);
+                    pager->pages->pages[i] = _vdb_pager_load_page(name, f, idx);
+                    page = pager->pages->pages[i];
+                    break;
+                }
+            }
+        } else*/ {
+            page = _vdb_pager_load_page(name, f, idx);
+            _vdb_pagelist_append_page(pager->pages, page);
+        }
     }
 
     page->pin_count++;

@@ -299,6 +299,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
                 vdbcursor_free(cursor);
                 vdbrecordset_free(final);
                 vdbbinarytree_free(bt);
+                vdbhashtable_free(ht);
+                vdbhashtable_free(grouping_table);
 
                 break;
             }

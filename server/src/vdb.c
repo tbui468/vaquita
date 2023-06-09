@@ -490,10 +490,10 @@ bool vdbcursor_apply_having(struct VdbCursor* cursor, struct VdbRecordSet* rs, s
 
 void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     if (expr == NULL)
         return;
 
+    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     struct VdbValue limit = vdbexpr_eval(expr, rs, schema);
     vdb_schema_free(schema);
 

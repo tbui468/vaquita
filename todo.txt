@@ -58,9 +58,15 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Connect sdl_app and vaquita in the easiest way possible
-        just have sdl_app send sql to vaquita, get a response, and print out the response on sdl_app side
-        run the sql statements
+    select * from planets; //this should report error since there is no table called planets in universe db
+        this was causing problems since I kept typing the wrong table name in (this shouldn't happend again)
+
+    If table name is omitted, also report error
+
+    query database is failing with 'realloc' failed - I suspect running out of memory for pages
+
+    sdl_game should use a separate thread to connect to db
+        don't want star viewer to freeze when selection regions
 
     Server should not require opaque handle anymore since user doesn't have direct access
         anymore

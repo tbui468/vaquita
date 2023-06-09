@@ -27,16 +27,17 @@ char* load_file(const char* path) {
 }
 
 int main(int argc, char** argv) {
-    VDBHANDLE h = vdbclient_connect("localhost", "3333");
-    char buf[MAXDATASIZE];
+    VDBHANDLE h = vdbclient_connect("127.0.0.1", "3333");
+    char* buf;
 
     if (argc > 1) {
         char* queries = load_file(argv[1]);
 
-        if (!vdbclient_execute_query(h, queries, buf))
+        if (!(buf = vdbclient_execute_query(h, queries)))
             printf("server disconnected\n");
 
         printf("%s", buf);
+        free(buf);
 
         free(queries);
 
@@ -52,16 +53,18 @@ int main(int argc, char** argv) {
                 break;
             line[strlen(line) - 1] = '\0'; //get rid of newline
 
-            if (!vdbclient_execute_query(h, line, buf)) {
+            if (!(buf = vdbclient_execute_query(h, line))) {
                 printf("server disconnected\n");
                 break;
             }
 
             if (strncmp(line, "exit;", strlen("exit;")) == 0) { 
+                free(buf);
                 break;
             }
 
             printf("%s", buf);
+            free(buf);
         }
 
         free(line);

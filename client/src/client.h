@@ -15,7 +15,7 @@ typedef void* VDBHANDLE;
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <bool.h>
+#include <stdbool.h>
 #include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -179,7 +179,7 @@ bool vdbclient_recv(struct VdbClient* c, char* buf, int len) {
     return true;
 }
 
-bool vdbclient_execute_query(VDBHANDLE h, char* request, char* response) {
+char* vdbclient_execute_query(VDBHANDLE h, char* request) {
     struct VdbClient* c = (struct VdbClient*)h;
 
     int32_t l = strlen(request);
@@ -188,12 +188,22 @@ bool vdbclient_execute_query(VDBHANDLE h, char* request, char* response) {
 
     int32_t recv_len;
     if (!vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t)))
-        return false;
-    if (!vdbclient_recv(c, response, recv_len))
-        return false;
-    response[recv_len] = '\0';
+        return NULL;
 
-    return true;
+    char* buf = malloc(sizeof(char) * (recv_len + 1));
+    if (!buf) {
+        printf("malloc failed\n");
+        exit(1);
+    }
+
+    if (!vdbclient_recv(c, buf, recv_len)) {
+        free(buf);
+        return false;
+    }
+    
+    buf[recv_len] = '\0';
+
+    return buf;
 }
 
 

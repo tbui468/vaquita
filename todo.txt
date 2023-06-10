@@ -58,11 +58,29 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
+
     query database is failing with 'realloc' failed - I suspect running out of memory for pages
-        Look at valgrind output
+        Look at valgrind output.txt
             invalid reads
             10 total items for lost memory when running select_all.sql
-                recordsets, exprlists, bytelists, etc
+                recordsets, exprlists, bytelists, etc are not being freed
+            Fix these issues until 0
+
+            SELECT branch in vdb_execute is so confusing!
+            
+            Here's a problem - we need to free recordsets, BUT sometimes not the records themselves
+                since recordsets are being inserted into binary trees, hash tables and linked lists for
+                intermediate steps...this is really confusing.  Who should have ownership over the records
+                in all of these recordsets?  (since sometimes they are in multiple data structures at the same time)
+
+            Also, each recordset is initialized with a capacity of 8(!), so it's a huge space of space since each
+                record is wrapped in a recordset.  This was initially done to simplify insertion into binary tree
+                and hash tables (rather than having two types (record and recordset), just having record type).  
+
+            These three functions use recordsets, but don't free them
+                vdbbinarytree_flatten_desc(bt) : 
+                vdbbinarytree_flatten_asc(bt);
+                vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0)
 
     select * from planets; //this should report error since there is no table called planets in universe db
         this was causing problems since I kept typing the wrong table name in (this shouldn't happend again)

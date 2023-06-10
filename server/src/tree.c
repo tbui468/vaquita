@@ -279,8 +279,8 @@ static void vdbtree_leaf_write_varlen_data(struct VdbTree* tree, uint32_t idx, s
         if (rec->data[i].type != VDBT_TYPE_STR)
             continue;
 
-        //must have enough free space to fit idxcell and at least 1 character
-        if (vdbtree_data_get_free_space(tree, data_block_idx) < 2) {
+        //include index size and at least 1 character
+        if (vdbtree_data_get_free_space(tree, data_block_idx) < vdbdata_datacell_header_size() + sizeof(uint32_t) + 1) {
             uint32_t new_data_idx = vdbtree_data_init(tree, data_block_idx);
             vdbtree_data_write_next(tree, data_block_idx, new_data_idx);
             data_block_idx = new_data_idx;
@@ -456,9 +456,12 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
             uint8_t* ptr = vdbdata_datacell_ptr(page->buf, idxcell_idx);
             struct VdbValue datum = vdbvalue_deserialize_string(ptr);
 
-            d->as.Str.start = realloc_w(d->as.Str.start, sizeof(char) * (d->as.Str.len + datum.as.Str.len), sizeof(char) * d->as.Str.len);
-            memcpy(d->as.Str.start + d->as.Str.len, datum.as.Str.start, datum.as.Str.len);
-            d->as.Str.len += datum.as.Str.len;
+            printf("cur size: %d, new_size: %d\n", d->as.Str.len, d->as.Str.len + datum.as.Str.len);
+            if (datum.as.Str.len > 0) { //TODO: temp fix, but datum.as.Str.len should NEVER be 0 (and it is sometimes)
+                d->as.Str.start = realloc_w(d->as.Str.start, sizeof(char) * (d->as.Str.len + datum.as.Str.len), sizeof(char) * d->as.Str.len);
+                memcpy(d->as.Str.start + d->as.Str.len, datum.as.Str.start, datum.as.Str.len);
+                d->as.Str.len += datum.as.Str.len;
+            }
 
             block_idx = datum.block_idx;
             idxcell_idx = datum.idxcell_idx;
@@ -480,7 +483,7 @@ static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx) {
     uint32_t data_cells_size = *vdbleaf_datacells_size_ptr(page->buf);
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    uint32_t record_entry_size = vdbschema_fixedlen_record_size(schema) + sizeof(uint32_t) * 3; //3 for: index cell + next + size fields
+    uint32_t record_entry_size = vdbschema_fixedlen_record_size(schema) + sizeof(uint32_t) * 3; //3 for: index cell + next + occupied fields
     vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);

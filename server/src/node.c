@@ -144,7 +144,7 @@ void vdbdata_init(uint8_t* buf, uint32_t parent_idx) {
     *((uint32_t*)(buf + sizeof(uint32_t) * 6)) = 0;
 }
 
-static uint32_t vdbdata_datacell_header_size(void) {
+uint32_t vdbdata_datacell_header_size(void) {
     return sizeof(uint32_t) * 3;
 }
 

@@ -46,6 +46,7 @@ void vdbdata_init(uint8_t* buf, uint32_t parent_idx);
 uint32_t* vdbdata_next_ptr(uint8_t* buf);
 uint32_t* vdbdata_idx_count_ptr(uint8_t* buf);
 
+uint32_t vdbdata_datacell_header_size(void);
 uint32_t vdbdata_get_free_space(uint8_t* buf);
 uint8_t* vdbdata_datacell_ptr(uint8_t* buf, uint32_t idxcell_idx);
 

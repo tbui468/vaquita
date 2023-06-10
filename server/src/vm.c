@@ -230,20 +230,23 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 0); //cursor to beginning of table
 
                 struct VdbBinaryTree* bt = vdbbinarytree_init();
-                struct VdbHashTable* ht = vdbhashtable_init();
+                struct VdbHashTable* distinct_table = vdbhashtable_init();
                 struct VdbHashTable* grouping_table = vdbhashtable_init();
 
                 struct VdbRecord* rec;
 
+                printf("Before fetching records\n");
+
                 while ((rec = vdbcursor_fetch_record(cursor))) {
+                    printf("beginning of fetch loop\n");
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
                     if (stmt->as.select.grouping->count == 0) {
                         if (vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
                             if (stmt->as.select.distinct) {
                                 struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
-                                if (!vdbhashtable_contains_key(ht, key)) {
-                                    vdbhashtable_insert_entry(ht, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+                                if (!vdbhashtable_contains_key(distinct_table, key)) {
+                                    vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
                                     rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
                                     vdbbinarytree_insert_node(bt, rs);
                                 }
@@ -259,10 +262,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
                         //not applying selection if 'group by' is used
                         //will apply 'having' clause later after aggregates can be applied to entire group
                         struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.grouping);
+                        //TODO: freeing recordset rs since it's not used, but kinda messy
+                        free_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
+                        free_w(rs, sizeof(struct VdbRecordSet));
                         vdbhashtable_insert_entry(grouping_table, key, rec);
                     }
+                    printf("end of fetch loop\n");
                 }
 
+                printf("after fetching records\n");
                 //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)
                 //TODO: should not manually use hash table internals like this - error prone.  Should be done with hashtable interface
                 if (stmt->as.select.grouping->count > 0) {
@@ -299,7 +307,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
                 vdbcursor_free(cursor);
                 vdbrecordset_free(final);
                 vdbbinarytree_free(bt);
-                vdbhashtable_free(ht);
+                vdbhashtable_free(distinct_table);
                 vdbhashtable_free(grouping_table);
 
                 break;

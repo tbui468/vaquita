@@ -36,12 +36,15 @@ struct VdbValue vdbvalue_copy(struct VdbValue v);
 int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2);
 void vdbvalue_free(struct VdbValue v);
 void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v);
+struct VdbValue vdbint(int64_t i);
+struct VdbValue vdbfloat(double d);
+struct VdbValue vdbstring(char* s, int len);
+struct VdbValue vdbbool(bool b);
 
 struct VdbValueList * vdbvaluelist_init();
 void vdbvaluelist_free(struct VdbValueList* vl);
 void vdbvaluelist_append_value(struct VdbValueList* vl, struct VdbValue v);
 
-struct VdbString vdbstring_init(char* s);
 void vdbstring_concat(struct VdbString* s, const char* fmt, ...);
 
 #endif //VDB_VALUE_H

@@ -464,18 +464,18 @@ uint32_t vdbtree_traverse_to_first_leaf(struct VdbTree* tree, uint32_t idx) {
 
     if (vdbtree_intern_read_ptr_count(tree, idx) > 0) {
         struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, 0);
-        if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF) {
-            return p.idx;
+        if (vdbtree_node_type(tree, p.block_idx) == VDBN_LEAF) {
+            return p.block_idx;
         } else {
-            return vdbtree_traverse_to_first_leaf(tree, p.idx);
+            return vdbtree_traverse_to_first_leaf(tree, p.block_idx);
         }
     } else {
         struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);
 
-        if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF) {
-            return p.idx;
+        if (vdbtree_node_type(tree, p.block_idx) == VDBN_LEAF) {
+            return p.block_idx;
         } else {
-            return vdbtree_traverse_to_first_leaf(tree, p.idx);
+            return vdbtree_traverse_to_first_leaf(tree, p.block_idx);
         }
     }
 
@@ -488,20 +488,20 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
     //TODO: switch to binary search
     for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
         struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, i);
-        if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF && vdbtree_leaf_read_record_count(tree, p.idx) > 0) {
-            uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, p.idx, vdbtree_leaf_read_record_count(tree, p.idx) - 1);
+        if (vdbtree_node_type(tree, p.block_idx) == VDBN_LEAF && vdbtree_leaf_read_record_count(tree, p.block_idx) > 0) {
+            uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, p.block_idx, vdbtree_leaf_read_record_count(tree, p.block_idx) - 1);
             if (key <= last_rec_key) {
-                return p.idx;
+                return p.block_idx;
             }
-        } else if (vdbtree_node_type(tree, p.idx) == VDBN_INTERN) {
+        } else if (vdbtree_node_type(tree, p.block_idx) == VDBN_INTERN) {
             //get largest key for a given internal node, and compare to key
-            struct VdbPtr right = vdbtree_intern_read_right_ptr(tree, p.idx);
-            while (vdbtree_node_type(tree, right.idx) != VDBN_LEAF) {
-                right = vdbtree_intern_read_right_ptr(tree, right.idx);
+            struct VdbPtr right = vdbtree_intern_read_right_ptr(tree, p.block_idx);
+            while (vdbtree_node_type(tree, right.block_idx) != VDBN_LEAF) {
+                right = vdbtree_intern_read_right_ptr(tree, right.block_idx);
             }
-            uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, right.idx, vdbtree_leaf_read_record_count(tree, right.idx) - 1);
+            uint32_t last_rec_key = vdbtree_leaf_read_record_key(tree, right.block_idx, vdbtree_leaf_read_record_count(tree, right.block_idx) - 1);
             if (key <= last_rec_key) {
-                return vdb_tree_traverse_to(tree, p.idx, key);
+                return vdb_tree_traverse_to(tree, p.block_idx, key);
             }
         }
     }
@@ -509,10 +509,10 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, uint32_t key) 
     //if not found, check right pointer
     struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);
 
-    if (vdbtree_node_type(tree, p.idx) == VDBN_LEAF) {
-        return p.idx;
+    if (vdbtree_node_type(tree, p.block_idx) == VDBN_LEAF) {
+        return p.block_idx;
     } else {
-        return vdb_tree_traverse_to(tree, p.idx, key);
+        return vdb_tree_traverse_to(tree, p.block_idx, key);
     }
 
 }
@@ -600,14 +600,14 @@ static void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t dept
     if (vdbtree_node_type(tree, idx) == VDBN_INTERN) {
         printf("\n");
         //TODO: make not printing leaves an option later
-        if (vdbtree_node_type(tree, vdbtree_intern_read_right_ptr(tree, idx).idx) == VDBN_LEAF) {
+        if (vdbtree_node_type(tree, vdbtree_intern_read_right_ptr(tree, idx).block_idx) == VDBN_LEAF) {
             //skip printing leaves
             return;
         }
         for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
-            vdbtree_print_node(tree, vdbtree_intern_read_ptr(tree, idx, i).idx, depth + 1);
+            vdbtree_print_node(tree, vdbtree_intern_read_ptr(tree, idx, i).block_idx, depth + 1);
         }
-        vdbtree_print_node(tree, vdbtree_intern_read_right_ptr(tree, idx).idx, depth + 1);
+        vdbtree_print_node(tree, vdbtree_intern_read_right_ptr(tree, idx).block_idx, depth + 1);
     } else {
         printf(": ");
         for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {

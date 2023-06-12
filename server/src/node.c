@@ -58,7 +58,7 @@ void vdbintern_append_nodeptr(uint8_t* buf, struct VdbPtr ptr) {
     uint32_t datacell_off = VDB_PAGE_SIZE - datacells_size - sizeof(uint32_t) * 2;
 
     *((uint32_t*)(buf + indexcell_off)) = datacell_off;
-    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = ptr.idx;
+    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = ptr.block_idx;
     *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 1)) = ptr.key;
 
     *vdbintern_nodeptr_count_ptr(buf) = count + 1;

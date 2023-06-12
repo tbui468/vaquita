@@ -58,52 +58,33 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    This may be the time to refactor the entire tree to store data in data blocks (rather than leaf)
-        and also get rid of variable length data completely.  Just store strings directly in the record
-        along with fixed-length data.  This will simplify everything significantly
+    Change VdbPtr key field to a struct VdbValue type (rather than uint32_t) to allow
+        for any data type as index later
 
-        How can we rewrite this incrementally so that we don't get lost in the weeds?
-            Idea!!!
-            Rewrite tree to not need data blocks anymore - store strings in record
-                rewrite tree so that data nodes are no longer reference
-                should have separate functions for checking if leaf datacell can fit and record can fit
-                    datacell includes datacell headers (such as next field, and record size)
-                run tests to make sure everything still works
-                test universe database to see if it works
-            Once that works, add data blocks in (they will hold records now) and leaves
-                only hold a reference to data blocks. This will make indexing easier
+    Rewrite tree to allow insertion in any order
+        All the tests should still pass after this since cursor is going from index 0
+        Cursor will need to be rewritten to take in a struct VdbValue (the key)
+
+        Do some research on B-Trees if necessary
+
+    Add in data blocks to store record data
+        leaves will now only hold ptrs to blocks/idx and keys
+        still only insert data if entire record fits in current data block (so no overflow)
+        also assume that the largest record will fit into a single data block (so no overflow)
+
+        data blocks will have similar layout as internal and leaf blocks (header + indexcells + datacells)
+            leaves will now hold key + data_block_idx + record_idx
+
+    along with id, index columns x and y
+        will require rewrite of tree.c/h to allow insertion anywhere (rather than just appending)
+        will make things a lot faster once cursor(s) know the start/end range of indices to search
+
+    update will not work correctly if string fields are different sizes now...
 
     Design it specifically for the hyg star database
         what is the larget int and uint we need for each field?
         Can floats be used instead of doubles for decimal value fields?
-
-    queries.sql is still failing bc of new_size being 0 (and cur_size is also 0 - does this matter?)
-        getting an fread failed sometimes, but sometimes not.  silently failing server is tricky....
-        cur_size and new_size for varlen data is still weird - getting a 0 for new_size sometimes 
-        
-
-    query database is failing with 'realloc' failed - I suspect running out of memory for pages
-        Look at valgrind output.txt
-            invalid reads
-            10 total items for lost memory when running select_all.sql
-                recordsets, exprlists, bytelists, etc are not being freed
-            Fix these issues until 0
-
-            SELECT branch in vdb_execute is so confusing!
-            
-            Here's a problem - we need to free recordsets, BUT sometimes not the records themselves
-                since recordsets are being inserted into binary trees, hash tables and linked lists for
-                intermediate steps...this is really confusing.  Who should have ownership over the records
-                in all of these recordsets?  (since sometimes they are in multiple data structures at the same time)
-
-            Also, each recordset is initialized with a capacity of 8(!), so it's a huge space of space since each
-                record is wrapped in a recordset.  This was initially done to simplify insertion into binary tree
-                and hash tables (rather than having two types (record and recordset), just having record type).  
-
-            These three functions use recordsets, but don't free them
-                vdbbinarytree_flatten_desc(bt) : 
-                vdbbinarytree_flatten_asc(bt);
-                vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0)
+        Need different threads (or use non-blocking sockets) to make it run better
 
     select * from planets; //this should report error since there is no table called planets in universe db
         this was causing problems since I kept typing the wrong table name in (this shouldn't happend again)

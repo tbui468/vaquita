@@ -11,7 +11,7 @@ enum VdbNodeType {
 };
 
 struct VdbPtr {
-    uint32_t idx;
+    uint32_t block_idx;
     uint32_t key;
 };
 

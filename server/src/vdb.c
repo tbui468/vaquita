@@ -109,7 +109,7 @@ enum VdbReturnCode vdb_show_dbs(struct VdbValueList** vl) {
         if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
             continue;
 
-        struct VdbValue v = vdbvalue_init_string(ent->d_name, entry_len - ext_len);
+        struct VdbValue v = vdbstring(ent->d_name, entry_len - ext_len);
         vdbvaluelist_append_value(*vl, v);
     }
 
@@ -125,7 +125,7 @@ enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, struct VdbValueList** vl) {
 
     for (uint32_t i = 0; i < db->trees->count; i++) {
         struct VdbTree* tree = db->trees->trees[i];
-        struct VdbValue v = vdbvalue_init_string(tree->name, strlen(tree->name));
+        struct VdbValue v = vdbstring(tree->name, strlen(tree->name));
         vdbvaluelist_append_value(*vl, v);
     }
 
@@ -140,21 +140,21 @@ enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, struct VdbV
     *vl = vdbvaluelist_init();
 
     for (uint32_t i = 0; i < schema->count; i++) {
-        struct VdbValue attr_name = vdbvalue_init_string(schema->names[i], strlen(schema->names[i]));
+        struct VdbValue attr_name = vdbstring(schema->names[i], strlen(schema->names[i]));
         vdbvaluelist_append_value(*vl, attr_name);
 
         switch (schema->types[i]) {
             case VDBT_TYPE_INT:
-                vdbvaluelist_append_value(*vl, vdbvalue_init_string("int", 3));
+                vdbvaluelist_append_value(*vl, vdbstring("int", 3));
                 break;
             case VDBT_TYPE_STR:
-                vdbvaluelist_append_value(*vl, vdbvalue_init_string("string", 6));
+                vdbvaluelist_append_value(*vl, vdbstring("string", 6));
                 break;
             case VDBT_TYPE_FLOAT:
-                vdbvaluelist_append_value(*vl, vdbvalue_init_string("float", 5));
+                vdbvaluelist_append_value(*vl, vdbstring("float", 5));
                 break;
             case VDBT_TYPE_BOOL:
-                vdbvaluelist_append_value(*vl, vdbvalue_init_string("bool", 4));
+                vdbvaluelist_append_value(*vl, vdbstring("bool", 4));
                 break;
             default:
                 assert(false && "invalid schema data type");

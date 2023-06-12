@@ -19,21 +19,34 @@ bool vdbvalue_is_null(struct VdbValue* d) {
     return d->type == VDBT_TYPE_NULL;
 }
 
-struct VdbValue vdbvalue_init_string(char* start, int len) {
+struct VdbValue vdbint(int64_t i) {
     struct VdbValue v;
-    v.type = VDBT_TYPE_STR;
-    v.as.Str.len = len;
-    v.as.Str.start = malloc_w(sizeof(char) * len);
-    memcpy(v.as.Str.start, start, len);
+    v.type = VDBT_TYPE_INT;
+    v.as.Int = i;
     return v;
 }
 
-struct VdbString vdbstring_init(char* value) {
-    struct VdbString s;
-    s.start = malloc_w(sizeof(char) * strlen(value));
-    s.len = strlen(value);
-    memcpy(s.start, value, s.len);
-    return s;
+struct VdbValue vdbfloat(double d) {
+    struct VdbValue v;
+    v.type = VDBT_TYPE_FLOAT;
+    v.as.Float = d;
+    return v;
+}
+
+struct VdbValue vdbstring(char* s, int len) {
+    struct VdbValue v;
+    v.type = VDBT_TYPE_STR;
+    v.as.Str.start = malloc_w(sizeof(char) * len);
+    v.as.Str.len = len;
+    memcpy(v.as.Str.start, s, v.as.Str.len);
+    return v;
+}
+
+struct VdbValue vdbbool(bool b) {
+    struct VdbValue v;
+    v.type = VDBT_TYPE_BOOL;
+    v.as.Bool = b;
+    return v;
 }
 
 void vdbstring_concat(struct VdbString* s, const char* fmt, ...) {
@@ -51,7 +64,7 @@ void vdbstring_concat(struct VdbString* s, const char* fmt, ...) {
 
 struct VdbValue vdbvalue_copy(struct VdbValue v) {
     if (v.type == VDBT_TYPE_STR) {
-        return vdbvalue_init_string(v.as.Str.start, v.as.Str.len);
+        return vdbstring(v.as.Str.start, v.as.Str.len);
     }
 
     return v;

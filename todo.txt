@@ -58,6 +58,29 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
+    This may be the time to refactor the entire tree to store data in data blocks (rather than leaf)
+        and also get rid of variable length data completely.  Just store strings directly in the record
+        along with fixed-length data.  This will simplify everything significantly
+
+        How can we rewrite this incrementally so that we don't get lost in the weeds?
+            Idea!!!
+            Rewrite tree to not need data blocks anymore - store strings in record
+                rewrite tree so that data nodes are no longer reference
+                should have separate functions for checking if leaf datacell can fit and record can fit
+                    datacell includes datacell headers (such as next field, and record size)
+                run tests to make sure everything still works
+                test universe database to see if it works
+            Once that works, add data blocks in (they will hold records now) and leaves
+                only hold a reference to data blocks. This will make indexing easier
+
+    Design it specifically for the hyg star database
+        what is the larget int and uint we need for each field?
+        Can floats be used instead of doubles for decimal value fields?
+
+    queries.sql is still failing bc of new_size being 0 (and cur_size is also 0 - does this matter?)
+        getting an fread failed sometimes, but sometimes not.  silently failing server is tricky....
+        cur_size and new_size for varlen data is still weird - getting a 0 for new_size sometimes 
+        
 
     query database is failing with 'realloc' failed - I suspect running out of memory for pages
         Look at valgrind output.txt

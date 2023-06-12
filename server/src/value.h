@@ -20,8 +20,6 @@ struct VdbValue {
         bool Bool;
         double Float;
     } as;
-    uint32_t block_idx;
-    uint32_t idxcell_idx;
 };
 
 struct VdbValueList {

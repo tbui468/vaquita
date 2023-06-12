@@ -20,6 +20,5 @@ void vdb_schema_free(struct VdbSchema* schema);
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
 void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema);
 struct VdbSchema* vdbschema_deserialize(uint8_t* buf);
-uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema);
 
 #endif //VDB_SCHEMA_H

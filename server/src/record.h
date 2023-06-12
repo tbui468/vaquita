@@ -24,13 +24,11 @@ struct VdbRecordSet {
 //[next|occupied|data....]
 
 struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data);
-void vdb_record_free(struct VdbRecord* rec);
-struct VdbRecord* vdb_record_copy(struct VdbRecord* rec);
+void vdbrecord_free(struct VdbRecord* rec);
+struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec);
+int vdbrecord_serialized_size(struct VdbRecord* rec, struct VdbSchema* schema);
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema);
 struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema);
-struct VdbValue vdbrecord_read_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx);
-void vdbrecord_write_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx, struct VdbValue v);
-bool vdbrecord_has_varlen_data(struct VdbRecord* rec);
 void vdbrecord_print(struct VdbString* s, struct VdbRecord* record);
 
 struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key);

@@ -101,29 +101,4 @@ struct VdbSchema* vdbschema_deserialize(uint8_t* buf) {
     return schema;
 }
 
-uint32_t vdbschema_fixedlen_record_size(struct VdbSchema* schema) {
-    uint32_t size = 0;
-    for (uint32_t i = 0; i < schema->count; i++) {
-        size += sizeof(bool); //is_null flag
-        switch (schema->types[i]) {
-            case VDBT_TYPE_INT:
-                size += sizeof(uint64_t);
-                break;
-            case VDBT_TYPE_FLOAT:
-                size += sizeof(double);
-                break;
-            case VDBT_TYPE_STR:
-                size += sizeof(uint32_t) * 2;
-                break;
-            case VDBT_TYPE_BOOL:
-                size += sizeof(bool);
-                break;
-            default:
-                assert(false && "invalid data type");
-                break;
-        }
-    }
-
-    return size;
-}
 

@@ -14,7 +14,7 @@ struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data) {
     return rec;
 }
 
-void vdb_record_free(struct VdbRecord* rec) {
+void vdbrecord_free(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue* d = &rec->data[i];
         if (d->type == VDBT_TYPE_STR) {
@@ -25,7 +25,7 @@ void vdb_record_free(struct VdbRecord* rec) {
     free_w(rec, sizeof(struct VdbRecord));
 }
 
-struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
+struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec) {
     struct VdbRecord* r = malloc_w(sizeof(struct VdbRecord));
     r->count = rec->count; 
     r->data = malloc_w(sizeof(struct VdbValue) * r->count);
@@ -51,35 +51,28 @@ struct VdbRecord* vdb_record_copy(struct VdbRecord* rec) {
                 assert(false && "invalid data type");
                 break;
         }
-        r->data[i].block_idx = d->block_idx;
-        r->data[i].idxcell_idx = d->idxcell_idx;
     }
 
     return r;
 }
 
-static uint32_t vdbrecord_seek_value(struct VdbSchema* schema, uint32_t idx) {
-    uint32_t off = 0;
-
-    for (uint32_t j = 0; j < schema->count; j++) {
-        if (j == idx)
-            break;
-
-        off += sizeof(bool);
-
-        switch (schema->types[j]) {
+int vdbrecord_serialized_size(struct VdbRecord* rec, struct VdbSchema* schema) {
+    int size = 0;
+    for (uint32_t i = 0; i < rec->count; i++) {
+        size += sizeof(bool); //is_null flag
+        switch (schema->types[i]) {
             case VDBT_TYPE_INT:
-                off += sizeof(int64_t);
+                size += sizeof(uint64_t);
                 break;
             case VDBT_TYPE_FLOAT:
-                off += sizeof(double);
+                size += sizeof(double);
                 break;
             case VDBT_TYPE_STR:
-                off += sizeof(uint32_t);
-                off += sizeof(uint32_t);
+                size += sizeof(uint32_t); //string length
+                size += rec->data[i].as.Str.len; //string value
                 break;
             case VDBT_TYPE_BOOL:
-                off += sizeof(bool);
+                size += sizeof(bool);
                 break;
             default:
                 assert(false && "invalid data type");
@@ -87,12 +80,11 @@ static uint32_t vdbrecord_seek_value(struct VdbSchema* schema, uint32_t idx) {
         }
     }
 
-    return off;
+    return size;
 }
 
-static struct VdbValue vdbrecord_read_value(uint8_t* buf, enum VdbTokenType col_type) {
-    struct VdbValue v;
-    v.type = col_type;
+static int vdbrecord_read_value(struct VdbValue* v, uint8_t* buf, enum VdbTokenType col_type) {
+    v->type = col_type;
 
     int data_off = 0;
     bool is_null = *((bool*)(buf + data_off));
@@ -101,21 +93,26 @@ static struct VdbValue vdbrecord_read_value(uint8_t* buf, enum VdbTokenType col_
     //don't switch data type to null since we need to get correct offset
     switch (col_type) {
         case VDBT_TYPE_INT:
-            v.as.Int = *((int64_t*)(buf + data_off));
+            v->as.Int = *((int64_t*)(buf + data_off));
             data_off += sizeof(int64_t);
             break;
         case VDBT_TYPE_FLOAT:
-            v.as.Float = *((double*)(buf + data_off));
+            v->as.Float = *((double*)(buf + data_off));
             data_off += sizeof(double);
             break;
         case VDBT_TYPE_STR:
-            v.block_idx = *((uint32_t*)(buf + data_off));
+            v->as.Str.len = *((uint32_t*)(buf + data_off));
             data_off += sizeof(uint32_t);
-            v.idxcell_idx = *((uint32_t*)(buf + data_off));
-            data_off += sizeof(uint32_t);
+            if (v->as.Str.len > 0) {
+                v->as.Str.start = malloc_w(sizeof(char) * v->as.Str.len);
+                memcpy(v->as.Str.start, buf + data_off, v->as.Str.len);
+                data_off += v->as.Str.len;
+            } else {
+                v->as.Str.start = NULL;
+            }
             break;
         case VDBT_TYPE_BOOL:
-            v.as.Bool = *((bool*)(buf + data_off));
+            v->as.Bool = *((bool*)(buf + data_off));
             data_off += sizeof(bool);
             break;
         default:
@@ -125,13 +122,13 @@ static struct VdbValue vdbrecord_read_value(uint8_t* buf, enum VdbTokenType col_
 
     //switch data type to null
     if (is_null) {
-        v.type = VDBT_TYPE_NULL;
+        v->type = VDBT_TYPE_NULL;
     }
 
-    return v;
+    return data_off;
 }
 
-static void vdbrecord_write_value(uint8_t* buf, struct VdbValue* v, enum VdbTokenType col_type) {
+static int vdbrecord_write_value(uint8_t* buf, struct VdbValue* v, enum VdbTokenType col_type) {
     int off = 0;
     *((bool*)(buf + off)) = v->type == VDBT_TYPE_NULL;
     off += sizeof(bool);
@@ -146,8 +143,10 @@ static void vdbrecord_write_value(uint8_t* buf, struct VdbValue* v, enum VdbToke
             off += sizeof(double);
             break;
         case VDBT_TYPE_STR: {
-            write_u32(buf, v->block_idx, &off);
-            write_u32(buf, v->idxcell_idx, &off);
+            *((uint32_t*)(buf + off)) = v->as.Str.len;
+            off += sizeof(uint32_t);
+            memcpy(buf + off, v->as.Str.start, v->as.Str.len);
+            off += v->as.Str.len; 
             break;
         }
         case VDBT_TYPE_BOOL:
@@ -158,12 +157,14 @@ static void vdbrecord_write_value(uint8_t* buf, struct VdbValue* v, enum VdbToke
             assert(false && "invalid data type");
             break;
     }
+
+    return off;
 }
 
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema) {
+    int off = 0;
     for (uint32_t i = 0; i < rec->count; i++) {
-        int off = vdbrecord_seek_value(schema, i);
-        vdbrecord_write_value(buf + off, &rec->data[i], schema->types[i]);
+        off += vdbrecord_write_value(buf + off, &rec->data[i], schema->types[i]);
     }
 }
 
@@ -172,33 +173,12 @@ struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema) {
     rec->count = schema->count;
     rec->data = malloc_w(sizeof(struct VdbValue) * rec->count);
 
+    int off = 0;
     for (uint32_t i = 0; i < schema->count; i++) {
-        uint32_t off = vdbrecord_seek_value(schema, i);
-        rec->data[i] = vdbrecord_read_value(buf + off, schema->types[i]);
+        off += vdbrecord_read_value(&rec->data[i], buf + off, schema->types[i]);
     }
 
     return rec;
-}
-
-struct VdbValue vdbrecord_read_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx) {
-    uint32_t off = vdbrecord_seek_value(schema, idx);
-    return vdbrecord_read_value(buf + off, schema->types[idx]);
-}
-
-void vdbrecord_write_value_at_idx(uint8_t* buf, struct VdbSchema* schema, uint32_t idx, struct VdbValue v) {
-    uint32_t off = vdbrecord_seek_value(schema, idx);
-    vdbrecord_write_value(buf + off, &v, schema->types[idx]);
-}
-
-bool vdbrecord_has_varlen_data(struct VdbRecord* rec) {
-    for (uint32_t i = 0; i < rec->count; i++) {
-        struct VdbValue* d = &rec->data[i];
-        if (d->type == VDBT_TYPE_STR) {
-            return true;
-        }
-    } 
-
-    return false;
 }
 
 void vdbrecord_print(struct VdbString* s, struct VdbRecord* r) {
@@ -253,7 +233,7 @@ void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec) 
 void vdbrecordset_free(struct VdbRecordSet* rs) {
     for (uint32_t i = 0; i < rs->count; i++) {
         struct VdbRecord* rec = rs->records[i];
-        vdb_record_free(rec);
+        vdbrecord_free(rec);
     }
 
     free_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);

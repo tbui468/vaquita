@@ -297,6 +297,7 @@ static void vdb_allocate_dummy_string(struct VdbValue* value) {
     memcpy(value->as.Str.start, "0", 1);
 }
 
+//used for record insertion - autofills non-specified columns with null
 static void vdb_assign_column_values(struct VdbValue* data, struct VdbSchema* schema, struct VdbTokenList* cols, struct VdbExprList* values) {
     for (uint32_t i = 0; i < schema->count; i++) {
         
@@ -328,9 +329,6 @@ static void vdb_assign_column_values(struct VdbValue* data, struct VdbSchema* sc
             }
         }
 
-        data[i].block_idx = 0;
-        data[i].idxcell_idx = 0;
-
     }
 }
 
@@ -349,7 +347,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     vdb_schema_free(schema);
 
     vdb_tree_insert_record(tree, rec);
-    vdb_record_free(rec);
+    vdbrecord_free(rec);
 
     return VDBRC_SUCCESS;
 }
@@ -375,10 +373,12 @@ struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t k
     cursor->prev_node_idx = cursor->cur_node_idx;
     cursor->prev_rec_idx = cursor->cur_rec_idx;
 
+    /*
+    //TODO: should have cursor start at the specified key
     while (vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, cursor->cur_rec_idx) < key) {
         cursor->prev_rec_idx = cursor->cur_rec_idx;
         cursor->cur_rec_idx++;
-    }
+    }*/
 
     return cursor;
 }
@@ -395,7 +395,9 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
         return NULL;
     }
 
+    printf("attempting to read record\n");
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+    printf("read record\n");
 
     cursor->prev_rec_idx = cursor->cur_rec_idx;
     cursor->cur_rec_idx++;
@@ -501,7 +503,7 @@ void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, st
         return;
 
     for (uint32_t i = limit.as.Int; i < rs->count; i++) {
-        vdb_record_free(rs->records[i]);
+        vdbrecord_free(rs->records[i]);
     }
 
     rs->count = limit.as.Int;

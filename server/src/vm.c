@@ -225,6 +225,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
                 break;
             }
             case VDBST_SELECT: {
+                                   printf("started select\n");
                 char* table_name = to_static_string(stmt->target);
 
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, 0); //cursor to beginning of table

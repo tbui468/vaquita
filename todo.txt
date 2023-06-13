@@ -58,15 +58,13 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Get rid of occupied field since it's not usd anymore
-
-    Cache schema in tree struct rather than allocating/freeing it every time
-
     When traversing tree and comparing keys, should use vdbvalue_compare (which allows comparsion
         between all vdb types).   This will allows keys that are floats and booleans too
         test with databases using floats as keys, and one using booleans as keys
 
     Should NOT allow duplicate keys
+
+    Get rid of occupied field since it's not usd anymore
 
     string keys are NOT currently saved in tree nodes correctly(the pointer /len is saved right now, which doensn't do anything or at worst breaks everything)
         put in some asserts to fail if a string is used as key, or fix this to allow strings as keys

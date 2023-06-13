@@ -65,15 +65,6 @@ static void vdbtree_meta_write_root(struct VdbTree* tree, uint32_t root_idx) {
     vdb_pager_unpin_page(page);
 }
 
-struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree) {
-    assert(vdbtree_node_type(tree, 0) == VDBN_META);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
-
-    struct VdbSchema* schema = vdbschema_deserialize(vdbmeta_schema_ptr(page->buf));
-    vdb_pager_unpin_page(page);
-    return schema;
-}
-
 uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree) {
     assert(vdbtree_node_type(tree, 0) == VDBN_META);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
@@ -245,9 +236,7 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-
-    uint32_t rec_key = rec->data[schema->key_idx].as.Int;
+    uint32_t rec_key = rec->data[tree->schema->key_idx].as.Int;
     uint32_t i;
     for (i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
         uint32_t key = vdbtree_leaf_read_record_key(tree, idx, i).as.Int;
@@ -256,11 +245,9 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
         }
     }
 
-    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec, schema));
+    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec, tree->schema));
 
-    vdbrecord_write(vdbleaf_record_ptr(page->buf, i), rec, schema);
-
-    vdb_schema_free(schema);
+    vdbrecord_write(vdbleaf_record_ptr(page->buf, i), rec, tree->schema);
 
     vdb_pager_unpin_page(page);
 }
@@ -269,12 +256,8 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
-
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     
-    vdbrecord_write(vdbleaf_record_ptr(page->buf, rec_idx), rec, schema);
-
-    vdb_schema_free(schema);
+    vdbrecord_write(vdbleaf_record_ptr(page->buf, rec_idx), rec, tree->schema);
 
     vdb_pager_unpin_page(page);
 }
@@ -291,14 +274,11 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
-    struct VdbValue v = rec->data[schema->key_idx];
+    struct VdbValue v = rec->data[tree->schema->key_idx];
     assert(v.type == VDBT_TYPE_INT);
 
     vdbrecord_free(rec);
-    vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);
     return v;
@@ -307,26 +287,23 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
 void vdbtree_leaf_delete_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
     page->dirty = true;
 
     vdbleaf_delete_idxcell(page->buf, rec_idx);
 
-    vdb_schema_free(schema);
     vdb_pager_unpin_page(page);
 }
 
 void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, struct VdbTokenList* attrs, struct VdbValueList* vl) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     page->dirty = true;
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
 
     for (int i = 0; i < attrs->count; i++) {
-        for (uint32_t j = 0; j < schema->count; j++) {
-            if (strncmp(attrs->tokens[i].lexeme, schema->names[j], attrs->tokens[i].len) == 0) {
+        for (uint32_t j = 0; j < tree->schema->count; j++) {
+            if (strncmp(attrs->tokens[i].lexeme, tree->schema->names[j], attrs->tokens[i].len) == 0) {
                 vdbvalue_free(rec->data[j]);
                 rec->data[j] = vdbvalue_copy(vl->values[i]);
             }
@@ -335,7 +312,6 @@ void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint32_t rec
 
     vdbtree_leaf_write_record(tree, idx, rec_idx, rec);
 
-    vdb_schema_free(schema);
     vdbrecord_free(rec);
     vdb_pager_unpin_page(page);
 }
@@ -350,11 +326,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
         return NULL;
     }
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-
-    struct VdbRecord* rec = vdbrecord_read(vdbleaf_record_ptr(page->buf, rec_idx), schema);
-
-    vdb_schema_free(schema);
+    struct VdbRecord* rec = vdbrecord_read(vdbleaf_record_ptr(page->buf, rec_idx), tree->schema);
 
     vdb_pager_unpin_page(page);
     return rec;
@@ -367,12 +339,10 @@ static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, stru
     uint32_t idx_cells_size = *vdbleaf_record_count_ptr(page->buf) * sizeof(uint32_t);
     uint32_t data_cells_size = *vdbleaf_datacells_size_ptr(page->buf);
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    uint32_t serialized_rec_size = vdbrecord_serialized_size(rec, schema);
+    uint32_t serialized_rec_size = vdbrecord_serialized_size(rec, tree->schema);
     uint32_t idxcell_size = sizeof(uint32_t);
     uint32_t datacell_hdr_size = sizeof(uint32_t) * 2; //next + occupied
     uint32_t total_size = serialized_rec_size + idxcell_size + datacell_hdr_size;
-    vdb_schema_free(schema);
 
     vdb_pager_unpin_page(page);
     return idx_cells_size + data_cells_size + total_size <= VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE;
@@ -421,17 +391,14 @@ void vdbtree_leaf_write_record_key(struct VdbTree* tree, uint32_t idx, uint32_t 
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-
     struct VdbValue v;
     v.type = VDBT_TYPE_INT;
     v.as.Int = key;
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
-    rec->data[schema->key_idx] = v;
+    rec->data[tree->schema->key_idx] = v;
     vdbtree_leaf_write_record(tree, idx, rec_idx, rec);
 
-    vdb_schema_free(schema);
     vdbrecord_free(rec);
 
     vdb_pager_unpin_page(page);
@@ -446,7 +413,7 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     tree->name = strdup_w(name);
     tree->pager = pager;
     tree->f = f;
-//    tree->schema = schema;
+    tree->schema = vdb_schema_copy(schema);
 
     uint32_t meta_idx = vdbtree_meta_init(tree, schema);
     tree->meta_idx = meta_idx;
@@ -465,7 +432,11 @@ struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager)
     tree->f = f;
     tree->pager = pager;
     tree->meta_idx = 0;
-//    tree->schema = vdbtree_meta_read_schema(tree);
+
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
+    tree->schema = vdbschema_deserialize(vdbmeta_schema_ptr(page->buf));
+    vdb_pager_unpin_page(page);
+
     return tree;
 }
 
@@ -473,7 +444,7 @@ void vdb_tree_close(struct VdbTree* tree) {
     fclose_w(tree->f);
     free_w(tree->name, sizeof(char) * (strlen(tree->name) + 1));
     free_w(tree, sizeof(struct VdbTree));
-//    vdb_schema_free(tree->schema);
+    vdb_schema_free(tree->schema);
 }
 
 uint32_t vdbtree_traverse_to_first_leaf(struct VdbTree* tree, uint32_t idx) {
@@ -538,8 +509,7 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
     assert(rec->data[0].type == VDBT_TYPE_INT);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    struct VdbValue key = rec->data[schema->key_idx];
+    struct VdbValue key = rec->data[tree->schema->key_idx];
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
 
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
@@ -547,7 +517,6 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     }
 
     vdbtree_leaf_append_record(tree, leaf_idx, rec);
-    vdb_schema_free(schema);
 }
 
 

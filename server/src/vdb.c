@@ -135,15 +135,14 @@ enum VdbReturnCode vdb_show_tabs(VDBHANDLE h, struct VdbValueList** vl) {
 enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, struct VdbValueList** vl) {
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     *vl = vdbvaluelist_init();
 
-    for (uint32_t i = 0; i < schema->count; i++) {
-        struct VdbValue attr_name = vdbstring(schema->names[i], strlen(schema->names[i]));
+    for (uint32_t i = 0; i < tree->schema->count; i++) {
+        struct VdbValue attr_name = vdbstring(tree->schema->names[i], strlen(tree->schema->names[i]));
         vdbvaluelist_append_value(*vl, attr_name);
 
-        switch (schema->types[i]) {
+        switch (tree->schema->types[i]) {
             case VDBT_TYPE_INT:
                 vdbvaluelist_append_value(*vl, vdbstring("int", 3));
                 break;
@@ -161,8 +160,6 @@ enum VdbReturnCode vdb_describe_table(VDBHANDLE h, const char* name, struct VdbV
                 break;
         }
     }
-
-    vdb_schema_free(schema);
 
     return VDBRC_SUCCESS;
 }
@@ -336,15 +333,11 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct Vdb* db = (struct Vdb*)h;
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    struct VdbValue data[tree->schema->count];
+    vdb_assign_column_values(data, tree->schema, cols, values);
 
-    struct VdbValue data[schema->count];
-    vdb_assign_column_values(data, schema, cols, values);
-
-    struct VdbRecord* rec = vdbrecord_init(schema->count, data); 
+    struct VdbRecord* rec = vdbrecord_init(tree->schema->count, data); 
     
-    vdb_schema_free(schema);
-
     vdb_tree_insert_record(tree, rec);
     vdbrecord_free(rec);
 
@@ -406,13 +399,12 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
 
 bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr* selection) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
     vdbrecordset_append_record(rs, rec);
 
-    struct VdbValue v = vdbexpr_eval(selection, rs, schema);
+    struct VdbValue v = vdbexpr_eval(selection, rs, tree->schema);
     bool result;
     if (v.type == VDBT_TYPE_NULL) {
         result = false;
@@ -424,7 +416,6 @@ bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr*
     }
 
     vdbrecordset_free(rs);
-    vdb_schema_free(schema);
 
     return result;
 }
@@ -466,9 +457,8 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* selection) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    struct VdbValue v = vdbexpr_eval(selection, rs, schema);
+    struct VdbValue v = vdbexpr_eval(selection, rs, tree->schema);
     bool result;
     if (v.type == VDBT_TYPE_NULL) {
         result = false;
@@ -479,13 +469,11 @@ bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs
         result = false;
     }
 
-    vdb_schema_free(schema);
     return result;
 }
 
 struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbExprList* projection, bool aggregate) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     struct VdbRecordSet* final = vdbrecordset_init(NULL);
     struct VdbRecordSet* cur = head;
@@ -498,7 +486,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
             if (expr->type != VDBET_IDENTIFIER || expr->as.identifier.token.type != VDBT_STAR) { //Skip if projection is *
                 struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
                 for (int i = 0; i < projection->count; i++) {
-                    data[i] = vdbexpr_eval(projection->exprs[i], cur, schema);
+                    data[i] = vdbexpr_eval(projection->exprs[i], cur, tree->schema);
                 }
 
                 free_w(rec->data, sizeof(struct VdbValue) * rec->count);
@@ -511,17 +499,14 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
         cur = cur->next;
     }
 
-    vdb_schema_free(schema);
     return final;
 }
 
 bool vdbcursor_apply_having(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
-    struct VdbValue result = vdbexpr_eval(expr, rs, schema);
+    struct VdbValue result = vdbexpr_eval(expr, rs, tree->schema);
 
-    vdb_schema_free(schema);
     return result.as.Bool;
 }
 
@@ -530,9 +515,7 @@ void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, st
     if (expr == NULL)
         return;
 
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-    struct VdbValue limit = vdbexpr_eval(expr, rs, schema);
-    vdb_schema_free(schema);
+    struct VdbValue limit = vdbexpr_eval(expr, rs, tree->schema);
 
     if (limit.as.Int >= rs->count)
         return;
@@ -546,16 +529,14 @@ void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, st
 
 struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExprList* cols) {
     struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-    struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
     struct VdbByteList* bl = vdbbytelist_init();
 
     for (int i = 0; i < cols->count; i++) {
-        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, schema);
+        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, tree->schema);
         vdbvalue_to_bytes(bl, v);
     }
 
-    vdb_schema_free(schema);
     return bl;
 }
 

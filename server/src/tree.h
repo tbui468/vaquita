@@ -13,7 +13,7 @@ struct VdbTree {
     FILE* f;
     struct VdbPager* pager;
     uint32_t meta_idx;
-//    struct VdbSchema* schema;
+    struct VdbSchema* schema;
 };
 
 struct VdbTreeList {
@@ -29,7 +29,6 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
 struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager);
 void vdb_tree_close(struct VdbTree* tree);
 
-struct VdbSchema* vdbtree_meta_read_schema(struct VdbTree* tree);
 uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree);
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);

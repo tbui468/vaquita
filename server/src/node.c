@@ -137,6 +137,14 @@ void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fix
     *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = (uint32_t)true; //occupied field
 }
 
+void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx) {
+    (*vdbleaf_record_count_ptr(buf))--;
+    uint8_t* dst = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
+    uint8_t* src = dst + sizeof(uint32_t);
+    size_t size = (*vdbleaf_record_count_ptr(buf) - idxcell_idx) * sizeof(uint32_t);
+    memmove(dst, src, size);
+}
+
 /*
  * Shared node functions
  */

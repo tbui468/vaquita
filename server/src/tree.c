@@ -308,12 +308,11 @@ void vdbtree_leaf_delete_record(struct VdbTree* tree, uint32_t idx, uint32_t rec
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
+    page->dirty = true;
 
-    struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
-    *vdbleaf_record_occupied_ptr(page->buf, rec_idx) = (uint32_t)false;
+    vdbleaf_delete_idxcell(page->buf, rec_idx);
 
     vdb_schema_free(schema);
-    vdbrecord_free(rec);
     vdb_pager_unpin_page(page);
 }
 
@@ -322,6 +321,7 @@ void vdbtree_leaf_update_record(struct VdbTree* tree, uint32_t idx, uint32_t rec
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
 
+    page->dirty = true;
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
 
     for (int i = 0; i < attrs->count; i++) {
@@ -446,6 +446,7 @@ struct VdbTree* vdb_tree_init(const char* name, struct VdbSchema* schema, struct
     tree->name = strdup_w(name);
     tree->pager = pager;
     tree->f = f;
+//    tree->schema = schema;
 
     uint32_t meta_idx = vdbtree_meta_init(tree, schema);
     tree->meta_idx = meta_idx;
@@ -464,6 +465,7 @@ struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager)
     tree->f = f;
     tree->pager = pager;
     tree->meta_idx = 0;
+//    tree->schema = vdbtree_meta_read_schema(tree);
     return tree;
 }
 
@@ -471,6 +473,7 @@ void vdb_tree_close(struct VdbTree* tree) {
     fclose_w(tree->f);
     free_w(tree->name, sizeof(char) * (strlen(tree->name) + 1));
     free_w(tree, sizeof(struct VdbTree));
+//    vdb_schema_free(tree->schema);
 }
 
 uint32_t vdbtree_traverse_to_first_leaf(struct VdbTree* tree, uint32_t idx) {
@@ -503,6 +506,7 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
     for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
         struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, i);
         if (vdbtree_node_type(tree, p.block_idx) == VDBN_LEAF && vdbtree_leaf_read_record_count(tree, p.block_idx) > 0) {
+            //TODO: record may be NULL (eg, deleted record), so need to check that before checking key
             struct VdbValue last_rec_key = vdbtree_leaf_read_record_key(tree, p.block_idx, vdbtree_leaf_read_record_count(tree, p.block_idx) - 1);
             if (key.as.Int <= last_rec_key.as.Int) {
                 return p.block_idx;
@@ -513,13 +517,13 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
             while (vdbtree_node_type(tree, right.block_idx) != VDBN_LEAF) {
                 right = vdbtree_intern_read_right_ptr(tree, right.block_idx);
             }
+            //TODO: record may be NULL (eg, deleted record), so need to check that before checking key
             struct VdbValue last_rec_key = vdbtree_leaf_read_record_key(tree, right.block_idx, vdbtree_leaf_read_record_count(tree, right.block_idx) - 1);
             if (key.as.Int <= last_rec_key.as.Int) {
                 return vdb_tree_traverse_to(tree, p.block_idx, key);
             }
         }
     }
-
     //if not found, check right pointer
     struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);
 

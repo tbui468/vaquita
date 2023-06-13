@@ -98,8 +98,6 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbString* output) {
     vdbstmtlist_free(stmts);
     vdberrorlist_free(parse_errors);
 
-    printf("at end\n");
-
     if (end) {
         return true;
     }
@@ -215,9 +213,7 @@ int serve() {
                 }
                 buf[request_len] = '\0';
 
-                printf("executing query...\n");
                 bool end = execute_query(&h, buf, &s);
-                printf("query done.  response length: %.*s\n", s.len, s.start);
 
                 int32_t res_len = s.len;
                 vdbserver_send(new_fd, (char*)&res_len, sizeof(int32_t));

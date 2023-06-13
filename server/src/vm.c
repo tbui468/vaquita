@@ -193,15 +193,14 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
             case VDBST_UPDATE: {
                 char* table_name = to_static_string(stmt->target);
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to begining of table
-                struct VdbRecord* rec;
-                while ((rec = vdbcursor_fetch_record(cursor))) {
-                    struct VdbRecordSet* rs = vdbrecordset_init(NULL);
-                    vdbrecordset_append_record(rs, rec);
-                    if (vdbcursor_apply_selection(cursor, rs, stmt->as.update.selection)) {
-                        vdbcursor_update_prev_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
+
+                while (cursor->cur_node_idx != 0) {
+                    if (vdbcursor_record_passes_selection(cursor, stmt->as.update.selection)) {
+                        vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
+                    } else {
+                        struct VdbRecord* rec = vdbcursor_fetch_record(cursor);
+                        vdbrecord_free(rec);
                     }
-                        
-                    vdbrecordset_free(rs);
                 }
 
                 vdbcursor_free(cursor);
@@ -210,15 +209,14 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
             case VDBST_DELETE: {
                 char* table_name = to_static_string(stmt->target);
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to begining of table
-                struct VdbRecord* rec;
-                while ((rec = vdbcursor_fetch_record(cursor))) {
-                    struct VdbRecordSet* rs = vdbrecordset_init(NULL);
-                    vdbrecordset_append_record(rs, rec);
-                    if (vdbcursor_apply_selection(cursor, rs, stmt->as.delete.selection)) {
-                        vdbcursor_delete_prev_record(cursor);
+
+                while (cursor->cur_node_idx != 0) {
+                    if (vdbcursor_record_passes_selection(cursor, stmt->as.delete.selection)) {
+                        vdbcursor_delete_record(cursor);
+                    } else {
+                        struct VdbRecord* rec = vdbcursor_fetch_record(cursor);
+                        vdbrecord_free(rec);
                     }
-                        
-                    vdbrecordset_free(rs);
                 }
 
                 vdbcursor_free(cursor);
@@ -227,9 +225,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
             case VDBST_SELECT: {
                 char* table_name = to_static_string(stmt->target);
 
-                printf("started select\n");
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to beginning of table
-                printf("after init cursor\n");
 
                 struct VdbBinaryTree* bt = vdbbinarytree_init();
                 struct VdbHashTable* distinct_table = vdbhashtable_init();
@@ -237,10 +233,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
 
                 struct VdbRecord* rec;
 
-                printf("Before fetching records\n");
-
                 while ((rec = vdbcursor_fetch_record(cursor))) {
-                    printf("beginning of fetch loop\n");
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
                     if (stmt->as.select.grouping->count == 0) {
@@ -269,10 +262,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output)
                         free_w(rs, sizeof(struct VdbRecordSet));
                         vdbhashtable_insert_entry(grouping_table, key, rec);
                     }
-                    printf("end of fetch loop\n");
                 }
 
-                printf("after fetching records\n");
                 //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)
                 //TODO: should not manually use hash table internals like this - error prone.  Should be done with hashtable interface
                 if (stmt->as.select.grouping->count > 0) {

@@ -13,6 +13,7 @@ struct VdbTree {
     FILE* f;
     struct VdbPager* pager;
     uint32_t meta_idx;
+//    struct VdbSchema* schema;
 };
 
 struct VdbTreeList {

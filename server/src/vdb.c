@@ -337,7 +337,6 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
 
     struct VdbSchema* schema = vdbtree_meta_read_schema(tree);
-//    uint32_t key = vdbtree_meta_increment_primary_key_counter(tree);
 
     struct VdbValue data[schema->count];
     vdb_assign_column_values(data, schema, cols, values);

@@ -119,6 +119,24 @@ uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size) {
     return new_rec_idx;
 }
 
+void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fixedlen_size) {
+    uint8_t* src = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
+    uint8_t* dst = src + sizeof(uint32_t);
+    size_t size = *vdbleaf_record_count_ptr(buf) * sizeof(uint32_t);
+    memmove(dst, src, size);
+
+    uint32_t new_datacells_size = *vdbleaf_datacells_size_ptr(buf) + sizeof(uint32_t) * 2 + fixedlen_size;
+    *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
+
+    *vdbleaf_datacells_size_ptr(buf) = new_datacells_size;
+    (*vdbleaf_record_count_ptr(buf))++;
+
+    int idx_off = VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
+    int datacell_off = *((uint32_t*)(buf + idx_off));
+    *((uint32_t*)(buf + datacell_off)) = 0; //next field
+    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = (uint32_t)true; //occupied field
+}
+
 /*
  * Shared node functions
  */

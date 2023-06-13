@@ -39,6 +39,7 @@ uint32_t* vdbleaf_next_leaf_ptr(uint8_t* buf);
 void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);
 uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx);
 uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);
+void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fixedlen_size);
 
 //shared node functions
 enum VdbNodeType* vdbnode_type(uint8_t* buf);

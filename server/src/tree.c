@@ -236,11 +236,11 @@ static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struc
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
-    uint32_t rec_key = rec->data[tree->schema->key_idx].as.Int;
+    struct VdbValue rec_key = rec->data[tree->schema->key_idx];
     uint32_t i;
     for (i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
-        uint32_t key = vdbtree_leaf_read_record_key(tree, idx, i).as.Int;
-        if (rec_key < key) {
+        struct VdbValue key = vdbtree_leaf_read_record_key(tree, idx, i);
+        if (vdbvalue_compare(rec_key, key) == -1) {
             break;
         }
     }
@@ -276,7 +276,6 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
     struct VdbValue v = rec->data[tree->schema->key_idx];
-    assert(v.type == VDBT_TYPE_INT);
 
     vdbrecord_free(rec);
 
@@ -387,22 +386,6 @@ uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx) {
     return next_leaf_idx;
 }
 
-void vdbtree_leaf_write_record_key(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, uint32_t key) {
-    assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-
-    struct VdbValue v;
-    v.type = VDBT_TYPE_INT;
-    v.as.Int = key;
-
-    struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
-    rec->data[tree->schema->key_idx] = v;
-    vdbtree_leaf_write_record(tree, idx, rec_idx, rec);
-
-    vdbrecord_free(rec);
-
-    vdb_pager_unpin_page(page);
-}
 
 /*
  * VdbTree API
@@ -477,9 +460,8 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
     for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
         struct VdbPtr p = vdbtree_intern_read_ptr(tree, idx, i);
         if (vdbtree_node_type(tree, p.block_idx) == VDBN_LEAF && vdbtree_leaf_read_record_count(tree, p.block_idx) > 0) {
-            //TODO: record may be NULL (eg, deleted record), so need to check that before checking key
             struct VdbValue last_rec_key = vdbtree_leaf_read_record_key(tree, p.block_idx, vdbtree_leaf_read_record_count(tree, p.block_idx) - 1);
-            if (key.as.Int <= last_rec_key.as.Int) {
+            if (vdbvalue_compare(key, last_rec_key) <= 0) {
                 return p.block_idx;
             }
         } else if (vdbtree_node_type(tree, p.block_idx) == VDBN_INTERN) {
@@ -488,9 +470,8 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
             while (vdbtree_node_type(tree, right.block_idx) != VDBN_LEAF) {
                 right = vdbtree_intern_read_right_ptr(tree, right.block_idx);
             }
-            //TODO: record may be NULL (eg, deleted record), so need to check that before checking key
             struct VdbValue last_rec_key = vdbtree_leaf_read_record_key(tree, right.block_idx, vdbtree_leaf_read_record_count(tree, right.block_idx) - 1);
-            if (key.as.Int <= last_rec_key.as.Int) {
+            if (vdbvalue_compare(key, last_rec_key) <= 0) {
                 return vdb_tree_traverse_to(tree, p.block_idx, key);
             }
         }
@@ -508,7 +489,6 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     uint32_t root_idx = vdbtree_meta_read_root(tree);
-    assert(rec->data[0].type == VDBT_TYPE_INT);
     struct VdbValue key = rec->data[tree->schema->key_idx];
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
 
@@ -598,8 +578,8 @@ static void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t dept
     } else {
         printf(": ");
         for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
-            uint32_t key = vdbtree_leaf_read_record_key(tree, idx, i).as.Int;
-            printf("%d", key);
+            //uint32_t key = vdbtree_leaf_read_record_key(tree, idx, i).as.Int;
+            //printf("%d", key);
             if (i < vdbtree_leaf_read_record_count(tree, idx) - 1) {
                 printf(", ");
             }

@@ -361,7 +361,7 @@ void vdb_debug_print_tree(VDBHANDLE h, const char* name) {
     vdbtree_print(tree);
 }
 
-struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, uint32_t key) {
+struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, struct VdbValue key) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
     cursor->db = (struct Vdb*)h;
     cursor->table_name = strdup_w(table_name);

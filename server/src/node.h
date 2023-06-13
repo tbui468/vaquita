@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "value.h"
 
 enum VdbNodeType {
     VDBN_META,
@@ -12,8 +13,10 @@ enum VdbNodeType {
 
 struct VdbPtr {
     uint32_t block_idx;
-    uint32_t key;
+    struct VdbValue key;
 };
+
+
 
 //meta data node
 uint32_t* vdbmeta_auto_counter_ptr(uint8_t* buf);

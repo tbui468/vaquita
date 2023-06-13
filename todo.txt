@@ -58,8 +58,8 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Change VdbPtr key field to a struct VdbValue type (rather than uint32_t) to allow
-        for any data type as index later
+    When traversing tree and comparing keys, should use vdbvalue_compare (which allows comparsion
+        between all vdb types).   This will make it work with strings, floats and booleans too
 
     Rewrite tree to allow insertion in any order
         All the tests should still pass after this since cursor is going from index 0

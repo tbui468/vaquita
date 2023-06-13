@@ -29,19 +29,19 @@ void* vdbmeta_schema_ptr(uint8_t* buf) {
 
 /*
  * Internal node de/serialization
- * [type|parent_idx|right ptr idx|right ptr key|ptr count|datacells size| ... |index cells...datacells]
+ * [type|parent_idx|ptr count|datacells size|right ptr| ... |index cells...datacells]
  */
 
-struct VdbPtr* vdbintern_rightptr_ptr(uint8_t* buf) {
-    return (struct VdbPtr*)(buf + sizeof(uint32_t) * 2);
-}
-
 uint32_t* vdbintern_nodeptr_count_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
+    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
 }
 
 uint32_t* vdbintern_datacells_size_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 5);
+    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
+}
+
+struct VdbPtr* vdbintern_rightptr_ptr(uint8_t* buf) {
+    return (struct VdbPtr*)(buf + sizeof(uint32_t) * 4);
 }
 
 struct VdbPtr* vdbintern_nodeptr_ptr(uint8_t* buf, uint32_t idx) {
@@ -55,20 +55,20 @@ void vdbintern_append_nodeptr(uint8_t* buf, struct VdbPtr ptr) {
     uint32_t count = *vdbintern_nodeptr_count_ptr(buf);
     uint32_t indexcell_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * count;
     uint32_t datacells_size = *vdbintern_datacells_size_ptr(buf);
-    uint32_t datacell_off = VDB_PAGE_SIZE - datacells_size - sizeof(uint32_t) * 2;
+    uint32_t datacell_off = VDB_PAGE_SIZE - datacells_size - sizeof(uint32_t) - sizeof(struct VdbValue);
 
     *((uint32_t*)(buf + indexcell_off)) = datacell_off;
     *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = ptr.block_idx;
-    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 1)) = ptr.key;
+    *((struct VdbValue*)(buf + datacell_off + sizeof(uint32_t) * 1)) = ptr.key;
 
     *vdbintern_nodeptr_count_ptr(buf) = count + 1;
-    *vdbintern_datacells_size_ptr(buf) = datacells_size + sizeof(uint32_t) * 2;
+    *vdbintern_datacells_size_ptr(buf) = datacells_size + sizeof(uint32_t) + sizeof(struct VdbValue);
 }
 
 bool vdbintern_can_fit_nodeptr(uint8_t* buf) {
     uint32_t indexcells_size = *vdbintern_nodeptr_count_ptr(buf) * sizeof(uint32_t);
     uint32_t datacells_size = *vdbintern_datacells_size_ptr(buf);
-    uint32_t ptr_entry_size = sizeof(uint32_t) * 3; //index cell + two pointer fields (idx and key)
+    uint32_t ptr_entry_size = sizeof(uint32_t) * 2 + sizeof(struct VdbValue); //index cell + block_idx + key
 
     return VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE >= indexcells_size + datacells_size + ptr_entry_size;
 }

@@ -60,14 +60,14 @@ bool vdbserver_recv(int sockfd, char* buf, int len) {
     return true;
 }
 
-bool execute_query(VDBHANDLE* h, char* query, struct VdbString* output) {
+bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
 
     if (vdblexer_lex(query, &tokens, &lex_errors) == VDBRC_ERROR) {
         for (int i = 0; i < 1; i++) {
-            struct VdbError e = lex_errors->errors[i];
-            vdbstring_concat(output, "error [%d]: %s\n", e.line, e.msg);
+            //struct VdbError e = lex_errors->errors[i];
+            //vdbstring_concat(output, "error [%d]: %s\n", e.line, e.msg);
         }
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
@@ -80,8 +80,8 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbString* output) {
 
     if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
         for (int i = 0; i < 1; i++) {
-            struct VdbError e = parse_errors->errors[i];
-            vdbstring_concat(output, "error [%d]: %s\n", e.line, e.msg);
+            //struct VdbError e = parse_errors->errors[i];
+            //vdbstring_concat(output, "error [%d]: %s\n", e.line, e.msg);
         }
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
@@ -180,7 +180,6 @@ int serve() {
     socklen_t sin_size;
     struct sockaddr_storage their_addr;
     int new_fd;
-    char s[INET6_ADDRSTRLEN];
 
     while (true) {
         sin_size = sizeof(struct sockaddr_storage);
@@ -196,10 +195,6 @@ int serve() {
 
             VDBHANDLE h = NULL;
 
-            //struct VdbString s = vdbstring_init("connected to localhost:3333\n");
-            struct VdbString s;
-            s.start = NULL;
-            s.len = 0;
             while (true) {
                 int32_t request_len;
                 if (!vdbserver_recv(new_fd, (char*)&request_len, sizeof(int32_t))) {
@@ -213,23 +208,20 @@ int serve() {
                 }
                 buf[request_len] = '\0';
 
-                bool end = execute_query(&h, buf, &s);
+                struct VdbByteList* response_buf = vdbbytelist_init();
+                uint32_t count = response_buf->count;
+                vdbbytelist_append_bytes(response_buf, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
+                bool end = execute_query(&h, buf, response_buf);
+                *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
 
-                int32_t res_len = s.len;
-                vdbserver_send(new_fd, (char*)&res_len, sizeof(int32_t));
-                vdbserver_send(new_fd, s.start, res_len);
-
-                free_w(s.start, s.len);
-                s.start = NULL;
-                s.len = 0;
+                vdbserver_send(new_fd, (char*)(response_buf->values), sizeof(uint32_t));
+                vdbserver_send(new_fd, response_buf->values + sizeof(uint32_t), response_buf->count - sizeof(uint32_t));
 
                 if (end) {
                     printf("client released database handle\n");
                     break;
                 }
             }
-
-            free_w(s.start, s.len);
 
             close(new_fd);
             exit(0);
@@ -243,6 +235,7 @@ int serve() {
 }
 
 int main(int argc, char** argv) {
+    argv = argv;
     if (argc > 1) {
         printf("usage: vdb\n");
     } else {

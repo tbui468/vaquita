@@ -27,6 +27,7 @@ void vdbintlist_append_int(struct VdbIntList* il, int value);
 struct VdbByteList* vdbbytelist_init();
 void vdbbytelist_free(struct VdbByteList* bl);
 void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte);
+void vdbbytelist_append_bytes(struct VdbByteList* bl, uint8_t* bytes, int count);
 
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);
@@ -53,6 +54,7 @@ int closedir_w(DIR* d);
 struct dirent* readdir_w(DIR* d);
 char* strdup_w(const char* s);
 int vsnprintf_w(char* s, size_t size, const char* fmt, va_list ap);
+int snprintf_w(char* s, size_t size, const char* fmt, ...);
 
 //error handling
 void err_quit(const char* msg);

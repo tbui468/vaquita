@@ -36,7 +36,61 @@ int main(int argc, char** argv) {
         if (!(buf = vdbclient_execute_query(h, queries)))
             printf("server disconnected\n");
 
-        printf("%s", buf);
+        int32_t size = *((int32_t*)buf);
+        int32_t off = sizeof(int32_t);
+        while (off < size) {
+            int row_count = *((int32_t*)(buf + off));
+            off += sizeof(int32_t);
+
+            int col_count = *((int32_t*)(buf + off));
+            off += sizeof(int32_t);
+            for (int row = 0; row < row_count; row++) {
+                for (int col = 0; col < col_count; col++) {
+                    enum VdbTokenType type = *((uint32_t*)(buf + off));     
+                    off += sizeof(uint32_t);
+                    switch (type) {
+                        case VDBT_TYPE_STR: {
+                            int len = *((uint32_t*)(buf + off));
+                            off += sizeof(uint32_t);
+                            char s[len + 1];
+                            memcpy(s, buf + off, len);
+                            off += len;
+                            s[len] = '\0';
+                            printf("%s", s);
+                            break;
+                        }
+                        case VDBT_TYPE_INT: {
+                            int64_t i = *((int64_t*)(buf + off));
+                            off += sizeof(int64_t);
+                            printf("%ld", i);
+                            break;
+                        }
+                        case VDBT_TYPE_BOOL: {
+                            bool b = *((bool*)(buf + off));
+                            off += sizeof(bool);
+                            printf("%d", b);
+                            break;
+                        }
+                        case VDBT_TYPE_FLOAT: {
+                            double d = *((double*)(buf + off));
+                            off += sizeof(double);
+                            printf("%f", d);
+                            break;
+                        }
+                        case VDBT_TYPE_NULL: {
+                            printf("null");
+                            break;
+                        }
+                        default:
+                            break;
+                    }
+                    if (col != col_count - 1)
+                        printf(", ");
+                }
+                printf("\n");
+            }
+        }
+
         free(buf);
 
         free(queries);

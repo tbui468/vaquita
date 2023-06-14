@@ -30,6 +30,7 @@ int vdbrecord_serialized_size(struct VdbRecord* rec, struct VdbSchema* schema);
 void vdbrecord_write(uint8_t* buf, struct VdbRecord* rec, struct VdbSchema* schema);
 struct VdbRecord* vdbrecord_read(uint8_t* buf, struct VdbSchema* schema);
 void vdbrecord_print(struct VdbString* s, struct VdbRecord* record);
+void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r);
 
 struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key);
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);

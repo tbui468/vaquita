@@ -8,7 +8,8 @@
 enum VdbNodeType {
     VDBN_META,
     VDBN_INTERN,
-    VDBN_LEAF
+    VDBN_LEAF,
+    VDBN_DATA
 };
 
 struct VdbPtr {
@@ -16,12 +17,17 @@ struct VdbPtr {
     struct VdbValue key;
 };
 
-
+struct VdbRecordPtr {
+    uint32_t block_idx;
+    uint32_t idxcell_idx;
+    struct VdbValue key;
+};
 
 //meta data node
 uint32_t* vdbmeta_auto_counter_ptr(uint8_t* buf);
 uint32_t* vdbmeta_root_ptr(uint8_t* buf);
 void* vdbmeta_schema_ptr(uint8_t* buf);
+uint32_t vdbmeta_get_data_block(uint8_t* buf, uint32_t record_size); //TODO: meta node holds currently free data block
 
 //internal node
 struct VdbPtr* vdbintern_rightptr_ptr(uint8_t* buf);
@@ -38,9 +44,12 @@ uint32_t* vdbleaf_datacells_size_ptr(uint8_t* buf);
 uint32_t* vdbleaf_next_leaf_ptr(uint8_t* buf);
 void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);
 uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx);
-uint32_t vdbleaf_append_record_cell(uint8_t* buf, uint32_t fixedlen_size);
 void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fixedlen_size);
 void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx);
+
+//data node
+void* vdbdata_record_ptr(uint8_t* buf, uint32_t idxcell_idx); //TODO
+uint32_t vdbdata_append_record_cell(uint8_t* buf, uint32_t record_size); //TODO
 
 //shared node functions
 enum VdbNodeType* vdbnode_type(uint8_t* buf);

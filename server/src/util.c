@@ -57,6 +57,17 @@ void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte) {
     bl->values[bl->count++] = byte;
 }
 
+void vdbbytelist_append_bytes(struct VdbByteList* bl, uint8_t* bytes, int count) {
+    while (bl->count + count > bl->capacity) {
+        int old_cap = bl->capacity;
+        bl->capacity *= 2;
+        bl->values = realloc_w(bl->values, sizeof(uint8_t) * bl->capacity, sizeof(uint8_t) * old_cap);
+    }
+
+    memcpy(bl->values + bl->count, bytes, count);
+    bl->count += count;
+}
+
 int get_filename(FILE* f, char* buf, ssize_t max_len) {
     get_pathname(f, buf, max_len);
     char* end = strrchr(buf, '/');
@@ -262,6 +273,14 @@ int vsnprintf_w(char* s, size_t size, const char* fmt, va_list ap) {
         err_quit("vsnprintf failed");
 
     return res;
+}
+
+int snprintf_w(char* s, size_t size, const char* fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    int result = vsnprintf_w(s, size, fmt, ap);
+    va_end(ap);
+    return result;
 }
 
 void read_u32(uint32_t* dst, uint8_t* buf, int* off) {

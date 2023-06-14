@@ -3,6 +3,17 @@
 
 typedef void* VDBHANDLE;
 
+//TODO: shouldn't require us to copy this over from server token.h
+//      this is error prone
+enum VdbTokenType {
+    VDBT_TYPE_STR,
+    VDBT_TYPE_INT,
+    VDBT_TYPE_BOOL,
+    VDBT_TYPE_FLOAT,
+    VDBT_TYPE_NULL
+};
+
+
 #define MAXDATASIZE 1024
 
 #if defined _WIN32 || _WIN64
@@ -187,21 +198,24 @@ char* vdbclient_execute_query(VDBHANDLE h, char* request) {
     vdbclient_send(c, request, l);
 
     int32_t recv_len;
-    if (!vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t)))
+    if (!vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t))) {
+        printf("failed to recv data length\n");
         return NULL;
+    }
 
-    char* buf = malloc(sizeof(char) * (recv_len + 1));
+    char* buf = malloc(sizeof(int32_t) + sizeof(char) * recv_len);
     if (!buf) {
         printf("malloc failed\n");
         exit(1);
     }
 
-    if (!vdbclient_recv(c, buf, recv_len)) {
+    *((int32_t*)buf) = recv_len;
+
+    if (!vdbclient_recv(c, buf + sizeof(int32_t), recv_len - sizeof(int32_t))) {
+        printf("failed to recv data\n");
         free(buf);
-        return false;
+        return NULL;
     }
-    
-    buf[recv_len] = '\0';
 
     return buf;
 }

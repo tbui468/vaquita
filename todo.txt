@@ -58,31 +58,56 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Should NOT allow duplicate keys
+    Make sure all tests pass
+        will need to rewrite to NOT include trailing comma in .expected files
+        some tests are segfaulting too
 
-    Get rid of occupied field since it's not usd anymore
+    Check with sdl_game
 
-    string keys are NOT currently saved in tree nodes correctly(the pointer /len is saved right now, which doensn't do anything or at worst breaks everything)
-        put in some asserts to fail if a string is used as key, or fix this to allow strings as keys
+    Client should have a function called deserialize_tuple that returns a struct VdbTupleSet (which is like a record)
+        This lets the client avoid working with the buffers directly (which is error prone)
+
+    Serialize bytes sent across wire:
+        [size|row count|col count|col types...|...data...|...repeat row/col/types/data...]
 
     Add in data blocks to store record data
         leaves will now only hold ptrs to blocks/idx and keys
-        still only insert data if entire record fits in current data block (so no overflow)
-        also assume that the largest record will fit into a single data block (so no overflow)
+            rename leaf functions to show that they hold recordptr and NOT records
+            
+        Write code in tree so that we can see what API is needed for data nodes
 
-        data blocks will have similar layout as internal and leaf blocks (header + indexcells + datacells)
-            leaves will now hold key + data_block_idx + record_idx
+        Implement data node API
+    
+        meta node holds ptr to current data node - implement this function
+
+    Should NOT allow duplicate keys
+
+    Get rid of occupied field since it's not used anymore
+
+    strings need work
+        string keys are NOT currently saved in tree nodes correctly(the pointer /len is saved right now, which doensn't do anything or at worst breaks everything)
+            put in some asserts to fail if a string is used as key, or fix this to allow strings as keys
+
+        update will not work correctly if string fields are different sizes now...
+
+    deleted datacells in leaf are not being reclaimed right now
+        this can also be fixed when we switch over to data blocks to hold records
 
     along with id, index columns x and y
         will require rewrite of tree.c/h to allow insertion anywhere (rather than just appending)
         will make things a lot faster once cursor(s) know the start/end range of indices to search
+        indexes should be stored in tree metadata
 
-    update will not work correctly if string fields are different sizes now...
+    Add BETWEEN keyword to allow easier query of ranges
+        selecting rectangles/arcs in star viewer will be easy using this
 
     Design it specifically for the hyg star database
         what is the larget int and uint we need for each field?
         Can floats be used instead of doubles for decimal value fields?
+        Only store the fields we need (id, x, y, z, prop, con, etc)
         Need different threads (or use non-blocking sockets) to make it run better
+
+    Should send tuples encoded in binary over wire rather than strings
 
     select * from planets; //this should report error since there is no table called planets in universe db
         this was causing problems since I kept typing the wrong table name in (this shouldn't happend again)

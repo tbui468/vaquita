@@ -4,6 +4,6 @@
 #include "vdb.h"
 #include "parser.h"
 
-bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbString* output);
+bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* output);
 
 #endif //VDB_VM_H

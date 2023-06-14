@@ -333,9 +333,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 vdbbytelist_append_bytes(output, (uint8_t*)&final->count, sizeof(uint32_t));
                 if (final->count > 0) {
                     vdbbytelist_append_bytes(output, (uint8_t*)&final->records[0]->count, sizeof(uint32_t));
-                    for (uint32_t i = 0; i < final->count; i++) {
-                        vdbrecord_serialize_to_bytes(output, final->records[i]);
-                    }
+                } else {
+                    uint32_t zero = 0;
+                    vdbbytelist_append_bytes(output, (uint8_t*)&zero, sizeof(uint32_t));
+                }
+
+                for (uint32_t i = 0; i < final->count; i++) {
+                    vdbrecord_serialize_to_bytes(output, final->records[i]);
                 }
 
                 vdbcursor_free(cursor);

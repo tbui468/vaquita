@@ -60,7 +60,12 @@ In release mode:
 *******************************TODO**************************************************
     Make sure all tests pass
         will need to rewrite to NOT include trailing comma in .expected files
-        some tests are segfaulting too
+        also get rid of trailing spaces
+        could just manually do it
+
+    client could use a cleaner API to deserialize data
+        shouldn't need to manually read bytes
+        should deserialize into a struct that client can manipulate using fields/count
 
     Check with sdl_game
 

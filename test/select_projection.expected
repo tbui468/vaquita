@@ -2,9 +2,9 @@ created database sol
 opened database sol
 created table planets
 inserted 3 record(s) into planets
-1, Neptune, 
-2, Mars, 
-3, Venus, 
+1, Neptune
+2, Mars
+3, Venus
 dropped table planets
 closed database sol
 dropped database sol

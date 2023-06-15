@@ -2,8 +2,8 @@ created database sol
 opened database sol
 created table planets
 inserted 2 record(s) into planets
-2, Earth, 1, false, 
-2, Earth, 1, false, 
-2, Earth, 1, false, 
+2, Earth, 1, false
+2, Earth, 1, false
+2, Earth, 1, false
 closed database sol
 dropped database sol

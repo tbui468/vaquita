@@ -58,22 +58,43 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Make sure all tests pass
-        will need to rewrite to NOT include trailing comma in .expected files
-        also get rid of trailing spaces
-        could just manually do it
-
     client could use a cleaner API to deserialize data
         shouldn't need to manually read bytes
         should deserialize into a struct that client can manipulate using fields/count
 
+        struct VdbReader r = {buf};
+        while (vdbreader_has_unread_bytes(reader)) {
+            vdbreader_next_tupleset_dim(reader, uint32_t* row, uint32_t* col);
+            for (uint32_t i = 0; i < row; i++) {
+                enum VdbTokenType type = vdbreader_next_type(reader);
+                switch (type) {
+                    case VDBT_TYPE_INT:
+                        int64_t num = vdbreader_next_int(reader);
+                        //do something with num
+                        break;
+                    case VDBT_TYPE_FLOAT:
+                        double num = vdbreader_next_float(reader);
+                        //do something with num
+                        break;
+                    case VDBT_TYPE_STR:
+                        char* s = vdbreader_next_string(reader);
+                        //do something with s
+                        //free s after done
+                        break;
+                    case VDBT_TYPE_BOOL:
+                        bool b = vdbreader_next_bool(reader);
+                        //do something with b
+                        break;
+                    case VDBT_TYPE_NULL:
+                        //do something with null value
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
     Check with sdl_game
-
-    Client should have a function called deserialize_tuple that returns a struct VdbTupleSet (which is like a record)
-        This lets the client avoid working with the buffers directly (which is error prone)
-
-    Serialize bytes sent across wire:
-        [size|row count|col count|col types...|...data...|...repeat row/col/types/data...]
 
     Add in data blocks to store record data
         leaves will now only hold ptrs to blocks/idx and keys
@@ -84,19 +105,6 @@ In release mode:
         Implement data node API
     
         meta node holds ptr to current data node - implement this function
-
-    Should NOT allow duplicate keys
-
-    Get rid of occupied field since it's not used anymore
-
-    strings need work
-        string keys are NOT currently saved in tree nodes correctly(the pointer /len is saved right now, which doensn't do anything or at worst breaks everything)
-            put in some asserts to fail if a string is used as key, or fix this to allow strings as keys
-
-        update will not work correctly if string fields are different sizes now...
-
-    deleted datacells in leaf are not being reclaimed right now
-        this can also be fixed when we switch over to data blocks to hold records
 
     along with id, index columns x and y
         will require rewrite of tree.c/h to allow insertion anywhere (rather than just appending)
@@ -111,6 +119,22 @@ In release mode:
         Can floats be used instead of doubles for decimal value fields?
         Only store the fields we need (id, x, y, z, prop, con, etc)
         Need different threads (or use non-blocking sockets) to make it run better
+
+    Use non-blocking sockets (or threads) to allow client to continue processing
+        while server is executing queries
+
+    Should NOT allow duplicate keys
+
+    Get rid of occupied field since it's not used anymore
+
+    strings need work
+        string keys are NOT currently saved in tree nodes correctly(the pointer /len is saved right now, which doensn't do anything or at worst breaks everything)
+            put in some asserts to fail if a string is used as key, or fix this to allow strings as keys
+
+        update will not work correctly if string fields are different sizes now...
+
+    deleted datacells in leaf are not being reclaimed right now
+        this can also be fixed when we switch over to data blocks to hold records
 
     Should send tuples encoded in binary over wire rather than strings
 

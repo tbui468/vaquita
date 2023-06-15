@@ -68,7 +68,11 @@ int main(int argc, char** argv) {
                         case VDBT_TYPE_BOOL: {
                             bool b = *((bool*)(buf + off));
                             off += sizeof(bool);
-                            printf("%d", b);
+                            if (b) {
+                                printf("true");
+                            } else {
+                                printf("false");
+                            }
                             break;
                         }
                         case VDBT_TYPE_FLOAT: {

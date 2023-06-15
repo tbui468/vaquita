@@ -2,7 +2,7 @@ created database sol
 opened database sol
 created table planets
 inserted 4 record(s) into planets
-false, 6, 
-true, 1, 
+false, 6
+true, 1
 closed database sol
 dropped database sol

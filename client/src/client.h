@@ -13,7 +13,6 @@ enum VdbTokenType {
     VDBT_TYPE_NULL
 };
 
-
 #define MAXDATASIZE 1024
 
 #if defined _WIN32 || _WIN64
@@ -153,6 +152,13 @@ void vdbclient_disconnect(VDBHANDLE h) {
 
 #endif // defined (__WIN32__)
 
+
+struct VdbReader {
+    char* buf;
+    uint32_t idx;
+};
+
+
 void vdbclient_send(struct VdbClient* c, char* buf, int len) {
     ssize_t written = 0;
     ssize_t n;
@@ -190,7 +196,7 @@ bool vdbclient_recv(struct VdbClient* c, char* buf, int len) {
     return true;
 }
 
-char* vdbclient_execute_query(VDBHANDLE h, char* request) {
+struct VdbReader vdbclient_execute_query(VDBHANDLE h, char* request) {
     struct VdbClient* c = (struct VdbClient*)h;
 
     int32_t l = strlen(request);
@@ -200,7 +206,8 @@ char* vdbclient_execute_query(VDBHANDLE h, char* request) {
     int32_t recv_len;
     if (!vdbclient_recv(c, (char*)&recv_len, sizeof(int32_t))) {
         printf("failed to recv data length\n");
-        return NULL;
+        struct VdbReader r = {NULL, 0};
+        return r;
     }
 
     char* buf = malloc(sizeof(int32_t) + sizeof(char) * recv_len);
@@ -214,10 +221,58 @@ char* vdbclient_execute_query(VDBHANDLE h, char* request) {
     if (!vdbclient_recv(c, buf + sizeof(int32_t), recv_len - sizeof(int32_t))) {
         printf("failed to recv data\n");
         free(buf);
-        return NULL;
+        struct VdbReader r = {NULL, 0};
+        return r;
     }
 
-    return buf;
+    struct VdbReader r = {buf, sizeof(uint32_t)}; //skip size 
+    return r;
+}
+
+bool vdbreader_has_unread_bytes(struct VdbReader* r) {
+    return r->idx < *((uint32_t*)(r->buf));
+}
+
+void vdbreader_next_set_dim(struct VdbReader* r, uint32_t* row, uint32_t* col) {
+    *row = *((int32_t*)(r->buf + r->idx));
+    r->idx += sizeof(int32_t);
+
+    *col = *((int32_t*)(r->buf + r->idx));
+    r->idx += sizeof(int32_t);
+}
+
+enum VdbTokenType vdbreader_next_type(struct VdbReader* r) {
+    enum VdbTokenType type = *((uint32_t*)(r->buf + r->idx));
+    r->idx += sizeof(uint32_t);
+    return type;
+}
+
+int64_t vdbreader_next_int(struct VdbReader* r) {
+    int64_t i = *((int64_t*)(r->buf + r->idx));
+    r->idx += sizeof(int64_t);
+    return i;
+}
+
+double vdbreader_next_float(struct VdbReader* r) {
+    double d = *((double*)(r->buf + r->idx));
+    r->idx += sizeof(double);
+    return d;
+}
+
+char* vdbreader_next_string(struct VdbReader* r) {
+    int len = *((uint32_t*)(r->buf + r->idx));
+    r->idx += sizeof(uint32_t);
+    char* s = malloc(sizeof(char) * (len + 1));
+    memcpy(s, r->buf + r->idx, len);
+    s[len] = '\0';
+    r->idx += len;
+    return s;
+}
+
+bool vdbreader_next_bool(struct VdbReader* r) {
+    bool b = *((bool*)(r->buf + r->idx));
+    r->idx += sizeof(bool);
+    return b;
 }
 
 

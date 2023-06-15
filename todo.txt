@@ -58,28 +58,42 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Fixed major bug with idxcells shift memmove size being incorrect
+    Can run this query on 60,000 records in about 1 minute:
+        open universe;
+        select x from stars where x < 100.0;
+        close universe;
+        exit;
+
+        Trying on all 119000 records just hangs for minutes without progress
+        I'm guessing the OS is paging to disk so it's taking forever
+        Could trying O_DIRECT and evicting VdbPages help here?
+      
+    Implement these 3 optimizations and check time for 60,000 record queries:
+        Remove next/occupied fiels
+     
+        Switch to single-precision float instead of double for VDBT_TYPE_FLOAT
+
+        Switch from int64 for id to uint32
+
+        index cells can be uint16 (let's us use up to 64,000 byte pages)
+
+        block headers can be a lot smaller by using uint8_t for most fields 
+            could even use bit masks
+
+        Could split query into parts?  Once response buffer is full, 
+            send it and then do the remaining part of the query.  This keeps
+            memory usage limited to the buffer size
 
     Only use some columns to speed up starviewer / server
         Need to be able to load all ~120,000 stars in this hgy database
             just loading in id, x, y for now
 
-        Failing if inserting too many records <----------------PROBELM HERE
-            occupied field is 0 for some reason, and so NULL is being returned when calling vdbleaf_read_record_key
-            I suspect there's an issue with record sizes being calculated wrong and something being overwritten
+        switch ids from int64_t to u32
+        switch x, y from double to float
+        get rid of next and occupied fields (keep null field since a lot of them in database)
 
-            okay.sql (91 records) runs fine
-                print out tree to see all the nodes <---------START HERE
-            not_okay.sql (92 records) segfaults
-
-            39 bytes for each record
-
-            idxcell = 4
-            datacellheader  = 8
-            3 is_null = 3
-            int64_t = 8
-            double * 2 = 16
-            
+    Add u32 type and replace id with this
+        replace int with: u8, u16, u32, u64, s8, s16, s32, s64
 
     Add in data blocks to store record data
         leaves will now only hold ptrs to blocks/idx and keys

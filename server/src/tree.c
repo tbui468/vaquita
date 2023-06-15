@@ -231,27 +231,6 @@ static uint32_t vdbtree_leaf_read_parent(struct VdbTree* tree, uint32_t idx) {
     return parent_idx;
 }
 
-static void vdbtree_leaf_append_record(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec) {
-    assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
-    page->dirty = true;
-
-    struct VdbValue rec_key = rec->data[tree->schema->key_idx];
-    uint32_t i;
-    for (i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
-        struct VdbValue key = vdbtree_leaf_read_record_key(tree, idx, i);
-        if (vdbvalue_compare(rec_key, key) == -1) {
-            break;
-        }
-    }
-
-    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec, tree->schema));
-
-    vdbrecord_write(vdbleaf_record_ptr(page->buf, i), rec, tree->schema);
-
-    vdb_pager_unpin_page(page);
-}
-
 static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, struct VdbRecord* rec) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
@@ -275,6 +254,7 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
+    if (!rec) printf("rec is null\n");
     struct VdbValue v = rec->data[tree->schema->key_idx];
 
     vdbrecord_free(rec);
@@ -321,6 +301,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
 
     //check if record idx is occupied (may be a freed record)
     if (!(*vdbleaf_record_occupied_ptr(page->buf, rec_idx))) {
+        printf("occupied: %d\n", *vdbleaf_record_occupied_ptr(page->buf, rec_idx));
         vdb_pager_unpin_page(page);
         return NULL;
     }
@@ -495,8 +476,23 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
         leaf_idx = vdbtree_leaf_split(tree, leaf_idx, key);
     }
+    
+    struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, leaf_idx);
+    page->dirty = true;
 
-    vdbtree_leaf_append_record(tree, leaf_idx, rec);
+    struct VdbValue rec_key = rec->data[tree->schema->key_idx];
+    uint32_t i;
+    for (i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
+        struct VdbValue key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
+        if (vdbvalue_compare(rec_key, key) == -1) {
+            break;
+        }
+    }
+
+    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec, tree->schema));
+    vdbrecord_write(vdbleaf_record_ptr(page->buf, i), rec, tree->schema);
+
+    vdb_pager_unpin_page(page);
 }
 
 
@@ -567,10 +563,10 @@ static void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t dept
     if (vdbtree_node_type(tree, idx) == VDBN_INTERN) {
         printf("\n");
         //TODO: make not printing leaves an option later
+        /*
         if (vdbtree_node_type(tree, vdbtree_intern_read_right_ptr(tree, idx).block_idx) == VDBN_LEAF) {
-            //skip printing leaves
             return;
-        }
+        }*/
         for (uint32_t i = 0; i < vdbtree_intern_read_ptr_count(tree, idx); i++) {
             vdbtree_print_node(tree, vdbtree_intern_read_ptr(tree, idx, i).block_idx, depth + 1);
         }

@@ -211,11 +211,12 @@ int serve() {
                 struct VdbByteList* response_buf = vdbbytelist_init();
                 uint32_t count = response_buf->count;
                 vdbbytelist_append_bytes(response_buf, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
+
                 bool end = execute_query(&h, buf, response_buf);
                 *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
 
                 vdbserver_send(new_fd, (char*)(response_buf->values), sizeof(uint32_t));
-                vdbserver_send(new_fd, response_buf->values + sizeof(uint32_t), response_buf->count - sizeof(uint32_t));
+                vdbserver_send(new_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
 
                 if (end) {
                     printf("client released database handle\n");

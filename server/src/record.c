@@ -62,7 +62,7 @@ int vdbrecord_serialized_size(struct VdbRecord* rec, struct VdbSchema* schema) {
         size += sizeof(bool); //is_null flag
         switch (schema->types[i]) {
             case VDBT_TYPE_INT:
-                size += sizeof(uint64_t);
+                size += sizeof(int64_t);
                 break;
             case VDBT_TYPE_FLOAT:
                 size += sizeof(double);

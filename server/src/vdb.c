@@ -337,7 +337,7 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     vdb_assign_column_values(data, tree->schema, cols, values);
 
     struct VdbRecord* rec = vdbrecord_init(tree->schema->count, data); 
-    
+  
     vdb_tree_insert_record(tree, rec);
     vdbrecord_free(rec);
 

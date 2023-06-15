@@ -213,6 +213,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
 
                 for (int i = 0; i < rec_count; i++) {
+//                    printf("number: %d\n", i);
                     struct VdbExprList* el = vdbexprlist_init();
                     int off = i * stmt->as.insert.attributes->count;
                     for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
@@ -224,6 +225,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
                     free_w(el, sizeof(struct VdbExprList));
                 }
+
                 snprintf(buf, MAX_BUF_SIZE, "inserted %d record(s) into %s", rec_count, table_name);
                 vdbvm_output_string(output, buf, strlen(buf));
                 break;

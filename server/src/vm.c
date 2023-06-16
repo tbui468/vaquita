@@ -286,8 +286,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                                     vdbbinarytree_insert_node(bt, rs);
                                 }
                             } else {
-                                rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
                                 //single record in record set - probably not the most efficient, but it works for now
+                                rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
                                 vdbbinarytree_insert_node(bt, rs);
                             }
                         } else {

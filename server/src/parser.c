@@ -176,7 +176,7 @@ struct VdbValue vdbexpr_eval_literal(struct VdbToken token) {
             char s[len + 1];
             memcpy(s, token.lexeme, len);
             s[len] = '\0';
-            d.as.Float = strtod(s, NULL);
+            d.as.Float = strtof(s, NULL);
             break;
         }
         case VDBT_TRUE: {
@@ -542,7 +542,7 @@ static struct VdbValue vdbexpr_eval_call_sum(struct VdbExpr* arg, struct VdbReco
         d.as.Int = sum;
         return d;
     } else if (first_value.type == VDBT_TYPE_FLOAT) {
-        double sum = 0.0;
+        float sum = 0.0f;
         for (uint32_t i = 0; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             sum += v.as.Float;
@@ -564,10 +564,10 @@ static struct VdbValue vdbexpr_eval_call_avg(struct VdbExpr* arg, struct VdbReco
     struct VdbValue d;
     d.type = VDBT_TYPE_FLOAT;
     if (v.type == VDBT_TYPE_INT) {
-        d.as.Float = (double)(vdbexpr_eval_call_sum(arg, rs, schema).as.Int) / (double)(rs->count);
+        d.as.Float = (float)(vdbexpr_eval_call_sum(arg, rs, schema).as.Int) / (float)(rs->count);
         return d;
     } else if (v.type == VDBT_TYPE_FLOAT) {
-        d.as.Float = vdbexpr_eval_call_sum(arg, rs, schema).as.Float / (double)(rs->count);
+        d.as.Float = vdbexpr_eval_call_sum(arg, rs, schema).as.Float / (float)(rs->count);
         return d;
     }
 
@@ -599,7 +599,7 @@ static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbReco
         d.as.Int = max;
         return d;
     } else if (first_value.type == VDBT_TYPE_FLOAT) {
-        double max = first_value.as.Float;
+        float max = first_value.as.Float;
         for (uint32_t i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             if (v.as.Float > max)
@@ -631,7 +631,7 @@ static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbReco
         d.as.Int = min;
         return d;
     } else if (first_value.type == VDBT_TYPE_FLOAT) {
-        double min = first_value.as.Float;
+        float min = first_value.as.Float;
         for (uint32_t i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             if (v.as.Float < min)
@@ -649,11 +649,11 @@ static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbReco
     return d;
 }
 
-static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, struct VdbSchema* schema) {
+static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
     switch (expr->type) {
         case VDBET_BINARY: {
-            struct VdbValue left = vdbexpr_do_eval(expr->as.binary.left, rs, schema);
-            struct VdbValue right = vdbexpr_do_eval(expr->as.binary.right, rs, schema);
+            struct VdbValue left = vdbexpr_do_eval(expr->as.binary.left, rec, schema);
+            struct VdbValue right = vdbexpr_do_eval(expr->as.binary.right, rec, schema);
 
             struct VdbValue d;
             switch (expr->as.binary.op.type) {
@@ -703,7 +703,7 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet
             return d;
         }
         case VDBET_UNARY: {
-            struct VdbValue right = vdbexpr_do_eval(expr->as.unary.right, rs, schema);
+            struct VdbValue right = vdbexpr_do_eval(expr->as.unary.right, rec, schema);
 
             if (vdbvalue_is_null(&right)) {
                 assert(false && "unary operator on null not implemented");
@@ -732,25 +732,26 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet
             return d;
         }
         case VDBET_IDENTIFIER: {
-            return vdbexpr_eval_identifier(expr->as.identifier.token, rs->records[0], schema);
+            return vdbexpr_eval_identifier(expr->as.identifier.token, rec, schema);
         }
         case VDBET_LITERAL: {
             return vdbexpr_eval_literal(expr->as.literal.token);
         }
         case VDBET_IS_NULL: {
-            struct VdbValue left = vdbexpr_do_eval(expr->as.is_null.left, rs, schema);
+            struct VdbValue left = vdbexpr_do_eval(expr->as.is_null.left, rec, schema);
             struct VdbValue d;
             d.type = VDBT_TYPE_BOOL;
             d.as.Bool = vdbvalue_is_null(&left);
             return d;
         }
         case VDBET_IS_NOT_NULL: {
-            struct VdbValue left = vdbexpr_do_eval(expr->as.is_not_null.left, rs, schema);
+            struct VdbValue left = vdbexpr_do_eval(expr->as.is_not_null.left, rec, schema);
             struct VdbValue d;
             d.type = VDBT_TYPE_BOOL;
             d.as.Bool = !vdbvalue_is_null(&left);
             return d;
         }
+                                /*
         case VDBET_CALL: {
             switch (expr->as.call.fcn_name.type) {
                 case VDBT_AVG: return vdbexpr_eval_call_avg(expr->as.call.arg, rs, schema);
@@ -761,7 +762,7 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet
                 default: assert(false && "invalid function name"); break;
             }
             break;
-        }
+        }*/
         default: {
             break;
         }
@@ -774,7 +775,7 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet
     return d;
 }
 
-struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, struct VdbSchema* schema) {
+struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema) {
     if (!expr) {
         struct VdbValue d;
         d.type = VDBT_TYPE_BOOL;
@@ -782,7 +783,7 @@ struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, stru
         return d;
     }
 
-    return vdbexpr_do_eval(expr, rs, schema);
+    return vdbexpr_do_eval(expr, rec, schema);
 }
 
 void vdbexpr_free(struct VdbExpr* expr) {

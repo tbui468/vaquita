@@ -94,7 +94,7 @@ void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx) {
     int off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
     int data_off = *((uint32_t*)(buf + off));
 
-    return (void*)(buf + data_off + sizeof(uint32_t) * 2); //skip next and occcupied fields
+    return (void*)(buf + data_off);
 }
 
 uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx) {
@@ -109,16 +109,11 @@ void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fix
     size_t size = (*vdbleaf_record_count_ptr(buf) - idxcell_idx) * sizeof(uint32_t);
     memmove(dst, src, size);
 
-    uint32_t new_datacells_size = *vdbleaf_datacells_size_ptr(buf) + sizeof(uint32_t) * 2 + fixedlen_size;
+    uint32_t new_datacells_size = *vdbleaf_datacells_size_ptr(buf) + fixedlen_size;
     *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
 
     *vdbleaf_datacells_size_ptr(buf) = new_datacells_size;
     (*vdbleaf_record_count_ptr(buf))++;
-
-    int idx_off = VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
-    int datacell_off = *((uint32_t*)(buf + idx_off));
-    *((uint32_t*)(buf + datacell_off)) = 0; //next field
-    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = 1; //occupied field
 }
 
 void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx) {

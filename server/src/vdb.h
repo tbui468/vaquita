@@ -61,11 +61,11 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor);
 void vdbcursor_delete_record(struct VdbCursor* cursor);
 void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values);
 
-bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* selection);
+bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecord* rec, struct VdbExpr* selection);
 bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr* selection);
 struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbExprList* projection, bool aggregate);
 bool vdbcursor_apply_having(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr);
 void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr);
-struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExprList* cols);
+//struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExprList* cols);
 
 #endif //VDB_H

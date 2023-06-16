@@ -1,9 +1,0 @@
-created database sol
-opened database sol
-created table planets
-inserted 3 record(s) into planets
-1, Venus 2, 2.000000, 0, 3.000000, true
-2, Venus 2, 2.000000, 0, 3.000000, true
-3, Venus 2, 2.000000, 0, 3.000000, true
-closed database sol
-dropped database sol

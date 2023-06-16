@@ -18,7 +18,7 @@ struct VdbValue {
         int64_t Int;
         struct VdbString Str;
         bool Bool;
-        double Float;
+        float Float;
     } as;
 };
 
@@ -37,7 +37,7 @@ int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2);
 void vdbvalue_free(struct VdbValue v);
 void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v);
 struct VdbValue vdbint(int64_t i);
-struct VdbValue vdbfloat(double d);
+struct VdbValue vdbfloat(float d);
 struct VdbValue vdbstring(char* s, int len);
 struct VdbValue vdbbool(bool b);
 

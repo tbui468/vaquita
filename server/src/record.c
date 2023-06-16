@@ -65,7 +65,7 @@ int vdbrecord_serialized_size(struct VdbRecord* rec, struct VdbSchema* schema) {
                 size += sizeof(int64_t);
                 break;
             case VDBT_TYPE_FLOAT:
-                size += sizeof(double);
+                size += sizeof(float);
                 break;
             case VDBT_TYPE_STR:
                 size += sizeof(uint32_t); //string length
@@ -97,8 +97,8 @@ static int vdbrecord_read_value(struct VdbValue* v, uint8_t* buf, enum VdbTokenT
             data_off += sizeof(int64_t);
             break;
         case VDBT_TYPE_FLOAT:
-            v->as.Float = *((double*)(buf + data_off));
-            data_off += sizeof(double);
+            v->as.Float = *((float*)(buf + data_off));
+            data_off += sizeof(float);
             break;
         case VDBT_TYPE_STR:
             v->as.Str.len = *((uint32_t*)(buf + data_off));
@@ -139,8 +139,8 @@ static int vdbrecord_write_value(uint8_t* buf, struct VdbValue* v, enum VdbToken
             off += sizeof(int64_t);
             break;
         case VDBT_TYPE_FLOAT:
-            *((double*)(buf + off)) = v->as.Float;
-            off += sizeof(double);
+            *((float*)(buf + off)) = v->as.Float;
+            off += sizeof(float);
             break;
         case VDBT_TYPE_STR: {
             *((uint32_t*)(buf + off)) = v->as.Str.len;
@@ -225,7 +225,7 @@ void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r) {
                 vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Int, sizeof(int64_t));
                 break;
             case VDBT_TYPE_FLOAT:
-                vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Float, sizeof(double));
+                vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Float, sizeof(float));
                 break;
             case VDBT_TYPE_BOOL:
                 vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Bool, sizeof(bool));
@@ -242,7 +242,7 @@ void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r) {
 struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key) {
     struct VdbRecordSet* rs = malloc_w(sizeof(struct VdbRecordSet));
     rs->count = 0;
-    rs->capacity = 8; 
+    rs->capacity = 1; 
     rs->records = malloc_w(sizeof(struct VdbRecord*) * rs->capacity);
     rs->next = NULL;
     rs->key = key;

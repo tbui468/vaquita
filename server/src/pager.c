@@ -37,6 +37,18 @@ struct VdbPage* _vdb_pager_load_page(char* name, FILE* f, uint32_t idx) {
     return page;
 }
 
+void vdbpager_replace_page(struct VdbPage* page, char* name, FILE* f, uint32_t idx) {
+    free_w(page->name, sizeof(char) * (strlen(page->name) + 1));
+
+    page->dirty = false;
+    page->pin_count = 0;
+    page->idx = idx;
+    fseek_w(f, page->idx * VDB_PAGE_SIZE, SEEK_SET);
+    fread_w(page->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
+    page->f = f;
+    page->name = strdup_w(name);
+}
+
 struct VdbPageList* _vdb_pagelist_alloc() {
     struct VdbPageList* pl = malloc_w(sizeof(struct VdbPageList));
     pl->count = 0;
@@ -89,6 +101,7 @@ void vdb_pager_free(struct VdbPager* pager) {
 }
 
 struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
+
     //search for page in buffer cache
     struct VdbPage* page = NULL;
     for (uint32_t i = 0; i < pager->pages->count; i++) {
@@ -100,20 +113,20 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, 
     }
 
     //not cached, so read from disk
-    if (!page) {
-        //TODO: evict here if necessary before loading page.  Only evict a page if pin_count == 0
-        /*if (pager->pages->count >= 8) {
+    if (!page) { /*
+        if (pager->pages->count >= 64) {
             for (uint32_t i = 0; i < pager->pages->count; i++) {
                 struct VdbPage* p = pager->pages->pages[i];
                 if (p->pin_count == 0) {
-                    _vdb_pager_flush_page(p);
-                    _vdb_pager_free_page(p);
-                    pager->pages->pages[i] = _vdb_pager_load_page(name, f, idx);
+                    if (p->dirty) {
+                        _vdb_pager_flush_page(p);
+                    }
+                    vdbpager_replace_page(p, name, f, idx);
                     page = pager->pages->pages[i];
                     break;
                 }
             }
-        } else*/ {
+        } else */{
             page = _vdb_pager_load_page(name, f, idx);
             _vdb_pagelist_append_page(pager->pages, page);
         }

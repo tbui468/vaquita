@@ -126,7 +126,7 @@ struct VdbExpr* vdbexpr_init_unary(struct VdbToken op, struct VdbExpr* right);
 struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, struct VdbExpr* right);
 struct VdbExpr* vdbexpr_init_is_null(struct VdbExpr* left);
 struct VdbExpr* vdbexpr_init_is_not_null(struct VdbExpr* left);
-struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, struct VdbSchema* schema);
+struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecord* rec, struct VdbSchema* schema);
 
 struct VdbExpr* vdbexpr_copy(struct VdbExpr* expr);
 void vdbexpr_print(struct VdbExpr* expr);

@@ -26,7 +26,7 @@ struct VdbValue vdbint(int64_t i) {
     return v;
 }
 
-struct VdbValue vdbfloat(float d) {
+struct VdbValue vdbfloat(double d) {
     struct VdbValue v;
     v.type = VDBT_TYPE_FLOAT;
     v.as.Float = d;
@@ -125,7 +125,7 @@ void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v) {
         }
         case VDBT_TYPE_FLOAT: {
             uint8_t* ptr = (uint8_t*)(&v.as.Float);
-            for (uint32_t j = 0; j < sizeof(float); j++) {
+            for (uint32_t j = 0; j < sizeof(double); j++) {
                 vdbbytelist_append_byte(bl, *(ptr + j));
             }
             break;

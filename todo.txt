@@ -58,23 +58,44 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    More optimizations
+    Can run this query on 60,000 records in about 1 minute:
+        open universe;
+        select x from stars where x < 100.0;
+        close universe;
+        exit;
+
+        Trying on all 119000 records just hangs for minutes without progress
+        I'm guessing the OS is paging to disk so it's taking forever
+        Could trying O_DIRECT and evicting VdbPages help here?
+      
+    Implement these 3 optimizations and check time for 60,000 record queries:
+        Remove next/occupied fiels
+     
+        Switch to single-precision float instead of double for VDBT_TYPE_FLOAT
+
         Switch from int64 for id to uint32
 
-        index cells can be uint16 (can use up to 64,000 byte pages, so more than we need)
+        index cells can be uint16 (let's us use up to 64,000 byte pages)
 
         block headers can be a lot smaller by using uint8_t for most fields 
             could even use bit masks
 
-        don't use set block header sizes - compute block header and store it in block itself
-            and then use that to compute remaining size
+        Could split query into parts?  Once response buffer is full, 
+            send it and then do the remaining part of the query.  This keeps
+            memory usage limited to the buffer size
 
-        Optimize insertions by holding a ptr to largest key - can skip scanning the tree
+    Only use some columns to speed up starviewer / server
+        Need to be able to load all ~120,000 stars in this hgy database
+            just loading in id, x, y for now
 
-        All traverse_to and other tree algorithms are using linear search
-            switch to binary search
+        switch ids from int64_t to u32
+        switch x, y from double to float
+        get rid of next and occupied fields (keep null field since a lot of them in database)
 
-    Add in data blocks to store record data (this step is necessary for indexing by x, y, z)
+    Add u32 type and replace id with this
+        replace int with: u8, u16, u32, u64, s8, s16, s32, s64
+
+    Add in data blocks to store record data
         leaves will now only hold ptrs to blocks/idx and keys
             rename leaf functions to show that they hold recordptr and NOT records
             
@@ -97,10 +118,6 @@ In release mode:
         Can floats be used instead of doubles for decimal value fields?
         Only store the fields we need (id, x, y, z, prop, con, etc)
         Need different threads (or use non-blocking sockets) to make it run better
-
-    delete and update need to be fixed and tests added back in
-        delete will leave holes in block, so need to defrag both index cells and datacells
-        update won't work with strings now since all records are saved in a fixed size when first created
 
     Use non-blocking sockets (or threads) to allow client to continue processing
         while server is executing queries

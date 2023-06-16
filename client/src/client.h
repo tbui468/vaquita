@@ -253,9 +253,9 @@ int64_t vdbreader_next_int(struct VdbReader* r) {
     return i;
 }
 
-float vdbreader_next_float(struct VdbReader* r) {
-    float d = *((float*)(r->buf + r->idx));
-    r->idx += sizeof(float);
+double vdbreader_next_float(struct VdbReader* r) {
+    double d = *((double*)(r->buf + r->idx));
+    r->idx += sizeof(double);
     return d;
 }
 

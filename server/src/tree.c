@@ -299,6 +299,13 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, idx);
 
+    //check if record idx is occupied (may be a freed record)
+    if (!(*vdbleaf_record_occupied_ptr(page->buf, rec_idx))) {
+        printf("occupied: %d\n", *vdbleaf_record_occupied_ptr(page->buf, rec_idx));
+        vdb_pager_unpin_page(page);
+        return NULL;
+    }
+
     struct VdbRecord* rec = vdbrecord_read(vdbleaf_record_ptr(page->buf, rec_idx), tree->schema);
 
     vdb_pager_unpin_page(page);

@@ -19,6 +19,10 @@ struct VdbRecordSet {
     struct VdbByteList* key;
 };
 
+
+//record
+//[next|occupied|data....]
+
 struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data);
 void vdbrecord_free(struct VdbRecord* rec);
 struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec);

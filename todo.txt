@@ -58,11 +58,18 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    Using binary tree to order selected records is SLOW
-        how to databases implement the order by clause?
-        read up on this
+    Using binary tree to order selected records is SLOW - replace binary tree with external merge sort
+        get rid of binary tree for now - just put all records into flat list
+            this will require a bit of a rewrite - since groupings make it confusing
 
-    Have recordsets store an array of records rather than pointers to records
+        Make sure that 'order by' tests fail after this, but other tests should pass still
+
+        Implement external merge sort
+            Database System Concepts (page 701)
+                External merge sort
+
+            Berkeley website
+                cs186berkeley.net/notes/note8/
 
     indexing:
         Add in data blocks to store record data

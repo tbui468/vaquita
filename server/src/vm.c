@@ -267,11 +267,12 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
 
                 struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to beginning of table
 
-                struct VdbBinaryTree* bt = vdbbinarytree_init();
                 struct VdbHashTable* distinct_table = vdbhashtable_init();
                 struct VdbHashTable* grouping_table = vdbhashtable_init();
 
                 struct VdbRecord* rec;
+
+                struct VdbRecordSet* head = NULL;
 
                 while ((rec = vdbcursor_fetch_record(cursor))) {
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
@@ -282,13 +283,13 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                                 struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
                                 if (!vdbhashtable_contains_key(distinct_table, key)) {
                                     vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
-                                    rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
-                                    vdbbinarytree_insert_node(bt, rs);
+
+                                    rs->next = head;
+                                    head = rs;
                                 }
                             } else {
-                                //single record in record set - probably not the most efficient, but it works for now
-                                rs->key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.ordering);
-                                vdbbinarytree_insert_node(bt, rs);
+                                rs->next = head;
+                                head = rs;
                             }
                         } else {
                             vdbrecordset_free(rs);
@@ -304,27 +305,22 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     }
                 }
 
-                //moves recordsets from hashtable to binary tree ('next' field in recordsets no longer used)
                 //TODO: should not manually use hash table internals like this - error prone.  Should be done with hashtable interface
                 if (stmt->as.select.grouping->count > 0) {
                     for (int i = 0; i < VDB_MAX_BUCKETS; i++) {
                         struct VdbRecordSet* cur = grouping_table->entries[i];
                         while (cur) {
                             //eval 'having' clause, and only insert into bt if true
+                            struct VdbRecordSet* cached_next = cur->next;
                             if (vdbcursor_apply_having(cursor, cur, stmt->as.select.having)) {
-                                struct VdbByteList* ordering_key = vdbcursor_key_from_cols(cursor, cur, stmt->as.select.ordering);
-                                cur->key = ordering_key;
-                                vdbbinarytree_insert_node(bt, cur);
+                                cur->next = head;
+                                head = cur;
                             }
-                            cur = cur->next;
+                            cur = cached_next;
                         }
                     }
                 }
 
-                //returns head of linked-list of recordsets
-                struct VdbRecordSet* head = stmt->as.select.order_desc ? 
-                                            vdbbinarytree_flatten_desc(bt) : 
-                                            vdbbinarytree_flatten_asc(bt);
 
                 //apply projections to each recordset in linked-list, and return final single recordset
                 struct VdbRecordSet* final = vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0);
@@ -340,13 +336,12 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     vdbbytelist_append_bytes(output, (uint8_t*)&zero, sizeof(uint32_t));
                 }
 
-                for (uint32_t i = 0; i < final->count; i++) {
+                for (int i = final->count - 1; i >= 0; i--) {
                     vdbrecord_serialize_to_bytes(output, final->records[i]);
                 }
 
                 vdbcursor_free(cursor);
                 vdbrecordset_free(final);
-                vdbbinarytree_free(bt);
                 vdbhashtable_free(distinct_table);
                 vdbhashtable_free(grouping_table);
 

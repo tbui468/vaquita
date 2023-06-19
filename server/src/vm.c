@@ -278,21 +278,22 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
                     if (stmt->as.select.grouping->count == 0) {
-                        if (vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
-                            if (stmt->as.select.distinct) {
-                                struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
-                                if (!vdbhashtable_contains_key(distinct_table, key)) {
-                                    vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+                        if (!vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
+                            vdbrecordset_free(rs);
+                            continue;
+                        }
 
-                                    rs->next = head;
-                                    head = rs;
-                                }
-                            } else {
+                        if (stmt->as.select.distinct) {
+                            struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
+                            if (!vdbhashtable_contains_key(distinct_table, key)) {
+                                vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+
                                 rs->next = head;
                                 head = rs;
                             }
                         } else {
-                            vdbrecordset_free(rs);
+                            rs->next = head;
+                            head = rs;
                         }
                     } else {
                         //not applying selection if 'group by' is used
@@ -321,11 +322,11 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     }
                 }
 
+                vdbcursor_sort_linked_list(cursor, &head, stmt->as.select.ordering, stmt->as.select.order_desc);
 
                 //apply projections to each recordset in linked-list, and return final single recordset
                 struct VdbRecordSet* final = vdbcursor_apply_projection(cursor, head, stmt->as.select.projection, stmt->as.select.grouping->count > 0);
 
-                //apply limits
                 vdbcursor_apply_limit(cursor, final, stmt->as.select.limit);
 
                 vdbbytelist_append_bytes(output, (uint8_t*)&final->count, sizeof(uint32_t));
@@ -336,7 +337,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     vdbbytelist_append_bytes(output, (uint8_t*)&zero, sizeof(uint32_t));
                 }
 
-                for (int i = final->count - 1; i >= 0; i--) {
+                for (uint32_t i = 0; i < final->count; i++) {
                     vdbrecord_serialize_to_bytes(output, final->records[i]);
                 }
 

@@ -271,3 +271,4 @@ void vdbrecordset_free(struct VdbRecordSet* rs) {
     if (rs->key) vdbbytelist_free(rs->key);
 }
 
+

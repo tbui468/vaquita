@@ -540,4 +540,123 @@ struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct Vdb
     return bl;
 }
 
+struct VdbRsPtrList {
+    struct VdbRecordSet** ps;
+    int capacity;
+    int count;
+};
+
+struct VdbRsPtrList* vdbrsptrlist_init() {
+    struct VdbRsPtrList* pl = malloc_w(sizeof(struct VdbRsPtrList));
+    pl->capacity = 8;
+    pl->count = 0;
+    pl->ps = malloc_w(sizeof(struct VdbRecordSet*) * pl->capacity);
+    return pl;
+}
+
+void vdbrsptrlist_free(struct VdbRsPtrList* pl) {
+    free_w(pl->ps, pl->capacity * sizeof(struct VdbRecordSet*));
+    free_w(pl, sizeof(struct VdbRsPtrList));
+}
+
+void vdbrsptrlist_enqueue(struct VdbRsPtrList* pl, struct VdbRecordSet* rs) {
+    if (pl->count + 1 > pl->capacity) {
+        int old_cap = pl->capacity;
+        pl->capacity *= 2;
+        pl->ps = realloc_w(pl->ps, sizeof(struct VdbRecordSet*) * pl->capacity, sizeof(struct VdbRecordSet*) * old_cap);
+    }
+
+    pl->ps[pl->count] = rs;
+    pl->count++;
+}
+
+struct VdbRecordSet* vdbrsptrlist_dequeue(struct VdbRsPtrList* pl) {
+    struct VdbRecordSet* result = pl->ps[0];
+
+    memmove(pl->ps, pl->ps + 1, sizeof(struct VdbRecordSet*) * (pl->count - 1));
+    pl->count--;
+
+    return result;
+}
+
+int vdb_compare_cols(struct VdbCursor* cursor, struct VdbRecordSet* left, struct VdbRecordSet* right, struct VdbExprList* ordering_cols) {
+    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+
+    for (int i = 0; i < ordering_cols->count; i++) {
+        struct VdbValue lv = vdbexpr_eval(ordering_cols->exprs[i], left, tree->schema);
+        struct VdbValue rv = vdbexpr_eval(ordering_cols->exprs[i], right, tree->schema);
+        int result = vdbvalue_compare(lv, rv);
+        if (result != 0)
+            return result;
+    }
+
+
+    return vdbvalue_compare(left->records[0]->data[tree->schema->key_idx], right->records[0]->data[tree->schema->key_idx]);
+}
+
+//TODO: external merge sort is recommended in literature since the entire tuple set may not fit into memory
+//Assuming entire tuple set fits into memory for now.  Should switch to external merge sort when needed
+void vdbcursor_sort_linked_list(struct VdbCursor* cursor, struct VdbRecordSet** head, struct VdbExprList* ordering_cols, bool order_desc) {
+    if (!(*head))
+        return;
+
+    struct VdbRsPtrList* pl = vdbrsptrlist_init();
+    struct VdbRecordSet* cur = *head;
+
+    while (cur) {
+        struct VdbRecordSet* p = cur;
+        cur = cur->next;
+        p->next = NULL;
+        vdbrsptrlist_enqueue(pl, p);
+    }
+
+    while (pl->count > 1) {
+        struct VdbRecordSet* left = vdbrsptrlist_dequeue(pl);
+        struct VdbRecordSet* right = vdbrsptrlist_dequeue(pl);
+
+        struct VdbRecordSet* merged = NULL;
+        struct VdbRecordSet** tail = &merged;
+        struct VdbRecordSet* cur_l = left;
+        struct VdbRecordSet* cur_r = right;
+
+        while (true) {
+            if (!cur_l) {
+                *tail = cur_r;
+                break;
+            }
+            if (!cur_r) {
+                *tail = cur_l;
+                break;
+            }
+
+            int result = vdb_compare_cols(cursor, cur_l, cur_r, ordering_cols);
+            if (order_desc) {
+                if (result >= 0) {
+                    *tail = cur_l;
+                    cur_l = cur_l->next;
+                } else {
+                    *tail = cur_r;
+                    cur_r = cur_r->next;
+                }
+            } else {
+                if (result <= 0) {
+                    *tail = cur_l;
+                    cur_l = cur_l->next;
+                } else {
+                    *tail = cur_r;
+                    cur_r = cur_r->next;
+                }
+            }
+
+            tail = &(*tail)->next;
+        }
+
+        vdbrsptrlist_enqueue(pl, merged);
+    }
+
+    *head = pl->ps[0];
+
+    vdbrsptrlist_free(pl);
+}
+
 

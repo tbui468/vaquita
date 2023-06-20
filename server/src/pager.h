@@ -17,7 +17,7 @@ struct VdbPage {
 };
 
 struct VdbPageList {
-    struct VdbPage** pages;
+    struct VdbPage* pages;
     uint32_t count;
     uint32_t capacity;
 };

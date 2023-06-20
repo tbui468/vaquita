@@ -102,7 +102,7 @@ struct VdbPage* vdb_pager_pin_page(struct VdbPager* pager, char* name, FILE* f, 
     //not cached, so read from disk
     if (!page) {
         //TODO: evict here if necessary before loading page.  Only evict a page if pin_count == 0
-        /*if (pager->pages->count >= 8) {
+        /*if (pager->pages->count >= 32) {
             for (uint32_t i = 0; i < pager->pages->count; i++) {
                 struct VdbPage* p = pager->pages->pages[i];
                 if (p->pin_count == 0) {

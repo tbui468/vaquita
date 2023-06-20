@@ -13,6 +13,8 @@
  * [type|parent_idx|pk_counter|root_idx|schema...]
  */
 
+//TODO: new meta block header
+//[type|parent_idx|pk_counter|root_idx|last_leaf_idx|largest_key_size|largest_key|schema...]
 
 uint32_t* vdbmeta_auto_counter_ptr(uint8_t* buf) {
     return (uint32_t*)(buf + sizeof(uint32_t) * 2);
@@ -22,10 +24,22 @@ uint32_t* vdbmeta_root_ptr(uint8_t* buf) {
     return (uint32_t*)(buf + sizeof(uint32_t) * 3);
 }
 
-void* vdbmeta_schema_ptr(uint8_t* buf) {
-    return (void*)(buf + sizeof(uint32_t) * 4);
+uint32_t* vdbmeta_last_leaf(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
 }
 
+uint32_t* vdbmeta_largest_key_size(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 5);
+}
+
+void* vdbmeta_largest_key(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 6);
+}
+
+void* vdbmeta_schema_ptr(uint8_t* buf) {
+    uint32_t largest_key_size = *vdbmeta_largest_key_size(buf);
+    return (void*)(buf + sizeof(uint32_t) * 6 + largest_key_size);
+}
 
 /*
  * Internal node de/serialization

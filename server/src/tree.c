@@ -457,6 +457,7 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
             }
         }
     }
+
     //if not found, check right pointer
     struct VdbPtr p = vdbtree_intern_read_right_ptr(tree, idx);
 
@@ -469,10 +470,28 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
 }
 
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
-    uint32_t root_idx = vdbtree_meta_read_root(tree);
     struct VdbValue key = rec->data[tree->schema->key_idx];
-    uint32_t leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
+   
+   /* 
+    //Right only appends - shaves off about 2 minutes from 12:30 (~15%)
+    struct VdbPage* meta_page = vdb_pager_pin_page(tree->pager, tree->name, tree->f, 0);
+    uint32_t leaf_idx;
+    if (*vdbmeta_last_leaf(meta_page->buf) == 0) {
+        uint32_t root_idx = vdbtree_meta_read_root(tree);
+        leaf_idx = vdb_tree_traverse_to(tree, root_idx, key);
+    } else {
+        leaf_idx = *vdbmeta_last_leaf(meta_page->buf);
+    }
 
+    if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
+        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, key);
+    }
+
+    *vdbmeta_last_leaf(meta_page->buf) = leaf_idx;
+    meta_page->dirty = true;
+    vdb_pager_unpin_page(meta_page);*/
+
+    uint32_t leaf_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), key);
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
         leaf_idx = vdbtree_leaf_split(tree, leaf_idx, key);
     }
@@ -481,6 +500,36 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     page->dirty = true;
 
     struct VdbValue rec_key = rec->data[tree->schema->key_idx];
+
+    /*
+    //binary search cut off about 30s from 12:30 (5%)
+    uint32_t i = 0;
+    uint32_t left = 0;
+    uint32_t right = vdbtree_leaf_read_record_count(tree, leaf_idx);
+    while (right > 0) {
+        i = (right - left) / 2 + left;
+        struct VdbValue key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
+
+        //record key is smaller than key at i
+        int result = vdbvalue_compare(rec_key, key);
+        if (result == -1) {
+            if (right - left <= 1) {
+                break;
+            }
+            right = i;
+        //record key is larger than key at i
+        } else if (result == 1) {
+            if (right - left <= 1) {
+                i++;
+                break;
+            }
+            left = i;
+        } else {
+            assert(false && "duplicate keys not allowed");
+        }
+
+    }*/
+  
     uint32_t i;
     for (i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
         struct VdbValue key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);

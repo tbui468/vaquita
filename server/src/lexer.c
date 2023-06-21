@@ -50,7 +50,9 @@ enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct 
     while (lexer.cur < len) {
         struct VdbToken t;
         if (vdblexer_read_token(&lexer, &t) == VDBRC_SUCCESS) {
-            vdbtokenlist_append_token(*tokens, t);
+            if (t.type != VDBT_COMMENT) {
+                vdbtokenlist_append_token(*tokens, t);
+            }
         } else {
             vdberrorlist_append_error(*errors, 1, "unrecognized token: %.*s", t.len, t.lexeme);
         }
@@ -325,6 +327,14 @@ enum VdbReturnCode vdblexer_read_token(struct VdbLexer* lexer, struct VdbToken* 
         case '/': {
             t->type = VDBT_SLASH;
             t->lexeme = &lexer->src[lexer->cur++];
+            if (lexer->src[lexer->cur] == '/') {
+                t->type = VDBT_COMMENT;
+                lexer->cur++;
+                t->len = 2;
+                while ((c = lexer->src[lexer->cur]) != '\n') {
+                    lexer->cur++;
+                }
+            }
             break;
         }
         case ';': {

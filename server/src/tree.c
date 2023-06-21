@@ -471,8 +471,6 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
 void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     struct VdbValue key = rec->data[tree->schema->key_idx];
    
-   /* 
-    //Right only appends - shaves off about 2 minutes from 12:30 (~15%)
     struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
     uint32_t leaf_idx;
     if (*vdbmeta_last_leaf(meta_page->buf) == 0) {
@@ -488,12 +486,14 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
 
     *vdbmeta_last_leaf(meta_page->buf) = leaf_idx;
     meta_page->dirty = true;
-    vdbpager_unpin_page(meta_page);*/
+    vdbpager_unpin_page(meta_page);
 
+    /*
+    //not right append
     uint32_t leaf_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), key);
     if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
         leaf_idx = vdbtree_leaf_split(tree, leaf_idx, key);
-    }
+    }*/
    
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, leaf_idx);
     page->dirty = true;
@@ -501,7 +501,7 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
     struct VdbValue rec_key = rec->data[tree->schema->key_idx];
 
     /*
-    //binary search cut off about 30s from 12:30 (5%)
+    //binary search doesn't really give much speedup (if any) and is so much more complex
     uint32_t i = 0;
     uint32_t left = 0;
     uint32_t right = vdbtree_leaf_read_record_count(tree, leaf_idx);
@@ -528,7 +528,7 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
         }
 
     }*/
-  
+
     uint32_t i;
     for (i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
         struct VdbValue key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);

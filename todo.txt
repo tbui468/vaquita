@@ -49,31 +49,26 @@ Example
 Major components
 Todos
 
+
 *************************Performance***************
-In debug mode:
-    Takes about 1:40 to lex/parse inserting 10,000 records
-    Takes about 1:40 to insert 10,000 records
-In release mode:
-    ~1:40 to lex/parse 10,000 records
-    ~0:20 to insert 10,000 records
+Takes ~5s to insert 119000 records from HYG
+
+Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
+    need to push the limits of memory usage so that page eviction can be tested
 
 *******************************TODO**************************************************
-    Lexer is the main problem
-        Look at lexer used in crafting interpreters (look at my implementation on github)
-        Try that to see if it can decrease lexing time for 5000 records from ~26 seconds
-        to something a lot smaller
+    Right append assumes records are inserted in order
+        Here's and easy way:
+            put schema on the right side of meta block (and store offset to start of schema)
+            then put largest key size and key itself on the left size (after all the fixed-size data including schema offset)
+            this will allow quite large schemas + key size
 
-    Page eviction
-        CPU is running at around 10% usage - should be closer to max capacity,
-            so this means disk IO is probably bottleneck
+        Won't work if schema + key size take up more than the entire block, but we can worry about that when necessary
+           
+    auto keyword to allow auto incrementing keys (integers)
 
-        Using a naive eviction policy and max 16 pages gives about 40 seconds of saved time already
-
-        Use O_DIRECT and O_SYNC (along with switching from fopen to open)
-            to see if bypassing OS cache will help
-
-        Write open_w wrapper that uses O_DIRECT and O_SYNC
-        Set a mamimum page count based on RAM (4-8 Gb seems reasonable)
+    fetch, delete, etc (all the cursor functions) really should be part of the tree module
+        why is it in the vdb module in the first place?
 
     indexing:
         Add in data blocks to store record data
@@ -94,21 +89,20 @@ In release mode:
     Add BETWEEN keyword to allow easier query of ranges
         selecting rectangles/arcs in star viewer will be easy using this
 
+    Page eviction
+        Use O_DIRECT and O_SYNC (along with switching from fopen to open)
+            to see if bypassing OS cache will speed up queries
+
+        Write open_w wrapper that uses O_DIRECT and O_SYNC
+        Set a mamimum page count based on RAM (4-8 Gb seems reasonable)
+
     Redo projection:
         Rather than an array of structs for recordsets, use a struct of arrays
         this will make projection easy - simply drop any arrays we don't need
 
     update will break if string is longer than current record size
         need to properly resize datacells if strings are updated
-
-    Design it specifically for the hyg star database
-        what is the larget int and uint we need for each field?
-        Can floats be used instead of doubles for decimal value fields?
-        Only store the fields we need (id, x, y, z, prop, con, etc)
-        Need different threads (or use non-blocking sockets) to make it run better
-
-    Use non-blocking sockets (or threads) to allow client to continue processing
-        while server is executing queries
+        need to store 3 data for each string: size, capacity, overflow
 
     Should NOT allow duplicate keys
 
@@ -151,32 +145,6 @@ In release mode:
     Combine windows and *nix versions into a single client header with ifdefs
         Write out windows version of client by hand to see what's in there first
         then abstract the windows/linux stuff into own functions, and common stuff into other functions
-
-    Priority: connect to star view client
-        Have client send SQL to server, and have server execute that query and return result
-            will need to rewrite structure of server
-
-        Could have tests call the client now, and then have the client output the results to compare against expected results
-        Make client work with windows so that we can use it in sdl_game
-            Beej's website has a link where someone else wrote a windows version
-                will need this version if we want to use it in sdl_game
-
-    Insertions with out-of-order keys doesn't order them properly in B-Tree
-        should fixed this soon too, otherwise indexing is pointless
-
-    Rewrite tree like this:
-        Meta block holds a ptr to first data block
-            use this ptr to defrag and find free space if needed
-
-        Internal nodes are the same as before
-        
-        Leaf nodes only hold ptrs to data
-            not longer need a data block for each leaf
-
-        Data nodes hold records + variable length data
-            don't allow overflow for now to keep it simple - if not enough space in a data block to fit entire record, just allocate a new one
-
-
     Creating/dropping indexes:
         Indexes require multiple trees - we need to take records out of leaves and put them in own data blocks that
             all indices can refer to.  Could keep data nodes for variable length data, and make record nodes for fixed len record data

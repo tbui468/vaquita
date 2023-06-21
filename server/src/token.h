@@ -68,7 +68,8 @@ enum VdbTokenType {
     VDBT_MAX,
     VDBT_HAVING,
     VDBT_LIMIT,
-    VDBT_KEY
+    VDBT_KEY,
+    VDBT_COMMENT
 };
 
 struct VdbToken {

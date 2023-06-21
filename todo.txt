@@ -58,11 +58,12 @@ In release mode:
     ~0:20 to insert 10,000 records
 
 *******************************TODO**************************************************
-    allocate ALL pages in a single bunch rather than as separate pointers
-        should prevent defragmentation since we are allocating a ton of space
-    
+    Lexer is the main problem
+        Look at lexer used in crafting interpreters (look at my implementation on github)
+        Try that to see if it can decrease lexing time for 5000 records from ~26 seconds
+        to something a lot smaller
 
-    Page eviction seems to help quite a bit here
+    Page eviction
         CPU is running at around 10% usage - should be closer to max capacity,
             so this means disk IO is probably bottleneck
 
@@ -73,34 +74,6 @@ In release mode:
 
         Write open_w wrapper that uses O_DIRECT and O_SYNC
         Set a mamimum page count based on RAM (4-8 Gb seems reasonable)
-
-    insertion takes a lot more time than querying database now
-        measure batch insertion time for hyg database now - 12:30 to insert 119000 records
-
-        changing to binary search when traversing tree (30s)
-            not a huge difference in speed 
-            Testing with binary search + 32 page max limit (32 page max limit without binary search was 10:40)
-
-            Uncomment these to check speed
-
-        Right-only appends (increases speed by 1:30 - 2:00) - not bad
-            Issue is that we need to cache largest key in meta block, but if keys are strings
-            then the space needed to store it will vary.  
-
-            Uncomment this to check speed
-
-    writing records/values to page buffer and serializing to bytestream to send to client really should be the same thing
-        should combine them into a function - vdbrecord_serialize(buf, record).  Then only big change necessary is making sure
-        the bytelist buffer is large enough to hold serialized record (which we can check using a function used to check record size)
-
-    Querying 119000 records in hyg is slow - queries.sql takes almost a 1 minute - should we start thinking about external merge sort and
-        external hashing?
-
-        //this query takes a long time
-        open universe;
-        select x from stars where x < 100.0;
-        close universe;
-        exit;
 
     indexing:
         Add in data blocks to store record data

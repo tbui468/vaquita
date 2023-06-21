@@ -11,14 +11,14 @@
 
 struct Vdb* vdb_init(const char* name) {
     struct Vdb* db = malloc_w(sizeof(struct Vdb));
-    db->pager = vdb_pager_alloc();
+    db->pager = vdbpager_init();
     db->trees = vdb_treelist_init();
     db->name = strdup_w(name);
     return db;
 }
 
 void vdb_free(struct Vdb* db) {
-    vdb_pager_free(db->pager);
+    vdbpager_free(db->pager);
     vdb_treelist_free(db->trees);
     free_w(db->name, sizeof(char) * (strlen(db->name) + 1)); //include null terminator
     free_w(db, sizeof(struct Vdb));
@@ -278,7 +278,7 @@ enum VdbReturnCode vdb_drop_table(VDBHANDLE h, const char* name) {
         strcat(path, ".vtb");
         
         vdb_tree_close(tree);
-        vdb_pager_evict_pages(db->pager, name);
+        vdbpager_evict_pages(db->pager, name);
 
         remove_w(path);
 
@@ -336,10 +336,21 @@ enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbToken
     struct VdbValue data[tree->schema->count];
     vdb_assign_column_values(data, tree->schema, cols, values);
 
-    struct VdbRecord* rec = vdbrecord_init(tree->schema->count, data); 
+    //TODO: could have record be stack allocated (along with data)
+    //struct VdbRecord* rec = vdbrecord_init(tree->schema->count, data); 
+    struct VdbRecord rec;
+    rec.count = tree->schema->count;
+    rec.data = data;
   
-    vdb_tree_insert_record(tree, rec);
-    vdbrecord_free(rec);
+    vdb_tree_insert_record(tree, &rec);
+    //vdbrecord_free(rec);
+
+    for (uint32_t i = 0; i < rec.count; i++) {
+        struct VdbValue* d = &rec.data[i];
+        if (d->type == VDBT_TYPE_STR) {
+            free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
+        }
+    }
 
     return VDBRC_SUCCESS;
 }

@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 
 //network includes
 #include <sys/types.h>
@@ -64,6 +65,9 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
 
+    time_t start_time, end_time;
+    time(&start_time);
+
     if (vdblexer_lex(query, &tokens, &lex_errors) == VDBRC_ERROR) {
         for (int i = 0; i < 1; i++) {
             //struct VdbError e = lex_errors->errors[i];
@@ -74,6 +78,10 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
         printf("lex error\n");
         return false;
     }
+
+    time(&end_time);
+    printf("tokenizing time: %.2lf\n", difftime(end_time, start_time));
+    time(&start_time);
 
     struct VdbStmtList* stmts;
     struct VdbErrorList* parse_errors;
@@ -91,7 +99,14 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
         return false;
     }
 
+    time(&end_time);
+    printf("parsing time: %.2lf\n", difftime(end_time, start_time));
+    time(&start_time);
+
     bool end = vdb_execute(stmts, h, output);
+
+    time(&end_time);
+    printf("executing time: %.2lf\n", difftime(end_time, start_time));
 
     vdbtokenlist_free(tokens);
     vdberrorlist_free(lex_errors);

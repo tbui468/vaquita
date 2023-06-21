@@ -212,19 +212,27 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 char* table_name = to_static_string(stmt->target);
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
 
+                //TODO: allocate struct VdbExprList here
+                struct VdbExprList* el = vdbexprlist_init();
+
                 for (int i = 0; i < rec_count; i++) {
-//                    printf("number: %d\n", i);
-                    struct VdbExprList* el = vdbexprlist_init();
                     int off = i * stmt->as.insert.attributes->count;
+                    //TODO: could just memcpy here (after making sure capacity is sufficient
                     for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
                         vdbexprlist_append_expr(el, stmt->as.insert.values->exprs[j]);
                     }
                     vdb_insert_new(*h, table_name, stmt->as.insert.attributes, el);
 
                     //not calling vdbexprlist_free(el) since the expressions will be freed when stmt is freed
-                    free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
-                    free_w(el, sizeof(struct VdbExprList));
+                    //TODO: just set set struct VdbExprList count to 0 here
+                    //free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
+                    //free_w(el, sizeof(struct VdbExprList));
+                    el->count = 0;
                 }
+
+                //TODO: free struct VdbExprList here
+                free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
+                free_w(el, sizeof(struct VdbExprList));
 
                 snprintf(buf, MAX_BUF_SIZE, "inserted %d record(s) into %s", rec_count, table_name);
                 vdbvm_output_string(output, buf, strlen(buf));

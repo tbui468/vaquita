@@ -46,7 +46,8 @@ enum VdbReturnCode vdblexer_lex(char* src, struct VdbTokenList** tokens, struct 
     *tokens = vdbtokenlist_init();
     *errors = vdberrorlist_init();
 
-    while (lexer.cur < (int)strlen(lexer.src)) {
+    int len = strlen(lexer.src);
+    while (lexer.cur < len) {
         struct VdbToken t;
         if (vdblexer_read_token(&lexer, &t) == VDBRC_SUCCESS) {
             vdbtokenlist_append_token(*tokens, t);

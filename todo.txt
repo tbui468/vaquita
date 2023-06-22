@@ -59,21 +59,19 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
 Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
+    Replace to_bytes function with serializing functions
+        void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r)
+            this function should be replaced with vdbrecord_serialize
+
+        void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v) 
+            this funciton should be replace with vdbvalue_serialize
+
     auto keyword to allow auto incrementing keys (integers)
         create table planets (id auto, name string, moons);
         should not be allowed to manually set key at this point
 
     fetch, delete, etc (all the cursor functions) really should be part of the tree module
         why is it in the vdb module in the first place?
-
-
-    void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v)
-        don't like this at all - should be:
-            void vdbvalue_serialize(uint8_t* buf, struct VdbValue v);
-            struct VdbValue vdbvalue_desrialize(uint8_t* buf);
-
-        records and value de/serialization is messy and mixed up
-            need to refactor to clean this up
 
     indexing:
         Add in data blocks to store record data
@@ -104,6 +102,10 @@ Could try the entire galileo database with 1.7 billion records
 
         Write open_w wrapper that uses O_DIRECT and O_SYNC
         Set a mamimum page count based on RAM (4-8 Gb seems reasonable)
+
+    Logging
+        use an append-only log to ensure data is not lost/corrupt if system
+        goes down while writing
 
     Redo projection:
         Rather than an array of structs for recordsets, use a struct of arrays

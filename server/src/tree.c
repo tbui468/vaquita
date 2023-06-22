@@ -237,7 +237,7 @@ static void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
     
-    vdbrecord_write(vdbleaf_record_ptr(page->buf, rec_idx), rec, tree->schema);
+    vdbrecord_serialize(vdbleaf_record_ptr(page->buf, rec_idx), rec);
 
     vdbpager_unpin_page(page);
 }
@@ -307,7 +307,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
         return NULL;
     }
 
-    struct VdbRecord* rec = vdbrecord_read(vdbleaf_record_ptr(page->buf, rec_idx), tree->schema);
+    struct VdbRecord* rec = vdbrecord_deserialize(vdbleaf_record_ptr(page->buf, rec_idx), tree->schema);
 
     vdbpager_unpin_page(page);
     return rec;
@@ -320,7 +320,7 @@ static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, stru
     uint32_t idx_cells_size = *vdbleaf_record_count_ptr(page->buf) * sizeof(uint32_t);
     uint32_t data_cells_size = *vdbleaf_datacells_size_ptr(page->buf);
 
-    uint32_t serialized_rec_size = vdbrecord_serialized_size(rec, tree->schema);
+    uint32_t serialized_rec_size = vdbrecord_serialized_size(rec);
     uint32_t idxcell_size = sizeof(uint32_t);
     uint32_t datacell_hdr_size = sizeof(uint32_t) * 2; //next + occupied
     uint32_t total_size = serialized_rec_size + idxcell_size + datacell_hdr_size;
@@ -475,7 +475,8 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
 
     uint32_t leaf_idx;
     if (*vdbmeta_last_leaf(meta_page->buf) != 0) {
-        struct VdbValue largest_key = vdbvalue_deserialize(vdbmeta_largest_key(meta_page->buf));
+        struct VdbValue largest_key;
+        vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
 
         //right append
         if (vdbvalue_compare(rec_key, largest_key) > 0) {
@@ -537,8 +538,8 @@ void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
         }
     }
 
-    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec, tree->schema));
-    vdbrecord_write(vdbleaf_record_ptr(page->buf, i), rec, tree->schema);
+    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec));
+    vdbrecord_serialize(vdbleaf_record_ptr(page->buf, i), rec);
 
     vdbpager_unpin_page(page);
 }

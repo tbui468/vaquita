@@ -28,8 +28,9 @@ struct VdbValueList {
     int count;
 };
 
-void vdbvalue_serialize(uint8_t* buf, struct VdbValue v);
-struct VdbValue vdbvalue_deserialize(uint8_t* buf);
+int vdbvalue_serialized_size(struct VdbValue v);
+int vdbvalue_serialize(uint8_t* buf, struct VdbValue v);
+int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf);
 
 struct VdbValue vdbvalue_deserialize_string(uint8_t* buf);
 bool vdbvalue_is_null(struct VdbValue* d);

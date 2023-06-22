@@ -26,7 +26,7 @@ uint32_t* vdbmeta_last_leaf(uint8_t* buf) {
 }
 
 void* vdbmeta_largest_key(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 6);
+    return (void*)(buf + sizeof(uint32_t) * 6);
 }
 
 void vdbmeta_allocate_schema_ptr(uint8_t* buf, uint32_t size) {

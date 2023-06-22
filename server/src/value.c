@@ -5,29 +5,66 @@
 #include "value.h"
 #include "util.h"
 
-void vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
+
+int vdbvalue_serialized_size(struct VdbValue v) {
+    int size = 0;
+    size += sizeof(uint8_t);
+
+    switch (v.type) {
+        case VDBT_TYPE_STR: {
+            size += sizeof(uint32_t);
+            size += v.as.Str.len;
+            break;
+        }
+        case VDBT_TYPE_INT: {
+            size += sizeof(int64_t);
+            break;
+        }
+        case VDBT_TYPE_FLOAT: {
+            size += sizeof(double);
+            break;
+        }
+        case VDBT_TYPE_BOOL: {
+            size += sizeof(bool);
+            break;
+        }
+        case VDBT_TYPE_NULL:
+            break;
+        default:
+            assert(false && "invalid data type");
+            break;
+    }
+
+    return size;
+}
+
+int vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
     int off = 0;
 
-    *((uint32_t*)(buf + off)) = (uint32_t)(v.type);
-    off += sizeof(uint32_t);
+    *((uint8_t*)(buf + off)) = (uint8_t)(v.type);
+    off += sizeof(uint8_t);
 
     switch (v.type) {
         case VDBT_TYPE_STR: {
             *((uint32_t*)(buf + off)) = (uint32_t)(v.as.Str.len);
             off += sizeof(uint32_t);
             memcpy(buf + off, v.as.Str.start, v.as.Str.len);
+            off += v.as.Str.len;
             break;
         }
         case VDBT_TYPE_INT: {
             memcpy(buf + off, &v.as.Int, sizeof(int64_t));
+            off += sizeof(int64_t);
             break;
         }
         case VDBT_TYPE_FLOAT: {
             memcpy(buf + off, &v.as.Float, sizeof(double));
+            off += sizeof(double);
             break;
         }
         case VDBT_TYPE_BOOL: {
             memcpy(buf + off, &v.as.Bool, sizeof(bool));
+            off += sizeof(bool);
             break;
         }
         case VDBT_TYPE_NULL:
@@ -36,32 +73,37 @@ void vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
             assert(false && "invalid data type");
             break;
     }
+
+    return off;
 }
 
-struct VdbValue vdbvalue_deserialize(uint8_t* buf) {
+int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf) {
     int off = 0;
-    struct VdbValue v;
-    v.type = (enum VdbTokenType)(*((uint32_t*)(buf + off)));
-    off += sizeof(uint32_t);
+    v->type = (enum VdbTokenType)(*((uint8_t*)(buf + off)));
+    off += sizeof(uint8_t);
 
-    switch (v.type) {
+    switch (v->type) {
         case VDBT_TYPE_STR: {
-            v.as.Str.len = *((uint32_t*)(buf + off));
+            v->as.Str.len = *((uint32_t*)(buf + off));
             off += sizeof(uint32_t);
-            v.as.Str.start = malloc_w(sizeof(char) * v.as.Str.len);
-            memcpy(v.as.Str.start, buf + off, v.as.Str.len);
+            v->as.Str.start = malloc_w(sizeof(char) * v->as.Str.len);
+            memcpy(v->as.Str.start, buf + off, v->as.Str.len);
+            off += v->as.Str.len;
             break;
         }
         case VDBT_TYPE_INT: {
-            memcpy(&v.as.Int, buf + off, sizeof(int64_t));
+            memcpy(&v->as.Int, buf + off, sizeof(int64_t));
+            off += sizeof(int64_t);
             break;
         }
         case VDBT_TYPE_FLOAT: {
-            memcpy(&v.as.Float, buf + off, sizeof(double));
+            memcpy(&v->as.Float, buf + off, sizeof(double));
+            off += sizeof(double);
             break;
         }
         case VDBT_TYPE_BOOL: {
-            memcpy(&v.as.Bool, buf + off, sizeof(bool));
+            memcpy(&v->as.Bool, buf + off, sizeof(bool));
+            off += sizeof(bool);
             break;
         }
         case VDBT_TYPE_NULL:
@@ -70,7 +112,8 @@ struct VdbValue vdbvalue_deserialize(uint8_t* buf) {
             assert(false && "invalid data type");
             break;
     }
-    return v;
+
+    return off;
 }
 
 struct VdbValue vdbvalue_deserialize_string(uint8_t* buf) {

@@ -49,6 +49,21 @@ struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema) {
     return s;
 }
 
+uint32_t vdbschema_serialized_size(struct VdbSchema* schema) {
+    uint32_t size = 0;
+
+    size += sizeof(uint32_t); //key_idx
+    size += sizeof(uint32_t); //schema count
+
+    for (uint32_t i = 0; i < schema->count; i++) {
+        size += sizeof(uint32_t); //type
+        size += sizeof(uint32_t); //name length
+        size += strlen(schema->names[i]);
+    }
+
+    return size;
+}
+
 void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema) {
     int off = 0;
 

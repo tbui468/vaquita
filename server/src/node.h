@@ -29,6 +29,7 @@ uint32_t* vdbmeta_root_ptr(uint8_t* buf);
 uint32_t* vdbmeta_last_leaf(uint8_t* buf);
 uint32_t* vdbmeta_largest_key_size(uint8_t* buf);
 void* vdbmeta_largest_key(uint8_t* buf);
+void vdbmeta_allocate_schema_ptr(uint8_t* buf, uint32_t size);
 void* vdbmeta_schema_ptr(uint8_t* buf);
 
 //internal node

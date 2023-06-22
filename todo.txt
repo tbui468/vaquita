@@ -56,19 +56,24 @@ Takes ~5s to insert 119000 records from HYG
 Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
     need to push the limits of memory usage so that page eviction can be tested
 
-*******************************TODO**************************************************
-    Right append assumes records are inserted in order
-        Here's and easy way:
-            put schema on the right side of meta block (and store offset to start of schema)
-            then put largest key size and key itself on the left size (after all the fixed-size data including schema offset)
-            this will allow quite large schemas + key size
+Could try the entire galileo database with 1.7 billion records
 
-        Won't work if schema + key size take up more than the entire block, but we can worry about that when necessary
-           
+*******************************TODO**************************************************
     auto keyword to allow auto incrementing keys (integers)
+        create table planets (id auto, name string, moons);
+        should not be allowed to manually set key at this point
 
     fetch, delete, etc (all the cursor functions) really should be part of the tree module
         why is it in the vdb module in the first place?
+
+
+    void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v)
+        don't like this at all - should be:
+            void vdbvalue_serialize(uint8_t* buf, struct VdbValue v);
+            struct VdbValue vdbvalue_desrialize(uint8_t* buf);
+
+        records and value de/serialization is messy and mixed up
+            need to refactor to clean this up
 
     indexing:
         Add in data blocks to store record data
@@ -85,6 +90,10 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
             will require rewrite of tree.c/h to allow insertion anywhere (rather than just appending)
             will make things a lot faster once cursor(s) know the start/end range of indices to search
             indexes should be stored in tree metadata
+
+    update, insert, and delete need to update all indexes now
+
+    update and delete need to deal with variable length data
 
     Add BETWEEN keyword to allow easier query of ranges
         selecting rectangles/arcs in star viewer will be easy using this

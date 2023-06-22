@@ -18,6 +18,7 @@ struct VdbSchema {
 struct VdbSchema* vdbschema_alloc(int count, struct VdbTokenList* attributes, struct VdbTokenList* types, int key_idx);
 void vdb_schema_free(struct VdbSchema* schema);
 struct VdbSchema* vdb_schema_copy(struct VdbSchema* schema);
+uint32_t vdbschema_serialized_size(struct VdbSchema* schema);
 void vdbschema_serialize(uint8_t* buf, struct VdbSchema* schema);
 struct VdbSchema* vdbschema_deserialize(uint8_t* buf);
 

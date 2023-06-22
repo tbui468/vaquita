@@ -5,6 +5,74 @@
 #include "value.h"
 #include "util.h"
 
+void vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
+    int off = 0;
+
+    *((uint32_t*)(buf + off)) = (uint32_t)(v.type);
+    off += sizeof(uint32_t);
+
+    switch (v.type) {
+        case VDBT_TYPE_STR: {
+            *((uint32_t*)(buf + off)) = (uint32_t)(v.as.Str.len);
+            off += sizeof(uint32_t);
+            memcpy(buf + off, v.as.Str.start, v.as.Str.len);
+            break;
+        }
+        case VDBT_TYPE_INT: {
+            memcpy(buf + off, &v.as.Int, sizeof(int64_t));
+            break;
+        }
+        case VDBT_TYPE_FLOAT: {
+            memcpy(buf + off, &v.as.Float, sizeof(double));
+            break;
+        }
+        case VDBT_TYPE_BOOL: {
+            memcpy(buf + off, &v.as.Bool, sizeof(bool));
+            break;
+        }
+        case VDBT_TYPE_NULL:
+            break;
+        default:
+            assert(false && "invalid data type");
+            break;
+    }
+}
+
+struct VdbValue vdbvalue_deserialize(uint8_t* buf) {
+    int off = 0;
+    struct VdbValue v;
+    v.type = (enum VdbTokenType)(*((uint32_t*)(buf + off)));
+    off += sizeof(uint32_t);
+
+    switch (v.type) {
+        case VDBT_TYPE_STR: {
+            v.as.Str.len = *((uint32_t*)(buf + off));
+            off += sizeof(uint32_t);
+            v.as.Str.start = malloc_w(sizeof(char) * v.as.Str.len);
+            memcpy(v.as.Str.start, buf + off, v.as.Str.len);
+            break;
+        }
+        case VDBT_TYPE_INT: {
+            memcpy(&v.as.Int, buf + off, sizeof(int64_t));
+            break;
+        }
+        case VDBT_TYPE_FLOAT: {
+            memcpy(&v.as.Float, buf + off, sizeof(double));
+            break;
+        }
+        case VDBT_TYPE_BOOL: {
+            memcpy(&v.as.Bool, buf + off, sizeof(bool));
+            break;
+        }
+        case VDBT_TYPE_NULL:
+            break;
+        default:
+            assert(false && "invalid data type");
+            break;
+    }
+    return v;
+}
+
 struct VdbValue vdbvalue_deserialize_string(uint8_t* buf) {
     struct VdbValue d;
     d.type = VDBT_TYPE_STR;

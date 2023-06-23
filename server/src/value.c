@@ -116,16 +116,6 @@ int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf) {
     return off;
 }
 
-struct VdbValue vdbvalue_deserialize_string(uint8_t* buf) {
-    struct VdbValue d;
-    d.type = VDBT_TYPE_STR;
-
-    d.as.Str.len = *((uint32_t*)(buf));
-    d.as.Str.start = malloc_w(sizeof(char) * d.as.Str.len);
-    memcpy(d.as.Str.start, buf + sizeof(uint32_t), d.as.Str.len);
-    return d;
-}
-
 bool vdbvalue_is_null(struct VdbValue* d) {
     return d->type == VDBT_TYPE_NULL;
 }
@@ -158,19 +148,6 @@ struct VdbValue vdbbool(bool b) {
     v.type = VDBT_TYPE_BOOL;
     v.as.Bool = b;
     return v;
-}
-
-void vdbstring_concat(struct VdbString* s, const char* fmt, ...) {
-    char buf[1024]; 
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf_w(buf, 1024, fmt, ap);
-    va_end(ap);
-
-    int new_len = s->len + strlen(buf);
-    s->start = realloc_w(s->start, sizeof(char) * new_len, sizeof(char) * s->len);
-    memcpy(s->start + s->len, buf, strlen(buf));
-    s->len = new_len;
 }
 
 struct VdbValue vdbvalue_copy(struct VdbValue v) {

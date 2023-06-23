@@ -59,7 +59,6 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
 Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
-
     auto keyword to allow auto incrementing keys (integers)
         create table planets (id auto, name string, moons);
         should not be allowed to manually set key at this point

@@ -89,35 +89,6 @@ struct VdbRecord* vdbrecord_deserialize(uint8_t* buf, struct VdbSchema* schema) 
     return rec;
 }
 
-void vdbrecord_print(struct VdbString* s, struct VdbRecord* r) {
-    for (uint32_t j = 0; j < r->count; j++) {
-        switch (r->data[j].type) {
-            case VDBT_TYPE_STR:
-                vdbstring_concat(s, "%.*s, ", r->data[j].as.Str.len, r->data[j].as.Str.start); 
-                break;
-            case VDBT_TYPE_INT:
-                vdbstring_concat(s, "%ld, ", r->data[j].as.Int);
-                break;
-            case VDBT_TYPE_FLOAT:
-                vdbstring_concat(s, "%f, ", r->data[j].as.Float);
-                break;
-            case VDBT_TYPE_BOOL:
-                if (r->data[j].as.Bool) {
-                    vdbstring_concat(s, "true, ");
-                } else {
-                    vdbstring_concat(s, "false, ");
-                }
-                break;
-             case VDBT_TYPE_NULL:
-                vdbstring_concat(s, "null, ");
-                break;
-             default:
-                assert(false && "token is not valid data type");
-                break;
-        }
-    }
-}
-
 struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key) {
     struct VdbRecordSet* rs = malloc_w(sizeof(struct VdbRecordSet));
     rs->count = 0;

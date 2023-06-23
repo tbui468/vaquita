@@ -32,9 +32,7 @@ int vdbvalue_serialized_size(struct VdbValue v);
 int vdbvalue_serialize(uint8_t* buf, struct VdbValue v);
 int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf);
 
-struct VdbValue vdbvalue_deserialize_string(uint8_t* buf);
 bool vdbvalue_is_null(struct VdbValue* d);
-struct VdbValue vdbvalue_init_string(char* start, int len);
 struct VdbValue vdbvalue_copy(struct VdbValue v);
 int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2);
 void vdbvalue_free(struct VdbValue v);
@@ -46,7 +44,5 @@ struct VdbValue vdbbool(bool b);
 struct VdbValueList * vdbvaluelist_init();
 void vdbvaluelist_free(struct VdbValueList* vl);
 void vdbvaluelist_append_value(struct VdbValueList* vl, struct VdbValue v);
-
-void vdbstring_concat(struct VdbString* s, const char* fmt, ...);
 
 #endif //VDB_VALUE_H

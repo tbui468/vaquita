@@ -353,7 +353,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
 
                 for (uint32_t i = 0; i < final->count; i++) {
                     struct VdbRecord* r = final->records[i];
-                    vdbbytelist_serialize_data(output, vdbrecord_serialize, r, vdbrecord_serialized_size(r));
+                    vdbbytelist_serialize_data(output, r, vdbrecord_serialize, vdbrecord_serialized_size);
                 }
 
 

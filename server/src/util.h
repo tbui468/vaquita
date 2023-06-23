@@ -7,9 +7,9 @@
 #include <stdint.h>
 
 
-#define vdbbytelist_serialize_data(bl, fcn, value, size)\
-            vdbbytelist_resize(bl, size);\
-            bl->count += fcn(bl->values + bl->count, value)
+#define vdbbytelist_serialize_data(bl, data, serialize_fcn, size_fcn)\
+            vdbbytelist_resize(bl, size_fcn(data));\
+            bl->count += serialize_fcn(bl->values + bl->count, data)
 
 extern uint64_t allocated_memory;
 

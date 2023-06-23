@@ -545,7 +545,7 @@ struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct Vdb
 
     for (int i = 0; i < cols->count; i++) {
         struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, tree->schema);
-        vdbvalue_to_bytes(bl, v);
+        vdbbytelist_serialize_data(bl, v, vdbvalue_serialize, vdbvalue_serialized_size);
     }
 
     return bl;

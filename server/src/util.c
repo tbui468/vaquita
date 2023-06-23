@@ -47,22 +47,34 @@ void vdbbytelist_free(struct VdbByteList* bl) {
     free_w(bl, sizeof(struct VdbByteList));
 }
 
-void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte) {
-    if (bl->count + 1 > bl->capacity) {
+void vdbbytelist_resize(struct VdbByteList* bl, int size) {
+    while (bl->count + size > bl->capacity) {
         int old_cap = bl->capacity;
         bl->capacity *= 2;
         bl->values = realloc_w(bl->values, sizeof(uint8_t) * bl->capacity, sizeof(uint8_t) * old_cap);
     }
+}
+
+void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte) {
+    vdbbytelist_resize(bl, sizeof(uint8_t));
+    /*
+    if (bl->count + 1 > bl->capacity) {
+        int old_cap = bl->capacity;
+        bl->capacity *= 2;
+        bl->values = realloc_w(bl->values, sizeof(uint8_t) * bl->capacity, sizeof(uint8_t) * old_cap);
+    }*/
 
     bl->values[bl->count++] = byte;
 }
 
 void vdbbytelist_append_bytes(struct VdbByteList* bl, uint8_t* bytes, int count) {
+    vdbbytelist_resize(bl, sizeof(uint8_t) * count);
+    /*
     while (bl->count + count > bl->capacity) {
         int old_cap = bl->capacity;
         bl->capacity *= 2;
         bl->values = realloc_w(bl->values, sizeof(uint8_t) * bl->capacity, sizeof(uint8_t) * old_cap);
-    }
+    }*/
 
     memcpy(bl->values + bl->count, bytes, count);
     bl->count += count;

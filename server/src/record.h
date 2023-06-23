@@ -27,10 +27,9 @@ struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data);
 void vdbrecord_free(struct VdbRecord* rec);
 struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec);
 int vdbrecord_serialized_size(struct VdbRecord* rec);
-void vdbrecord_serialize(uint8_t* buf, struct VdbRecord* rec);
+int vdbrecord_serialize(uint8_t* buf, struct VdbRecord* rec);
 struct VdbRecord* vdbrecord_deserialize(uint8_t* buf, struct VdbSchema* schema);
 void vdbrecord_print(struct VdbString* s, struct VdbRecord* record);
-void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r);
 
 struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key);
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);

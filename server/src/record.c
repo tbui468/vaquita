@@ -66,12 +66,14 @@ int vdbrecord_serialized_size(struct VdbRecord* rec) {
     return size;
 }
 
-void vdbrecord_serialize(uint8_t* buf, struct VdbRecord* rec) {
+int vdbrecord_serialize(uint8_t* buf, struct VdbRecord* rec) {
     int off = 0;
 
     for (uint32_t i = 0; i < rec->count; i++) {
         off += vdbvalue_serialize(buf + off, rec->data[i]);
     }
+
+    return off;
 }
 
 struct VdbRecord* vdbrecord_deserialize(uint8_t* buf, struct VdbSchema* schema) {
@@ -108,35 +110,6 @@ void vdbrecord_print(struct VdbString* s, struct VdbRecord* r) {
                 break;
              case VDBT_TYPE_NULL:
                 vdbstring_concat(s, "null, ");
-                break;
-             default:
-                assert(false && "token is not valid data type");
-                break;
-        }
-    }
-}
-
-void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r) {
-    for (uint32_t i = 0; i < r->count; i++) {
-        uint32_t type = r->data[i].type;
-        vdbbytelist_append_bytes(bl, (uint8_t*)&type, sizeof(uint32_t));
-        switch (r->data[i].type) {
-            case VDBT_TYPE_STR: {
-                struct VdbString s = r->data[i].as.Str;
-                vdbbytelist_append_bytes(bl, (uint8_t*)&s.len, sizeof(uint32_t));
-                vdbbytelist_append_bytes(bl, (uint8_t*)s.start, s.len);
-                break;
-            }
-            case VDBT_TYPE_INT:
-                vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Int, sizeof(int64_t));
-                break;
-            case VDBT_TYPE_FLOAT:
-                vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Float, sizeof(double));
-                break;
-            case VDBT_TYPE_BOOL:
-                vdbbytelist_append_bytes(bl, (uint8_t*)&r->data[i].as.Bool, sizeof(bool));
-                break;
-             case VDBT_TYPE_NULL:
                 break;
              default:
                 assert(false && "token is not valid data type");

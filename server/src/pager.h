@@ -25,7 +25,7 @@ struct VdbPager {
 struct VdbPager* vdbpager_init();
 void vdbpager_free(struct VdbPager* pager);
 
-uint32_t vdbpager_fresh_page(struct VdbPager* pager, FILE* f);
+uint32_t vdbpager_fresh_page(FILE* f);
 struct VdbPage* vdbpager_pin_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx);
 void vdbpager_unpin_page(struct VdbPage* page);
 void vdbpager_evict_pages(struct VdbPager* pager, const char* name);

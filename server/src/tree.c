@@ -26,7 +26,7 @@ static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx) {
  */
 
 static uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema) {
-    uint32_t idx = vdbpager_fresh_page(tree->pager, tree->f);
+    uint32_t idx = vdbpager_fresh_page(tree->f);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
@@ -82,7 +82,7 @@ uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree) {
  */
 
 static uint32_t vdbtree_intern_init(struct VdbTree* tree, uint32_t parent_idx) {
-    uint32_t idx = vdbpager_fresh_page(tree->pager, tree->f);
+    uint32_t idx = vdbpager_fresh_page(tree->f);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 
@@ -209,7 +209,7 @@ static uint32_t vdbtree_intern_split(struct VdbTree* tree, uint32_t idx, struct 
  */
 
 static uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
-    uint32_t idx = vdbpager_fresh_page(tree->pager, tree->f);
+    uint32_t idx = vdbpager_fresh_page(tree->f);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
 

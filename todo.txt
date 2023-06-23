@@ -59,12 +59,16 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
 Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
-    Replace to_bytes function with serializing functions
-        void vdbrecord_serialize_to_bytes(struct VdbByteList* bl, struct VdbRecord* r)
-            this function should be replaced with vdbrecord_serialize
+    struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
+        This function will NOT produce correct key if key includes numbers!
+        it will ordery by ASCII values, so '19' will come before '9' even though that's not correct
+        if they are numbers.  Should be serializing it with the type (so use value serialization functions
+        and drop the value_to_bytes function. Then based on type, compare using vdbvalue_compare
 
-        void vdbvalue_to_bytes(struct VdbByteList* bl, struct VdbValue v) 
-            this funciton should be replace with vdbvalue_serialize
+        Write a test for this that fails first (using '19' and '9' for example) and then change code to
+        make it pass
+
+    vdbpager_fresh_page doesn't need pager as parameter
 
     auto keyword to allow auto incrementing keys (integers)
         create table planets (id auto, name string, moons);

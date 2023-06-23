@@ -6,6 +6,11 @@
 #include <dirent.h>
 #include <stdint.h>
 
+
+#define vdbbytelist_serialize_data(bl, fcn, value, size)\
+            vdbbytelist_resize(bl, size);\
+            bl->count += fcn(bl->values + bl->count, value)
+
 extern uint64_t allocated_memory;
 
 struct VdbIntList {
@@ -28,6 +33,7 @@ struct VdbByteList* vdbbytelist_init();
 void vdbbytelist_free(struct VdbByteList* bl);
 void vdbbytelist_append_byte(struct VdbByteList* bl, uint8_t byte);
 void vdbbytelist_append_bytes(struct VdbByteList* bl, uint8_t* bytes, int count);
+void vdbbytelist_resize(struct VdbByteList* bl, int size);
 
 //wrappers
 int get_filename(FILE* f, char* buf, ssize_t max_len);

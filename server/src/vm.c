@@ -17,8 +17,8 @@ void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
     uint32_t one = 1;
     vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
     vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
-    uint32_t type = VDBT_TYPE_STR;
-    vdbbytelist_append_bytes(bl, (uint8_t*)&type, sizeof(uint32_t));
+    uint8_t type = VDBT_TYPE_STR;
+    vdbbytelist_append_byte(bl, type);
     uint32_t len = size;
     vdbbytelist_append_bytes(bl, (uint8_t*)&len, sizeof(uint32_t));
     vdbbytelist_append_bytes(bl, (uint8_t*)buf, size);
@@ -285,25 +285,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 while ((rec = vdbcursor_fetch_record(cursor))) {
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
-                    if (stmt->as.select.grouping->count == 0) {
-                        if (!vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) { //applying select to individual record
-                            vdbrecordset_free(rs);
-                            continue;
-                        }
 
-                        if (stmt->as.select.distinct) {
-                            struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
-                            if (!vdbhashtable_contains_key(distinct_table, key)) {
-                                vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
-
-                                rs->next = head;
-                                head = rs;
-                            }
-                        } else {
-                            rs->next = head;
-                            head = rs;
-                        }
-                    } else {
+                    //grouping (will apply 'having' clause later)
+                    if (stmt->as.select.grouping->count > 0) {
                         //not applying selection if 'group by' is used
                         //will apply 'having' clause later after aggregates can be applied to entire group
                         struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.grouping);
@@ -311,7 +295,29 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                         free_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
                         free_w(rs, sizeof(struct VdbRecordSet));
                         vdbhashtable_insert_entry(grouping_table, key, rec);
+                        continue;
                     }
+
+                    //does not pass selection criteria
+                    if (!vdbcursor_apply_selection(cursor, rs, stmt->as.select.selection)) {
+                        vdbrecordset_free(rs);
+                        continue;
+                    }
+
+                    //passes selection criteria
+                    if (stmt->as.select.distinct) {
+                        struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, stmt->as.select.projection);
+                        if (!vdbhashtable_contains_key(distinct_table, key)) {
+                            vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+
+                            rs->next = head;
+                            head = rs;
+                        }
+                    } else {
+                        rs->next = head;
+                        head = rs;
+                    }
+
                 }
 
                 //TODO: should not manually use hash table internals like this - error prone.  Should be done with hashtable interface
@@ -346,8 +352,10 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 }
 
                 for (uint32_t i = 0; i < final->count; i++) {
-                    vdbrecord_serialize_to_bytes(output, final->records[i]);
+                    struct VdbRecord* r = final->records[i];
+                    vdbbytelist_serialize_data(output, vdbrecord_serialize, r, vdbrecord_serialized_size(r));
                 }
+
 
                 vdbcursor_free(cursor);
                 vdbrecordset_free(final);

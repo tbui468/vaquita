@@ -242,8 +242,8 @@ void vdbreader_next_set_dim(struct VdbReader* r, uint32_t* row, uint32_t* col) {
 }
 
 enum VdbTokenType vdbreader_next_type(struct VdbReader* r) {
-    enum VdbTokenType type = *((uint32_t*)(r->buf + r->idx));
-    r->idx += sizeof(uint32_t);
+    enum VdbTokenType type = *((uint8_t*)(r->buf + r->idx));
+    r->idx += sizeof(uint8_t);
     return type;
 }
 

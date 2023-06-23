@@ -29,7 +29,7 @@ void vdbpager_free(struct VdbPager* pager) {
     free_w(pager, sizeof(struct VdbPager));
 }
 
-uint32_t vdbpager_fresh_page(struct VdbPager* pager, FILE* f) {
+uint32_t vdbpager_fresh_page(FILE* f) {
     static uint8_t buf[VDB_PAGE_SIZE] = {0};
 
     fseek_w(f, 0, SEEK_END);

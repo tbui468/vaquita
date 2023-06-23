@@ -230,6 +230,8 @@ int serve() {
                 bool end = execute_query(&h, buf, response_buf);
                 *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
 
+                printf("bytes sent: %d\n", response_buf->count);
+
                 vdbserver_send(new_fd, (char*)(response_buf->values), sizeof(uint32_t));
                 vdbserver_send(new_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
 

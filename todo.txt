@@ -59,12 +59,20 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
 Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
-    auto keyword to allow auto incrementing keys (integers)
-        create table planets (id auto, name string, moons);
-        should not be allowed to manually set key at this point
-
     fetch, delete, etc (all the cursor functions) really should be part of the tree module
         why is it in the vdb module in the first place?
+
+        Get rid of vdb.c/h completely.  move code into vm.c or tree.c
+            case VDBST_DESCRIBE: {
+            case VDBST_INSERT: {
+            case VDBST_UPDATE: {
+            case VDBST_DELETE: {
+            case VDBST_SELECT: {
+
+
+        Move all cursor code to tree.c/h
+
+        Remove vdb.c/h, compile program, run tests
 
     indexing:
         Add in data blocks to store record data
@@ -85,6 +93,10 @@ Could try the entire galileo database with 1.7 billion records
     update, insert, and delete need to update all indexes now
 
     update and delete need to deal with variable length data
+
+    auto keyword to allow auto incrementing keys (integers)
+        create table planets (id auto, name string, moons);
+        should not be allowed to manually set key at this point
 
     Add BETWEEN keyword to allow easier query of ranges
         selecting rectangles/arcs in star viewer will be easy using this

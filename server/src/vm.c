@@ -1,4 +1,5 @@
 #include <string.h>
+#include <assert.h>
 
 #include "vm.h"
 #include "util.h"
@@ -13,7 +14,58 @@ static char* to_static_string(struct VdbToken t) {
     return s;
 }
 
-void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
+VDBHANDLE vdbvm_open_db(const char* name) {
+    //intialize struct Vdb
+    struct Vdb* db = malloc_w(sizeof(struct Vdb));
+    db->pager = vdbpager_init();
+    db->trees = vdb_treelist_init();
+    db->name = strdup_w(name);
+
+    char dirname[FILENAME_MAX];
+    dirname[0] = '\0';
+    strcat(dirname, name);
+    strcat(dirname, ".vdb");
+
+    //error if database doesn't exist
+    DIR* d;
+    if (!(d = opendir(dirname))) {
+        return NULL;
+    } 
+
+    //open all table files
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        int entry_len = strlen(ent->d_name);
+        const char* ext = ".vtb";
+        int ext_len = strlen(ext);
+
+        if (entry_len <= ext_len)
+            continue;
+
+        if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
+            continue;
+
+        char path[FILENAME_MAX];
+        path[0] = '\0';
+        strcat(path, dirname);
+        strcat(path, "/");
+        strcat(path, ent->d_name);
+        FILE* f = fopen_w(path, "r+");
+        setbuf(f, NULL);
+
+        char* s = malloc_w(sizeof(char) * (entry_len - 3));
+        memcpy(s, ent->d_name, entry_len - 4);
+        s[entry_len - 3] = '\0';
+        struct VdbTree* tree = vdb_tree_open(s, f, db->pager);
+        vdb_treelist_append_tree(db->trees, tree);
+    }
+
+    closedir_w(d);
+    
+    return (VDBHANDLE)db;
+}
+
+static void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
     uint32_t one = 1;
     vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
     vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
@@ -22,6 +74,105 @@ void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
     uint32_t len = size;
     vdbbytelist_append_bytes(bl, (uint8_t*)&len, sizeof(uint32_t));
     vdbbytelist_append_bytes(bl, (uint8_t*)buf, size);
+}
+
+static bool vdbvm_table_exists(VDBHANDLE h, const char* tab_name) {
+    struct Vdb* db = (struct Vdb*)(h);
+
+    for (uint32_t i = 0; i < db->trees->count; i++) {
+        struct VdbTree* tree = db->trees->trees[i];
+        if (strncmp(tree->name, tab_name, strlen(tab_name)) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool vdbvm_db_exists(const char* db_name) {
+    DIR* d;
+    if (!(d = opendir("./"))) {
+        return true;
+    } 
+
+    bool found = false;
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        int entry_len = strlen(ent->d_name);
+        const char* ext = ".vdb";
+        int ext_len = strlen(ext);
+
+        if (entry_len <= ext_len)
+            continue;
+
+        if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
+            continue;
+
+        if (strncmp(ent->d_name, db_name, strlen(db_name)) == 0) {
+            found = true;
+            break;
+        }
+    }
+
+    closedir_w(d);
+
+    return found;
+}
+
+
+enum VdbReturnCode vdbvm_drop_db(const char* name) {
+    char dirname[FILENAME_MAX];
+    dirname[0] = '\0';
+    strcat(dirname, name);
+    strcat(dirname, ".vdb");
+
+    DIR* d;
+    if (!(d = opendir(dirname))) {
+        return VDBRC_ERROR;
+    }
+
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        if (strncmp(ent->d_name, ".", 1) == 0 || strncmp(ent->d_name, "..", 2) == 0)
+            continue;
+
+        char path[FILENAME_MAX];
+        path[0] = '\0';
+        strcat(path, dirname);
+        strcat(path, "/");
+        strcat(path, ent->d_name);
+
+        remove_w(path);
+    }
+
+    closedir_w(d);
+
+    rmdir_w(dirname);
+
+    return VDBRC_SUCCESS;
+}
+
+enum VdbReturnCode vdbvm_drop_table(VDBHANDLE h, const char* name) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = vdb_treelist_remove_tree(db->trees, name);
+
+    if (tree) {
+        char path[FILENAME_MAX];
+        path[0] = '\0';
+        strcat(path, db->name);
+        strcat(path, ".vdb/");
+        strcat(path, tree->name);
+        strcat(path, ".vtb");
+        
+        vdb_tree_close(tree);
+        vdbpager_evict_pages(db->pager, name);
+
+        remove_w(path);
+
+        return VDBRC_SUCCESS;
+    }
+
+    return VDBRC_ERROR;
 }
 
 //TODO: need an generator that converst the stmtlist to bytecode
@@ -37,116 +188,137 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 break;
             }
             case VDBST_SHOW_DBS: {
-                struct VdbValueList* vl;
-                if (vdb_show_dbs(&vl) == VDBRC_SUCCESS) {
-                    const char* msg = "databases:";
-                    vdbvm_output_string(output, msg, strlen(msg));
-                    for (int i = 0; i < vl->count; i++) {
-                        snprintf_w(buf, MAX_BUF_SIZE, "\t%.*s", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
-                        vdbvm_output_string(output, buf, strlen(buf));
-                    }
-                    vdbvaluelist_free(vl);
-                } else {
+                DIR* d;
+                if (!(d = opendir("./"))) {
                     const char* msg = "execution error: cannot show databases";
                     vdbvm_output_string(output, msg, strlen(msg));
+                    break;
+                } 
+
+                const char* msg = "databases:";
+                vdbvm_output_string(output, msg, strlen(msg));
+
+                struct dirent* ent;
+                while ((ent = readdir(d)) != NULL) {
+                    int entry_len = strlen(ent->d_name);
+                    const char* ext = ".vdb";
+                    int ext_len = strlen(ext);
+
+                    if (entry_len <= ext_len)
+                        continue;
+
+                    if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
+                        continue;
+
+                    snprintf_w(buf, MAX_BUF_SIZE, "\t%.*s", entry_len - ext_len, ent->d_name);
+                    vdbvm_output_string(output, buf, strlen(buf));
                 }
+
+                closedir_w(d);
+
                 break;
             }
             case VDBST_SHOW_TABS: {
-                struct VdbValueList* vl;
-                if (vdb_show_tabs(*h, &vl) == VDBRC_SUCCESS) {
-                    const char* msg = "tables:";
-                    vdbvm_output_string(output, msg, strlen(msg));
-                    for (int i = 0; i < vl->count; i++) {
-                        snprintf_w(buf, MAX_BUF_SIZE, "\t%.*s", vl->values[i].as.Str.len, vl->values[i].as.Str.start);
-                        vdbvm_output_string(output, buf, strlen(buf));
-                    }
-                    vdbvaluelist_free(vl);
-                } else {
-                    const char* msg = "execution error: cannot show tables";
-                    vdbvm_output_string(output, msg, strlen(msg));
+                struct Vdb* db = (struct Vdb*)(*h);
+
+                const char* msg = "tables:";
+                vdbvm_output_string(output, msg, strlen(msg));
+
+                for (uint32_t i = 0; i < db->trees->count; i++) {
+                    struct VdbTree* tree = db->trees->trees[i];
+                    snprintf_w(buf, MAX_BUF_SIZE, "\t%.*s", strlen(tree->name), tree->name);
+                    vdbvm_output_string(output, buf, strlen(buf));
                 }
+
                 break;
             }
             case VDBST_CREATE_DB: {
                 char* db_name = to_static_string(stmt->target);
-                if (vdb_create_db(db_name) == VDBRC_SUCCESS) {
-                    snprintf(buf, MAX_BUF_SIZE, "created database %s", db_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
+                char dirname[FILENAME_MAX];
+                dirname[0] = '\0';
+                strcat(dirname, db_name);
+                strcat(dirname, ".vdb");
+
+                DIR* d;
+                if (!(d = opendir(dirname))) {
+                    mkdir_w(dirname, 0777);
                 } else {
+                    closedir_w(d);
                     snprintf(buf, MAX_BUF_SIZE, "failed to create database %s", db_name);
                     vdbvm_output_string(output, buf, strlen(buf));
-                }
+                    break;
+                } 
+
+                snprintf(buf, MAX_BUF_SIZE, "created database %s", db_name);
+                vdbvm_output_string(output, buf, strlen(buf));
+
                 break;
             }
             case VDBST_CREATE_TAB: {
-                int count = stmt->as.create.attributes->count;
-
-                struct VdbSchema* schema = vdbschema_alloc(count, stmt->as.create.attributes, stmt->as.create.types, stmt->as.create.key_idx);
-
                 char* table_name = to_static_string(stmt->target);
-                if (vdb_create_table(*h, table_name, schema)) {
-                    snprintf(buf, MAX_BUF_SIZE, "created table %s", table_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
-                } else {
+
+                if (vdbvm_table_exists(*h, table_name)) {
                     snprintf(buf, MAX_BUF_SIZE, "failed to create table %s", table_name);
                     vdbvm_output_string(output, buf, strlen(buf));
+                    break;
                 }
 
-                vdb_free_schema(schema);
+                struct Vdb* db = (struct Vdb*)(*h);
+
+                char path[FILENAME_MAX];
+                path[0] = '\0';
+                strcat(path, db->name);
+                strcat(path, ".vdb");
+                strcat(path, "/");
+                strcat(path, table_name);
+                strcat(path, ".vtb");
+
+                struct VdbSchema* schema = vdbschema_alloc(stmt->as.create.attributes->count, //why is this necessary if passing attributes already
+                                                           stmt->as.create.attributes,
+                                                           stmt->as.create.types, 
+                                                           stmt->as.create.key_idx);
+
+                FILE* f = fopen_w(path, "w+");
+                struct VdbTree* tree = vdb_tree_init(table_name, schema, db->pager, f);
+                vdb_treelist_append_tree(db->trees, tree);
+
+                snprintf(buf, MAX_BUF_SIZE, "created table %s", table_name);
+                vdbvm_output_string(output, buf, strlen(buf));
+
                 break;
             }
             case VDBST_IF_EXISTS_DROP_DB: {
-                bool found = false;
                 char* db_name = to_static_string(stmt->target);
-                struct VdbValueList *vl;
-                if (vdb_show_dbs(&vl) == VDBRC_SUCCESS) {
-                    for (int i = 0; i < vl->count; i++) {
-                        if (strncmp(vl->values[i].as.Str.start, db_name, strlen(db_name)) == 0) {
-                            found = true;
-                        }
-                    }
-                    vdbvaluelist_free(vl);
 
-                    if (found) {
-                        if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
-                            snprintf(buf, MAX_BUF_SIZE, "dropped database %s", db_name);
-                            vdbvm_output_string(output, buf, strlen(buf));
-                        } else {
-                            snprintf(buf, MAX_BUF_SIZE, "failed to drop database %s", db_name);
-                            vdbvm_output_string(output, buf, strlen(buf));
-                        }
+                if (vdbvm_db_exists(db_name)) {
+                    if (vdbvm_drop_db(db_name) == VDBRC_SUCCESS) {
+                        snprintf(buf, MAX_BUF_SIZE, "dropped database %s", db_name);
+                        vdbvm_output_string(output, buf, strlen(buf));
+                    } else {
+                        snprintf(buf, MAX_BUF_SIZE, "failed to drop database %s", db_name);
+                        vdbvm_output_string(output, buf, strlen(buf));
                     }
                 }
                 break;
             }
             case VDBST_IF_EXISTS_DROP_TAB: {
-                bool found = false;
                 char* tab_name = to_static_string(stmt->target);
-                struct VdbValueList* vl;
-                if (vdb_show_tabs(*h, &vl) == VDBRC_SUCCESS) {
-                    for (int i = 0; i < vl->count; i++) {
-                        if (strncmp(vl->values[i].as.Str.start, tab_name, strlen(tab_name)) == 0) {
-                            found = true;
-                        }
-                    }
-                    vdbvaluelist_free(vl);
 
-                    if (found) {
-                        if (vdb_drop_table(*h, tab_name) == VDBRC_SUCCESS) {
-                            snprintf(buf, MAX_BUF_SIZE, "dropped table %s", tab_name);
-                            vdbvm_output_string(output, buf, strlen(buf));
-                        } else {
-                            snprintf(buf, MAX_BUF_SIZE, "failed to drop table %s", tab_name);
-                            vdbvm_output_string(output, buf, strlen(buf));
-                        }
+                if (vdbvm_table_exists(*h, tab_name)) {
+                    if (vdbvm_drop_table(*h, tab_name) == VDBRC_SUCCESS) {
+                        snprintf(buf, MAX_BUF_SIZE, "dropped table %s", tab_name);
+                        vdbvm_output_string(output, buf, strlen(buf));
+                    } else {
+                        snprintf(buf, MAX_BUF_SIZE, "failed to drop table %s", tab_name);
+                        vdbvm_output_string(output, buf, strlen(buf));
                     }
                 }
+
                 break;
             }
             case VDBST_DROP_DB: {
                 char* db_name = to_static_string(stmt->target);
-                if (vdb_drop_db(db_name) == VDBRC_SUCCESS) {
+                if (vdbvm_drop_db(db_name) == VDBRC_SUCCESS) {
                     snprintf(buf, MAX_BUF_SIZE, "dropped database %s", db_name);
                     vdbvm_output_string(output, buf, strlen(buf));
                 } else {
@@ -157,7 +329,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             }
             case VDBST_DROP_TAB: {
                 char* table_name = to_static_string(stmt->target);
-                if (vdb_drop_table(*h, table_name) == VDBRC_SUCCESS) {
+                if (vdbvm_drop_table(*h, table_name) == VDBRC_SUCCESS) {
                     snprintf(buf, MAX_BUF_SIZE, "dropped table %s", table_name);
                     vdbvm_output_string(output, buf, strlen(buf));
                 } else {
@@ -168,44 +340,71 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             }
             case VDBST_OPEN: {
                 char* db_name = to_static_string(stmt->target);
-                if ((*h = vdb_open_db(db_name))) {
-                    snprintf(buf, MAX_BUF_SIZE, "opened database %s", db_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
+                if (vdbvm_db_exists(db_name)) {
+                    if ((*h = vdbvm_open_db(db_name))) {
+                        snprintf(buf, MAX_BUF_SIZE, "opened database %s", db_name);
+                        vdbvm_output_string(output, buf, strlen(buf));
+                    } else {
+                        snprintf(buf, MAX_BUF_SIZE, "failed to open database %s", db_name);
+                        vdbvm_output_string(output, buf, strlen(buf));
+                    }
                 } else {
-                    snprintf(buf, MAX_BUF_SIZE, "failed to open database %s", db_name);
+                    snprintf(buf, MAX_BUF_SIZE, "database %s does not exist", db_name);
                     vdbvm_output_string(output, buf, strlen(buf));
                 }
                 break;
             }
             case VDBST_CLOSE: {
                 char* db_name = to_static_string(stmt->target);
-                if (vdb_close(*h)) {
-                    snprintf(buf, MAX_BUF_SIZE, "closed database %s", db_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
-                    *h = NULL;
-                } else {
-                    snprintf(buf, MAX_BUF_SIZE, "failed to close database %s", db_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
-                }
+                struct Vdb* db = (struct Vdb*)(*h);
+
+                vdbpager_free(db->pager);
+                vdb_treelist_free(db->trees);
+                free_w(db->name, sizeof(char) * (strlen(db->name) + 1)); //include null terminator
+                free_w(db, sizeof(struct Vdb));
+
+                snprintf(buf, MAX_BUF_SIZE, "closed database %s", db_name);
+                vdbvm_output_string(output, buf, strlen(buf));
+                *h = NULL;
                 break;
             }
             case VDBST_DESCRIBE: {
+
+                struct Vdb* db = (struct Vdb*)(*h);
                 char* table_name = to_static_string(stmt->target);
-                struct VdbValueList* vl;
-                if (vdb_describe_table(*h, table_name, &vl) == VDBRC_SUCCESS) {
-                    snprintf(buf, MAX_BUF_SIZE, "%s:", table_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
-                    for (int i = 0; i < vl->count; i += 2) {
-                        struct VdbValue attr = vl->values[i];
-                        struct VdbValue type = vl->values[i + 1];
-                        snprintf(buf, MAX_BUF_SIZE, "\t%.*s: %.*s", attr.as.Str.len, attr.as.Str.start, type.as.Str.len, type.as.Str.start);
-                        vdbvm_output_string(output, buf, strlen(buf));
+                struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
+
+                snprintf(buf, MAX_BUF_SIZE, "%s:", table_name);
+                vdbvm_output_string(output, buf, strlen(buf));
+
+                for (uint32_t i = 0; i < tree->schema->count; i++) {
+                    char* type;
+                    int len;
+                    switch (tree->schema->types[i]) {
+                        case VDBT_TYPE_INT:
+                            type = "int";
+                            len = 3;
+                            break;
+                        case VDBT_TYPE_STR:
+                            type = "string";
+                            len = 6;
+                            break;
+                        case VDBT_TYPE_FLOAT:
+                            type = "float";
+                            len = 5;
+                            break;
+                        case VDBT_TYPE_BOOL:
+                            type = "bool";
+                            len = 4;
+                            break;
+                        default:
+                            assert(false && "invalid schema data type");
+                            break;
                     }
-                    vdbvaluelist_free(vl);
-                } else {
-                    snprintf(buf, MAX_BUF_SIZE, "failed to describe table %s", table_name);
+                    snprintf(buf, MAX_BUF_SIZE, "\t%.*s: %.*s", (int)strlen(tree->schema->names[i]), tree->schema->names[i], len, type);
                     vdbvm_output_string(output, buf, strlen(buf));
                 }
+
                 break;
             }
             case VDBST_INSERT: {

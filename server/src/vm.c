@@ -76,6 +76,70 @@ static void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t 
     vdbbytelist_append_bytes(bl, (uint8_t*)buf, size);
 }
 
+//used for record insertion - autofills non-specified columns with null
+static void vdbvm_assign_column_values(struct VdbValue* data, struct VdbSchema* schema, struct VdbTokenList* cols, struct VdbExprList* values) {
+    for (uint32_t i = 0; i < schema->count; i++) {
+        
+        bool found = false;
+        for (int j = 0; j < cols->count; j++) {
+            if (strncmp(schema->names[i], cols->tokens[j].lexeme, cols->tokens[j].len) != 0) 
+                continue;
+
+            //TODO: passing in NULL for struct VdbRecord* and struct Schema* since values expression shouldn't have identifiers
+            //  but holy hell this is ugly - should fix this
+            data[i] = vdbexpr_eval(values->exprs[j], NULL, NULL);
+
+            found = true;
+            break;
+
+        }
+
+        //user manually inserted null for a string value
+        if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
+            data[i] = vdbstring("0", 1); //insert dummy string
+            data[i].type = VDBT_TYPE_NULL;
+        }
+
+        if (!found) {
+            data[i].type = VDBT_TYPE_NULL;
+
+            //automacally insert null value for string
+            if (schema->types[i] == VDBT_TYPE_STR) {
+                data[i] = vdbstring("0", 1); //insert dummy string
+                data[i].type = VDBT_TYPE_NULL;
+            }
+        }
+
+    }
+}
+
+enum VdbReturnCode vdbvm_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* cols, struct VdbExprList* values) {
+    struct Vdb* db = (struct Vdb*)h;
+    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
+
+    struct VdbValue data[tree->schema->count];
+    vdbvm_assign_column_values(data, tree->schema, cols, values);
+
+    //TODO: could have record be stack allocated (along with data)
+    //struct VdbRecord* rec = vdbrecord_init(tree->schema->count, data); 
+    struct VdbRecord rec;
+    rec.count = tree->schema->count;
+    rec.data = data;
+  
+    vdb_tree_insert_record(tree, &rec);
+    //vdbrecord_free(rec);
+
+    for (uint32_t i = 0; i < rec.count; i++) {
+        struct VdbValue* d = &rec.data[i];
+        if (d->type == VDBT_TYPE_STR) {
+            free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
+        }
+    }
+
+    return VDBRC_SUCCESS;
+}
+
+
 static bool vdbvm_table_exists(VDBHANDLE h, const char* tab_name) {
     struct Vdb* db = (struct Vdb*)(h);
 
@@ -420,7 +484,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
                         vdbexprlist_append_expr(el, stmt->as.insert.values->exprs[j]);
                     }
-                    vdb_insert_new(*h, table_name, stmt->as.insert.attributes, el);
+                    vdbvm_insert_new(*h, table_name, stmt->as.insert.attributes, el);
 
                     //not calling vdbexprlist_free(el) since the expressions will be freed when stmt is freed
                     //TODO: just set set struct VdbExprList count to 0 here
@@ -565,7 +629,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             }
             case VDBST_EXIT: {
                 if (*h) {
-                    snprintf_w(buf, MAX_BUF_SIZE, "close database %s before exiting", vdb_dbname(*h));
+                    struct Vdb* db = (struct Vdb*)(*h);
+                    snprintf_w(buf, MAX_BUF_SIZE, "close database %s before exiting", db->name);
                     vdbvm_output_string(output, buf, strlen(buf));
                     return false;
                 } else {

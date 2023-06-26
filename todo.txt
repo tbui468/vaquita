@@ -59,20 +59,17 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
 Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
-    fetch, delete, etc (all the cursor functions) really should be part of the tree module
-        why is it in the vdb module in the first place?
-
-        Get rid of vdb.c/h completely.  move code into vm.c or tree.c
-            case VDBST_DESCRIBE: {
-            case VDBST_INSERT: {
-            case VDBST_UPDATE: {
-            case VDBST_DELETE: {
-            case VDBST_SELECT: {
-
+    Refactor to get rid of vdb.c/h (merge code into vm and tree)
+        enum VdbReturnCode vdbvm_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* cols, struct VdbExprList* values)
+            this is the only one of INSERT, SELECT, DELETE, UPDATE that doesn't use the cursor....
 
         Move all cursor code to tree.c/h
 
         Remove vdb.c/h, compile program, run tests
+
+    Get this working with flask
+        check to see how flask connects to mysql, and mimic interface
+        goal is to get this working with vue at some point to make wedding website
 
     indexing:
         Add in data blocks to store record data

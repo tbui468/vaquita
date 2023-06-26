@@ -28,16 +28,6 @@ struct VdbCursor {
     uint32_t cur_rec_idx;
 };
 
-char* vdb_dbname(VDBHANDLE h);
-
-
-enum VdbReturnCode vdb_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* attrs, struct VdbExprList* values);
-void vdb_insert_record(VDBHANDLE h, const char* name, ...);
-
-bool vdb_delete_record(VDBHANDLE h, const char* name, uint32_t key);
-bool vdb_update_record(VDBHANDLE h, const char* name, uint32_t key, ...);
-void vdb_debug_print_tree(VDBHANDLE h, const char* name);
-
 struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, struct VdbValue key);
 void vdbcursor_free(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor);

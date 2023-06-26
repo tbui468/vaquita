@@ -63,9 +63,7 @@ Could try the entire galileo database with 1.7 billion records
         enum VdbReturnCode vdbvm_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* cols, struct VdbExprList* values)
             this is the only one of INSERT, SELECT, DELETE, UPDATE that doesn't use the cursor....
 
-        Move all cursor code to tree.c/h
-
-        Remove vdb.c/h, compile program, run tests
+    Public interface of tree/cursor should be a lot smaller
 
     Get this working with flask
         check to see how flask connects to mysql, and mimic interface

@@ -1,6 +1,8 @@
 #ifndef VDB_LEXER_H
 #define VDB_LEXER_H
 
+#include <stdbool.h>
+
 #include "error.h"
 #include "token.h"
 

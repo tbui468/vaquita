@@ -1,34 +1,19 @@
-#ifndef VDB_H
-#define VDB_H
+#ifndef VDB_CURSOR_H
+#define VDB_CURSOR_H
 
-#include <stdio.h>
 #include <stdint.h>
 
-#include "schema.h"
-#include "record.h"
-#include "pager.h"
 #include "tree.h"
-#include "error.h"
 #include "parser.h"
 #include "util.h"
 
-
-typedef void* VDBHANDLE;
-
-struct Vdb {
-    char* name;
-    struct VdbPager* pager;
-    struct VdbTreeList* trees;
-};
-
 struct VdbCursor {
-    struct Vdb* db;
-    char* table_name;
+    struct VdbTree* tree;
     uint32_t cur_node_idx;
     uint32_t cur_rec_idx;
 };
 
-struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, struct VdbValue key);
+struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key);
 void vdbcursor_free(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor);
 void vdbcursor_delete_record(struct VdbCursor* cursor);
@@ -43,4 +28,4 @@ struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct Vdb
 void vdbcursor_sort_linked_list(struct VdbCursor* cursor, struct VdbRecordSet** head, struct VdbExprList* ordering_cols, bool order_desc);
 
 
-#endif //VDB_H
+#endif //VDB_CURSOR_H

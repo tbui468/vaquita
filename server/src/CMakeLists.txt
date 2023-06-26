@@ -1,6 +1,6 @@
 set(Sources
     main.c
-    vdb.c
+    cursor.c
     util.c
     schema.c
     tree.c
@@ -18,7 +18,7 @@ set(Sources
     )
 
 set(Headers
-    vdb.h
+    cursor.h
     util.h
     schema.h
     tree.h

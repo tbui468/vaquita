@@ -3,25 +3,19 @@
 #include <string.h>
 #include <assert.h>
 
-#include "vdb.h"
-#include "schema.h"
-#include "record.h"
-#include "util.h"
-#include "tree.h"
+#include "cursor.h"
 
-struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, struct VdbValue key) {
+struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
-    cursor->db = (struct Vdb*)h;
-    cursor->table_name = strdup_w(table_name);
 
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, table_name);
-    uint32_t root_idx = vdbtree_meta_read_root(tree);
-    cursor->cur_node_idx = vdb_tree_traverse_to(tree, root_idx, key);
+    cursor->tree = tree;
+    uint32_t root_idx = vdbtree_meta_read_root(cursor->tree);
+    cursor->cur_node_idx = vdb_tree_traverse_to(cursor->tree, root_idx, key);
     cursor->cur_rec_idx = 0;
 
-    while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
+    while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
         cursor->cur_rec_idx = 0;
-        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(tree, cursor->cur_node_idx);
+        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
     }
 
     //TODO: should increment cursor all the way to key
@@ -30,7 +24,6 @@ struct VdbCursor* vdbcursor_init(VDBHANDLE h, const char* table_name, struct Vdb
 }
 
 void vdbcursor_free(struct VdbCursor* cursor) {
-    free_w(cursor->table_name, sizeof(char) * (strlen(cursor->table_name) + 1)); //include null terminator
     free_w(cursor, sizeof(struct VdbCursor));
 }
 
@@ -39,7 +32,7 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
         return NULL;
     }
 
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbTree* tree = cursor->tree;
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
     cursor->cur_rec_idx++;
@@ -54,13 +47,11 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
 
 
 bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr* selection) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-
-    struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+    struct VdbRecord* rec = vdbtree_leaf_read_record(cursor->tree, cursor->cur_node_idx, cursor->cur_rec_idx);
     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
     vdbrecordset_append_record(rs, rec);
 
-    struct VdbValue v = vdbexpr_eval(selection, rs, tree->schema);
+    struct VdbValue v = vdbexpr_eval(selection, rs, cursor->tree->schema);
     bool result;
     if (v.type == VDBT_TYPE_NULL) {
         result = false;
@@ -81,7 +72,7 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
         return;
     }
 
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbTree* tree = cursor->tree;
     vdbtree_leaf_delete_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
     if (cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
@@ -92,7 +83,7 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
 }
 
 void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbTree* tree = cursor->tree;
     struct VdbValueList* vl = vdbvaluelist_init();
 
     for (int i = 0; i < values->count; i++) {
@@ -112,9 +103,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 }
 
 bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* selection) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-
-    struct VdbValue v = vdbexpr_eval(selection, rs, tree->schema);
+    struct VdbValue v = vdbexpr_eval(selection, rs, cursor->tree->schema);
     bool result;
     if (v.type == VDBT_TYPE_NULL) {
         result = false;
@@ -129,8 +118,6 @@ bool vdbcursor_apply_selection(struct VdbCursor* cursor, struct VdbRecordSet* rs
 }
 
 struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct VdbRecordSet* head, struct VdbExprList* projection, bool aggregate) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-
     struct VdbRecordSet* final = vdbrecordset_init(NULL);
     struct VdbRecordSet* cur = head;
 
@@ -142,7 +129,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
             if (expr->type != VDBET_IDENTIFIER || expr->as.identifier.token.type != VDBT_STAR) { //Skip if projection is *
                 struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
                 for (int i = 0; i < projection->count; i++) {
-                    data[i] = vdbexpr_eval(projection->exprs[i], cur, tree->schema);
+                    data[i] = vdbexpr_eval(projection->exprs[i], cur, cursor->tree->schema);
                 }
 
                 free_w(rec->data, sizeof(struct VdbValue) * rec->count);
@@ -159,19 +146,16 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
 }
 
 bool vdbcursor_apply_having(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-
-    struct VdbValue result = vdbexpr_eval(expr, rs, tree->schema);
+    struct VdbValue result = vdbexpr_eval(expr, rs, cursor->tree->schema);
 
     return result.as.Bool;
 }
 
 void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExpr* expr) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
     if (expr == NULL)
         return;
 
-    struct VdbValue limit = vdbexpr_eval(expr, rs, tree->schema);
+    struct VdbValue limit = vdbexpr_eval(expr, rs, cursor->tree->schema);
 
     if (limit.as.Int >= rs->count)
         return;
@@ -184,12 +168,10 @@ void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, st
 }
 
 struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct VdbRecordSet* rs, struct VdbExprList* cols) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
-
     struct VdbByteList* bl = vdbbytelist_init();
 
     for (int i = 0; i < cols->count; i++) {
-        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, tree->schema);
+        struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, cursor->tree->schema);
         vdbbytelist_serialize_data(bl, v, vdbvalue_serialize, vdbvalue_serialized_size);
     }
 
@@ -236,7 +218,7 @@ struct VdbRecordSet* vdbrsptrlist_dequeue(struct VdbRsPtrList* pl) {
 }
 
 int vdb_compare_cols(struct VdbCursor* cursor, struct VdbRecordSet* left, struct VdbRecordSet* right, struct VdbExprList* ordering_cols) {
-    struct VdbTree* tree = vdb_treelist_get_tree(cursor->db->trees, cursor->table_name);
+    struct VdbTree* tree = cursor->tree;
 
     for (int i = 0; i < ordering_cols->count; i++) {
         struct VdbValue lv = vdbexpr_eval(ordering_cols->exprs[i], left, tree->schema);

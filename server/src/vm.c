@@ -6,6 +6,7 @@
 #include "lexer.h"
 #include "binarytree.h"
 #include "hashtable.h"
+#include "cursor.h"
 
 static char* to_static_string(struct VdbToken t) {
     static char s[256];
@@ -503,7 +504,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             }
             case VDBST_UPDATE: {
                 char* table_name = to_static_string(stmt->target);
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to begining of table
+                struct Vdb* db = (struct Vdb*)(*h);
+                struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
+                struct VdbCursor* cursor = vdbcursor_init(tree, vdbint(0)); //cursor to begining of table
 
                 while (cursor->cur_node_idx != 0) {
                     if (vdbcursor_record_passes_selection(cursor, stmt->as.update.selection)) {
@@ -519,7 +522,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             }
             case VDBST_DELETE: {
                 char* table_name = to_static_string(stmt->target);
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to begining of table
+                struct Vdb* db = (struct Vdb*)(*h);
+                struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
+                struct VdbCursor* cursor = vdbcursor_init(tree, vdbint(0)); //cursor to begining of table
 
                 while (cursor->cur_node_idx != 0) {
                     if (vdbcursor_record_passes_selection(cursor, stmt->as.delete.selection)) {
@@ -535,8 +540,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             }
             case VDBST_SELECT: {
                 char* table_name = to_static_string(stmt->target);
-
-                struct VdbCursor* cursor = vdbcursor_init(*h, table_name, vdbint(0)); //cursor to beginning of table
+                struct Vdb* db = (struct Vdb*)(*h);
+                struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
+                struct VdbCursor* cursor = vdbcursor_init(tree, vdbint(0)); //cursor to beginning of table
 
                 struct VdbHashTable* distinct_table = vdbhashtable_init();
                 struct VdbHashTable* grouping_table = vdbhashtable_init();

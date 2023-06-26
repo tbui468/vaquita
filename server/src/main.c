@@ -18,7 +18,6 @@
 #define BACKLOG 10
 //end network stuff
 
-#include "vdb.h"
 #include "lexer.h"
 #include "parser.h"
 #include "vm.h"

@@ -313,7 +313,7 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
     return rec;
 }
 
-static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec) {
+bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
 
@@ -329,7 +329,7 @@ static bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, stru
     return idx_cells_size + data_cells_size + total_size <= VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE;
 }
 
-static uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, struct VdbValue new_right_key) {
+uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, struct VdbValue new_right_key) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
 
     uint32_t parent = vdbtree_leaf_read_parent(tree, idx);
@@ -468,82 +468,6 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
     }
 
 }
-
-void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec) {
-    struct VdbValue rec_key = rec->data[tree->schema->key_idx];
-    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
-
-    uint32_t leaf_idx;
-    if (*vdbmeta_last_leaf(meta_page->buf) != 0) {
-        struct VdbValue largest_key;
-        vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
-
-        //right append
-        if (vdbvalue_compare(rec_key, largest_key) > 0) {
-            leaf_idx = *vdbmeta_last_leaf(meta_page->buf);
-            vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
-        } else {
-            leaf_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), rec_key);
-        }
-    } else {
-        leaf_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), rec_key);
-        vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
-    }
-
-    if (!vdbtree_leaf_can_fit_record(tree, leaf_idx, rec)) {
-        leaf_idx = vdbtree_leaf_split(tree, leaf_idx, rec_key);
-    }
-
-    *vdbmeta_last_leaf(meta_page->buf) = leaf_idx;
-    meta_page->dirty = true;
-    vdbpager_unpin_page(meta_page);
-  
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, leaf_idx);
-    page->dirty = true;
-
-    /*
-    //binary search doesn't really give much speedup (if any) and is so much more complex
-    uint32_t i = 0;
-    uint32_t left = 0;
-    uint32_t right = vdbtree_leaf_read_record_count(tree, leaf_idx);
-    while (right > 0) {
-        i = (right - left) / 2 + left;
-        struct VdbValue key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
-
-        //record key is smaller than key at i
-        int result = vdbvalue_compare(rec_key, key);
-        if (result == -1) {
-            if (right - left <= 1) {
-                break;
-            }
-            right = i;
-        //record key is larger than key at i
-        } else if (result == 1) {
-            if (right - left <= 1) {
-                i++;
-                break;
-            }
-            left = i;
-        } else {
-            assert(false && "duplicate keys not allowed");
-        }
-
-    }*/
-
-    uint32_t i;
-    for (i = 0; i < vdbtree_leaf_read_record_count(tree, leaf_idx); i++) {
-        struct VdbValue key = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
-        if (vdbvalue_compare(rec_key, key) == -1) {
-            break;
-        }
-    }
-
-    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec));
-    vdbrecord_serialize(vdbleaf_record_ptr(page->buf, i), rec);
-
-    vdbpager_unpin_page(page);
-}
-
 
 struct VdbTreeList* vdb_treelist_init() {
     struct VdbTreeList* tl = malloc_w(sizeof(struct VdbTreeList));

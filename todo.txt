@@ -44,6 +44,9 @@
     wyag.thb.lt
         writing version control software like git (pretty cool)
 
+    Basic web server in python
+        https://bhch.github.io/posts/2017/11/writing-an-http-server-from-scratch/
+
 ***********************Documentation*****************************
 Example
 Major components
@@ -59,11 +62,6 @@ Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
 Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
-    Refactor to get rid of vdb.c/h (merge code into vm and tree)
-        enum VdbReturnCode vdbvm_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* cols, struct VdbExprList* values)
-            this is the only one of INSERT, SELECT, DELETE, UPDATE that doesn't use the cursor....
-
-    Public interface of tree/cursor should be a lot smaller
 
     Get this working with flask
         check to see how flask connects to mysql, and mimic interface

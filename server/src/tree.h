@@ -31,14 +31,14 @@ void vdb_tree_close(struct VdbTree* tree);
 
 uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree);
 
-void vdb_tree_insert_record(struct VdbTree* tree, struct VdbRecord* rec);
-
 struct VdbTreeList* vdb_treelist_init();
 void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree);
 struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name);
 struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* name);
 void vdb_treelist_free(struct VdbTreeList* tl);
 
+bool vdbtree_leaf_can_fit_record(struct VdbTree* tree, uint32_t idx, struct VdbRecord* rec);
+uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, struct VdbValue new_right_key);
 uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx);
 struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx);
 void vdbtree_leaf_delete_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx);

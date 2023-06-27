@@ -114,33 +114,6 @@ static void vdbvm_assign_column_values(struct VdbValue* data, struct VdbSchema* 
     }
 }
 
-enum VdbReturnCode vdbvm_insert_new(VDBHANDLE h, const char* name, struct VdbTokenList* cols, struct VdbExprList* values) {
-    struct Vdb* db = (struct Vdb*)h;
-    struct VdbTree* tree = vdb_treelist_get_tree(db->trees, name);
-
-    struct VdbValue data[tree->schema->count];
-    vdbvm_assign_column_values(data, tree->schema, cols, values);
-
-    //TODO: could have record be stack allocated (along with data)
-    //struct VdbRecord* rec = vdbrecord_init(tree->schema->count, data); 
-    struct VdbRecord rec;
-    rec.count = tree->schema->count;
-    rec.data = data;
-  
-    vdb_tree_insert_record(tree, &rec);
-    //vdbrecord_free(rec);
-
-    for (uint32_t i = 0; i < rec.count; i++) {
-        struct VdbValue* d = &rec.data[i];
-        if (d->type == VDBT_TYPE_STR) {
-            free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
-        }
-    }
-
-    return VDBRC_SUCCESS;
-}
-
-
 static bool vdbvm_table_exists(VDBHANDLE h, const char* tab_name) {
     struct Vdb* db = (struct Vdb*)(h);
 
@@ -476,25 +449,43 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 char* table_name = to_static_string(stmt->target);
                 int rec_count = stmt->as.insert.values->count / stmt->as.insert.attributes->count;
 
-                //TODO: allocate struct VdbExprList here
+                struct Vdb* db = (struct Vdb*)(*h);
+                struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
+
                 struct VdbExprList* el = vdbexprlist_init();
 
                 for (int i = 0; i < rec_count; i++) {
+                    //make record
                     int off = i * stmt->as.insert.attributes->count;
-                    //TODO: could just memcpy here (after making sure capacity is sufficient
+
                     for (int j = off; j < off + stmt->as.insert.attributes->count; j++) {
                         vdbexprlist_append_expr(el, stmt->as.insert.values->exprs[j]);
                     }
-                    vdbvm_insert_new(*h, table_name, stmt->as.insert.attributes, el);
 
-                    //not calling vdbexprlist_free(el) since the expressions will be freed when stmt is freed
-                    //TODO: just set set struct VdbExprList count to 0 here
-                    //free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
-                    //free_w(el, sizeof(struct VdbExprList));
+                    struct VdbValue data[tree->schema->count];
+                    vdbvm_assign_column_values(data, tree->schema, stmt->as.insert.attributes, el);
+
+                    struct VdbRecord rec;
+                    rec.count = tree->schema->count;
+                    rec.data = data;
+                 
+                    struct VdbCursor* cursor = vdbcursor_init(tree, rec.data[tree->schema->key_idx]);
+                    vdbcursor_insert_record(cursor, &rec);
+                    vdbcursor_free(cursor);
+
+                    //free record
+                    for (uint32_t i = 0; i < rec.count; i++) {
+                        struct VdbValue* d = &rec.data[i];
+                        if (d->type == VDBT_TYPE_STR) {
+                            free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
+                        }
+                    }
+
+                    //reuse expression list
                     el->count = 0;
                 }
 
-                //TODO: free struct VdbExprList here
+                //not calling vdbexprlist_free(el) since the expressions will be freed when stmt is freed
                 free_w(el->exprs, sizeof(struct VdbExpr*) * el->capacity);
                 free_w(el, sizeof(struct VdbExprList));
 

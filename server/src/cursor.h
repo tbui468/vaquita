@@ -16,6 +16,7 @@ struct VdbCursor {
 struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key);
 void vdbcursor_free(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor);
+void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec);
 void vdbcursor_delete_record(struct VdbCursor* cursor);
 void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values);
 

@@ -9,6 +9,7 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
 
     cursor->tree = tree;
+    /*
     uint32_t root_idx = vdbtree_meta_read_root(cursor->tree);
     cursor->cur_node_idx = vdb_tree_traverse_to(cursor->tree, root_idx, key);
     cursor->cur_rec_idx = 0;
@@ -16,9 +17,36 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
         cursor->cur_rec_idx = 0;
         cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
+    }*/
+
+
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+
+    //TODO: vdbcursor_init algorithm should include this
+    //get leaf
+    uint32_t leaf_idx;
+    if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
+        struct VdbValue largest_key;
+        vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
+
+        //right append
+        if (vdbvalue_compare(key, largest_key) > 0) {
+            leaf_idx = *vdbmeta_last_leaf(meta_page->buf);
+        } else {
+            leaf_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), key);
+        }
+    } else { //first record being inserted
+        leaf_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), key);
     }
 
-    //TODO: should increment cursor all the way to key
+    cursor->cur_rec_idx = 0;
+    cursor->cur_node_idx = leaf_idx;
+
+
+    while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
+        cursor->cur_rec_idx = 0;
+        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
+    }
 
     return cursor;
 }
@@ -45,6 +73,73 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
     return rec;
 }
 
+void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
+    struct VdbTree* tree = cursor->tree;
+    struct VdbValue rec_key = rec->data[tree->schema->key_idx];
+
+    if (!vdbtree_leaf_can_fit_record(tree, cursor->cur_node_idx, rec)) {
+        cursor->cur_node_idx = vdbtree_leaf_split(tree, cursor->cur_node_idx, rec_key);
+    }
+
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    //sets largest key in meta block if necessary
+    if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
+        struct VdbValue largest_key;
+        vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
+
+        //right append
+        if (vdbvalue_compare(rec_key, largest_key) > 0) {
+            vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
+        }
+    } else { //first record being inserted
+        vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
+
+        //Need to traverse again since cursor init will result in a node/record index of 0
+        //when vdbcursor_init is called.  vdcursor_init will skip any leaves with 0 records
+        //since records may be deleted.  
+        cursor->cur_node_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), rec_key);
+    }
+
+    *vdbmeta_last_leaf(meta_page->buf) = cursor->cur_node_idx;
+    meta_page->dirty = true;
+    vdbpager_unpin_page(meta_page);
+
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    page->dirty = true;
+
+    //binary search
+    uint32_t i = 0;
+    uint32_t left = 0;
+    uint32_t right = vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx);
+    while (right > 0) {
+        i = (right - left) / 2 + left;
+        struct VdbValue key = vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, i);
+
+        //record key is smaller than key at i
+        int result = vdbvalue_compare(rec_key, key);
+        if (result == -1) {
+            if (right - left <= 1) {
+                break;
+            }
+            right = i;
+        //record key is larger than key at i
+        } else if (result == 1) {
+            if (right - left <= 1) {
+                i++;
+                break;
+            }
+            left = i;
+        } else {
+            assert(false && "duplicate keys not allowed");
+        }
+
+    }
+
+    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec));
+    vdbrecord_serialize(vdbleaf_record_ptr(page->buf, i), rec);
+
+    vdbpager_unpin_page(page);
+}
 
 bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr* selection) {
     struct VdbRecord* rec = vdbtree_leaf_read_record(cursor->tree, cursor->cur_node_idx, cursor->cur_rec_idx);

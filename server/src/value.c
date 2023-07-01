@@ -12,8 +12,7 @@ int vdbvalue_serialized_size(struct VdbValue v) {
 
     switch (v.type) {
         case VDBT_TYPE_STR: {
-            size += sizeof(uint32_t);
-            size += v.as.Str.len;
+            size += sizeof(uint32_t) * 2;
             break;
         }
         case VDBT_TYPE_INT: {
@@ -38,6 +37,31 @@ int vdbvalue_serialized_size(struct VdbValue v) {
     return size;
 }
 
+int vdbvalue_serialize_string(uint8_t* buf, struct VdbValue* v) {
+    assert(v->type == VDBT_TYPE_STR && "must be string");
+    int off = 0;
+
+    *((uint8_t*)(buf + off)) = (uint8_t)(v->type);
+    off += sizeof(uint8_t);
+
+    *((uint32_t*)(buf + off)) = (uint32_t)(v->as.Str.len);
+    off += sizeof(uint32_t);
+    memcpy(buf + off, v->as.Str.start, v->as.Str.len);
+    off += v->as.Str.len;
+
+    return off;
+}
+
+int vdbvalue_serialized_string_size(struct VdbValue v) {
+    assert(v.type == VDBT_TYPE_STR && "must be string");
+    int off = 0;
+    off += sizeof(uint8_t);
+    off += sizeof(uint32_t);
+    off += v.as.Str.len;
+
+    return off;
+}
+
 int vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
     int off = 0;
 
@@ -46,10 +70,11 @@ int vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
 
     switch (v.type) {
         case VDBT_TYPE_STR: {
-            *((uint32_t*)(buf + off)) = (uint32_t)(v.as.Str.len);
+            assert(v.as.Str.block_idx != 0 && "block idx not set");
+            *((uint32_t*)(buf + off)) = v.as.Str.block_idx;
             off += sizeof(uint32_t);
-            memcpy(buf + off, v.as.Str.start, v.as.Str.len);
-            off += v.as.Str.len;
+            *((uint32_t*)(buf + off)) = v.as.Str.idxcell_idx;
+            off += sizeof(uint32_t);
             break;
         }
         case VDBT_TYPE_INT: {
@@ -77,6 +102,18 @@ int vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
     return off;
 }
 
+void vdbvalue_deserialize_string(struct VdbValue* v, uint8_t* buf) {
+    int off = 0;
+    v->type = (enum VdbTokenType)(*((uint8_t*)(buf + off)));
+    off += sizeof(uint8_t);
+
+    v->as.Str.len = *((uint32_t*)(buf + off));
+    off += sizeof(uint32_t);
+    v->as.Str.start = malloc_w(sizeof(char) * v->as.Str.len);
+    memcpy(v->as.Str.start, buf + off, v->as.Str.len);
+    off += v->as.Str.len;
+}
+
 int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf) {
     int off = 0;
     v->type = (enum VdbTokenType)(*((uint8_t*)(buf + off)));
@@ -84,11 +121,10 @@ int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf) {
 
     switch (v->type) {
         case VDBT_TYPE_STR: {
-            v->as.Str.len = *((uint32_t*)(buf + off));
+            v->as.Str.block_idx = *((uint32_t*)(buf + off));
             off += sizeof(uint32_t);
-            v->as.Str.start = malloc_w(sizeof(char) * v->as.Str.len);
-            memcpy(v->as.Str.start, buf + off, v->as.Str.len);
-            off += v->as.Str.len;
+            v->as.Str.idxcell_idx = *((uint32_t*)(buf + off));
+            off += sizeof(uint32_t);
             break;
         }
         case VDBT_TYPE_INT: {
@@ -139,6 +175,8 @@ struct VdbValue vdbstring(char* s, int len) {
     v.type = VDBT_TYPE_STR;
     v.as.Str.start = malloc_w(sizeof(char) * len);
     v.as.Str.len = len;
+    v.as.Str.block_idx = 0;
+    v.as.Str.idxcell_idx = 0;
     memcpy(v.as.Str.start, s, v.as.Str.len);
     return v;
 }

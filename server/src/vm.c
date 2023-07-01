@@ -613,9 +613,16 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
 
                 for (uint32_t i = 0; i < final->count; i++) {
                     struct VdbRecord* r = final->records[i];
-                    vdbbytelist_serialize_data(output, r, vdbrecord_serialize, vdbrecord_serialized_size);
+                    vdbbytelist_resize(output, vdbrecord_serialized_size(r));
+                    for (uint32_t j = 0; j < r->count; j++) {
+                        struct VdbValue v = r->data[j];
+                        if (v.type == VDBT_TYPE_STR) {
+                            output->count += vdbvalue_serialize_string(output->values + output->count, &v);
+                        } else {
+                            output->count += vdbvalue_serialize(output->values + output->count, v);
+                        }
+                    }
                 }
-
 
                 vdbcursor_free(cursor);
                 vdbrecordset_free(final);

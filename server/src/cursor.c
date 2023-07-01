@@ -9,25 +9,15 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
 
     cursor->tree = tree;
-    /*
-    uint32_t root_idx = vdbtree_meta_read_root(cursor->tree);
-    cursor->cur_node_idx = vdb_tree_traverse_to(cursor->tree, root_idx, key);
-    cursor->cur_rec_idx = 0;
-
-    while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
-        cursor->cur_rec_idx = 0;
-        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
-    }*/
-
 
     struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
 
-    //TODO: vdbcursor_init algorithm should include this
     //get leaf
     uint32_t leaf_idx;
     if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
         struct VdbValue largest_key;
         vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
+        vdbtree_deserialize_from_data_block_if_varlen(tree, &largest_key);
 
         //right append
         if (vdbvalue_compare(key, largest_key) > 0) {
@@ -86,12 +76,15 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
         struct VdbValue largest_key;
         vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
+        vdbtree_deserialize_from_data_block_if_varlen(tree, &largest_key);
 
         //right append
         if (vdbvalue_compare(rec_key, largest_key) > 0) {
+            vdbtree_serialize_to_data_block_if_varlen(tree, &rec_key);
             vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
         }
     } else { //first record being inserted
+        vdbtree_serialize_to_data_block_if_varlen(tree, &rec_key);
         vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
 
         //Need to traverse again since cursor init will result in a node/record index of 0
@@ -117,13 +110,13 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
 
         //record key is smaller than key at i
         int result = vdbvalue_compare(rec_key, key);
-        if (result == -1) {
+        if (result < 0) {
             if (right - left <= 1) {
                 break;
             }
             right = i;
         //record key is larger than key at i
-        } else if (result == 1) {
+        } else if (result > 0) {
             if (right - left <= 1) {
                 i++;
                 break;
@@ -136,6 +129,10 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     }
 
     vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec));
+
+    for (uint32_t i = 0; i < rec->count; i++) {
+        vdbtree_serialize_to_data_block_if_varlen(tree, &rec->data[i]);
+    }
     vdbrecord_serialize(vdbleaf_record_ptr(page->buf, i), rec);
 
     vdbpager_unpin_page(page);
@@ -267,7 +264,13 @@ struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct Vdb
 
     for (int i = 0; i < cols->count; i++) {
         struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, cursor->tree->schema);
-        vdbbytelist_serialize_data(bl, v, vdbvalue_serialize, vdbvalue_serialized_size);
+        if (v.type == VDBT_TYPE_STR) {
+            vdbbytelist_resize(bl, vdbvalue_serialized_string_size(v));
+            bl->count += vdbvalue_serialize_string(bl->values + bl->count, &v);
+        } else {
+            vdbbytelist_resize(bl, vdbvalue_serialized_size(v));
+            bl->count += vdbvalue_serialize(bl->values + bl->count, v);
+        }
     }
 
     return bl;

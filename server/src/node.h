@@ -30,6 +30,7 @@ uint32_t* vdbmeta_last_leaf(uint8_t* buf);
 uint32_t* vdbmeta_largest_key_size(uint8_t* buf);
 void* vdbmeta_largest_key(uint8_t* buf);
 void vdbmeta_allocate_schema_ptr(uint8_t* buf, uint32_t size);
+uint32_t* vdbmeta_data_block_ptr(uint8_t* buf);
 void* vdbmeta_schema_ptr(uint8_t* buf);
 
 //internal node
@@ -47,8 +48,16 @@ uint32_t* vdbleaf_datacells_size_ptr(uint8_t* buf);
 uint32_t* vdbleaf_next_leaf_ptr(uint8_t* buf);
 void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);
 uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx);
-void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fixedlen_size);
+void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec_size);
 void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx);
+
+//data node
+uint32_t* vdbdata_next(uint8_t* buf);
+uint32_t* vdbdata_idxcell_count(uint8_t* buf);
+uint32_t* vdbdata_datacells_size(uint8_t* buf);
+void* vdbdata_datacell(uint8_t* buf, uint32_t idx);
+bool vdbdata_can_fit(uint8_t* buf, uint32_t size);
+uint32_t vdbdata_insert_data(uint8_t* buf, uint32_t size);
 
 //shared node functions
 enum VdbNodeType* vdbnode_type(uint8_t* buf);

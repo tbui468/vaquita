@@ -141,10 +141,7 @@ struct VdbValue vdbexpr_eval_identifier(struct VdbToken token, struct VdbRecord*
     }
 
     if (rec->data[i].type == VDBT_TYPE_STR) {
-        struct VdbValue d = rec->data[i];
-        d.as.Str.len = rec->data[i].as.Str.len;
-        d.as.Str.start = strdup_w(rec->data[i].as.Str.start);
-        return d;
+        return vdbstring(rec->data[i].as.Str.start, rec->data[i].as.Str.len);
     }
     
     return rec->data[i];
@@ -154,11 +151,7 @@ struct VdbValue vdbexpr_eval_literal(struct VdbToken token) {
     struct VdbValue d;
     switch (token.type) {
         case VDBT_STR: {
-            d.type = VDBT_TYPE_STR;
-            d.as.Str.len = token.len;
-            d.as.Str.start = malloc_w(token.len + 1);
-            memcpy(d.as.Str.start, token.lexeme, token.len);
-            d.as.Str.start[token.len] = '\0';
+            d = vdbstring(token.lexeme, token.len);
             break;
         }
         case VDBT_INT: {

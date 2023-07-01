@@ -41,6 +41,8 @@ struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec) {
                 r->data[i].as.Str.len = d->as.Str.len;
                 r->data[i].as.Str.start = malloc_w(sizeof(char) * d->as.Str.len);
                 memcpy(r->data[i].as.Str.start, d->as.Str.start, d->as.Str.len);
+                r->data[i].as.Str.block_idx = d->as.Str.block_idx;
+                r->data[i].as.Str.idxcell_idx = d->as.Str.idxcell_idx;
                 break;
             case VDBT_TYPE_BOOL:
                 r->data[i].as.Bool = d->as.Bool;
@@ -57,6 +59,20 @@ struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec) {
 }
 
 int vdbrecord_serialized_size(struct VdbRecord* rec) {
+    int size = 0;
+
+    for (uint32_t i = 0; i < rec->count; i++) {
+        if (rec->data[i].type == VDBT_TYPE_STR) {
+            size += vdbvalue_serialized_string_size(rec->data[i]);
+        } else {
+            size += vdbvalue_serialized_size(rec->data[i]);
+        }
+    }
+
+    return size;
+}
+
+int vdbrecord_fixedlen_size(struct VdbRecord* rec) {
     int size = 0;
 
     for (uint32_t i = 0; i < rec->count; i++) {
@@ -120,5 +136,4 @@ void vdbrecordset_free(struct VdbRecordSet* rs) {
     //TODO: Who should free next recordset in linked list ('next' field)
     if (rs->key) vdbbytelist_free(rs->key);
 }
-
 

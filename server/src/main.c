@@ -79,7 +79,7 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     }
 
     time(&end_time);
-    printf("tokenizing time: %.2lf\n", difftime(end_time, start_time));
+    //printf("tokenizing time: %.2lf\n", difftime(end_time, start_time));
     time(&start_time);
 
     struct VdbStmtList* stmts;
@@ -99,13 +99,13 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     }
 
     time(&end_time);
-    printf("parsing time: %.2lf\n", difftime(end_time, start_time));
+    //printf("parsing time: %.2lf\n", difftime(end_time, start_time));
     time(&start_time);
 
     bool end = vdb_execute(stmts, h, output);
 
     time(&end_time);
-    printf("executing time: %.2lf\n", difftime(end_time, start_time));
+    //printf("executing time: %.2lf\n", difftime(end_time, start_time));
 
     vdbtokenlist_free(tokens);
     vdberrorlist_free(lex_errors);

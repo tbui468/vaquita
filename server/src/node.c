@@ -10,7 +10,7 @@
 
 /*
  * Meta node de/serialization
- * [type|parent_idx|pk_counter|root_idx|schema_off|last_leaf_idx|largest_key...|...|...schema]
+ * [type|parent_idx|pk_counter|root_idx|schema_off|data_block_idx|last_leaf_idx|largest_key...|...|...schema]
  */
 
 uint32_t* vdbmeta_auto_counter_ptr(uint8_t* buf) {
@@ -21,16 +21,20 @@ uint32_t* vdbmeta_root_ptr(uint8_t* buf) {
     return (uint32_t*)(buf + sizeof(uint32_t) * 3);
 }
 
-uint32_t* vdbmeta_last_leaf(uint8_t* buf) {
+void vdbmeta_allocate_schema_ptr(uint8_t* buf, uint32_t size) {
+    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = VDB_PAGE_SIZE - size;
+}
+
+uint32_t* vdbmeta_data_block_ptr(uint8_t* buf) {
     return (uint32_t*)(buf + sizeof(uint32_t) * 5);
 }
 
-void* vdbmeta_largest_key(uint8_t* buf) {
-    return (void*)(buf + sizeof(uint32_t) * 6);
+uint32_t* vdbmeta_last_leaf(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 6);
 }
 
-void vdbmeta_allocate_schema_ptr(uint8_t* buf, uint32_t size) {
-    *((uint32_t*)(buf + sizeof(uint32_t) * 4)) = VDB_PAGE_SIZE - size;
+void* vdbmeta_largest_key(uint8_t* buf) {
+    return (void*)(buf + sizeof(uint32_t) * 7);
 }
 
 void* vdbmeta_schema_ptr(uint8_t* buf) {
@@ -115,13 +119,13 @@ uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx) {
     return (uint32_t*)(buf + datacell_off + sizeof(uint32_t));
 }
 
-void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t fixedlen_size) {
+void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec_size) {
     uint8_t* src = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
     uint8_t* dst = src + sizeof(uint32_t);
     size_t size = (*vdbleaf_record_count_ptr(buf) - idxcell_idx) * sizeof(uint32_t);
     memmove(dst, src, size);
 
-    uint32_t new_datacells_size = *vdbleaf_datacells_size_ptr(buf) + sizeof(uint32_t) * 2 + fixedlen_size;
+    uint32_t new_datacells_size = *vdbleaf_datacells_size_ptr(buf) + sizeof(uint32_t) * 2 + rec_size;
     *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
 
     *vdbleaf_datacells_size_ptr(buf) = new_datacells_size;
@@ -143,12 +147,52 @@ void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx) {
 
 /* 
  * Data node de/serialization
- * [type|parent_idx|record count|datacells size|next data idx| ... |index cells ... datacells]
+ * [type|parent_idx|next|idxcell count|datacells size| ... |index cells ... datacells]
  */
+
+uint32_t* vdbdata_next(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
+}
+
+uint32_t* vdbdata_idxcell_count(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
+}
+
+uint32_t* vdbdata_datacells_size(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
+}
+
+void* vdbdata_datacell(uint8_t* buf, uint32_t idx) {
+    int off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
+    int data_off = *((uint32_t*)(buf + off));
+
+    return (void*)(buf + data_off);
+}
+
+//checks if enough space to fit idxcell and datacell
+bool vdbdata_can_fit(uint8_t* buf, uint32_t size) {
+    uint32_t remaining_size = VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - *vdbdata_idxcell_count(buf) * sizeof(uint32_t) - *vdbdata_datacells_size(buf);
+    return remaining_size >= size;
+}
+
+uint32_t vdbdata_insert_data(uint8_t* buf, uint32_t size) {
+    assert(vdbdata_can_fit(buf, size) && "data block not large enough to insert data");
+
+    uint32_t new_idx = *vdbdata_idxcell_count(buf);
+    (*vdbdata_idxcell_count(buf))++;
+
+    (*vdbdata_datacells_size(buf)) += (size - sizeof(uint32_t)); //don't include idxcell size 
+
+    uint32_t idxcell_off = VDB_PAGE_HDR_SIZE + new_idx * sizeof(uint32_t);
+    *((uint32_t*)(buf + idxcell_off)) = VDB_PAGE_SIZE - *vdbdata_datacells_size(buf);
+
+    return new_idx;
+}
 
 /*
  * Shared node functions
  */
+
 enum VdbNodeType* vdbnode_type(uint8_t* buf) {
     return (enum VdbNodeType*)(buf);
 }

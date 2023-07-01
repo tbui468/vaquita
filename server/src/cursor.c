@@ -129,11 +129,7 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     }
 
     vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec));
-
-    for (uint32_t i = 0; i < rec->count; i++) {
-        vdbtree_serialize_to_data_block_if_varlen(tree, &rec->data[i]);
-    }
-    vdbrecord_serialize(vdbleaf_record_ptr(page->buf, i), rec);
+    vdbtree_leaf_write_record(tree, cursor->cur_node_idx, i, rec);
 
     vdbpager_unpin_page(page);
 }
@@ -165,7 +161,12 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     }
 
     struct VdbTree* tree = cursor->tree;
-    vdbtree_leaf_delete_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    page->dirty = true;
+
+    vdbleaf_delete_idxcell(page->buf, cursor->cur_rec_idx);
+
+    vdbpager_unpin_page(page);
 
     if (cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx)) {
         cursor->cur_rec_idx = 0;
@@ -174,7 +175,7 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
 
 }
 
-void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attributes, struct VdbExprList* values) {
+void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attrs, struct VdbExprList* values) {
     struct VdbTree* tree = cursor->tree;
     struct VdbValueList* vl = vdbvaluelist_init();
 
@@ -183,8 +184,24 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
         vdbvaluelist_append_value(vl, v);
     }
 
-    vdbtree_leaf_update_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx, attributes, vl);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    page->dirty = true;
 
+    struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+
+    for (int i = 0; i < attrs->count; i++) {
+        for (uint32_t j = 0; j < tree->schema->count; j++) {
+            if (strncmp(attrs->tokens[i].lexeme, tree->schema->names[j], attrs->tokens[i].len) == 0) {
+                vdbvalue_free(rec->data[j]);
+                rec->data[j] = vdbvalue_copy(vl->values[i]);
+            }
+        }
+    }
+
+    vdbtree_leaf_write_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx, rec);
+
+    vdbrecord_free(rec);
+    vdbpager_unpin_page(page);
     vdbvaluelist_free(vl);
 
     cursor->cur_rec_idx++;

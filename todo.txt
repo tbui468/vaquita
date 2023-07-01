@@ -83,14 +83,6 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
-    Make sure all tests pass using new block system
-        limit.sql
-        seems like the last string is not read correctly
-        Looks like
-
-    Commit to github after all tests pass
-        'storing strings in data blocks'
-
     Move records from leaves to data blocks
         data blocks now will store both strings and records
 
@@ -109,6 +101,8 @@ Could try the entire galileo database with 1.7 billion records
             will require rewrite of tree.c/h to allow insertion anywhere (rather than just appending)
             will make things a lot faster once cursor(s) know the start/end range of indices to search
             indexes should be stored in tree metadata
+
+    defrag data blocks
 
     update, insert, and delete need to update all indexes now
 

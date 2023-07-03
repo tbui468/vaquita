@@ -74,7 +74,11 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     struct VdbTree* tree = cursor->tree;
     struct VdbValue rec_key = rec->data[tree->schema->key_idx];
 
-    if (!vdbtree_leaf_can_fit_record(tree, cursor->cur_node_idx, rec)) {
+    struct VdbPage* cur_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    bool can_fit_rec = vdbnode_can_fit(cur_page->buf, vdbrecord_fixedlen_size(rec));
+    vdbpager_unpin_page(cur_page);
+
+    if (!can_fit_rec) {
         cursor->cur_node_idx = vdbtree_leaf_split(tree, cursor->cur_node_idx, rec_key);
     }
 

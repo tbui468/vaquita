@@ -38,7 +38,7 @@ uint32_t* vdbintern_rightptr_block(uint8_t* buf);
 void* vdbintern_rightptr_key(uint8_t* buf);
 
 //leaf node
-void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);
+//void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);
 uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx);
 void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec_size);
 void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx);

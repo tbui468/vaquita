@@ -284,7 +284,7 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
-    if (!rec) printf("rec is null\n");
+    if (!rec) printf("rec is null\n"); //TODO: this should never happend...?
 
     struct VdbValue v = rec->data[tree->schema->key_idx];
     if (v.type == VDBT_TYPE_STR) {
@@ -300,13 +300,6 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
 struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
-
-    //check if record idx is occupied (may be a freed record)
-    if (!(*vdbleaf_record_occupied_ptr(page->buf, rec_idx))) {
-        printf("occupied: %d\n", *vdbleaf_record_occupied_ptr(page->buf, rec_idx));
-        vdbpager_unpin_page(page);
-        return NULL;
-    }
 
     struct VdbRecord* rec = vdbrecord_deserialize(vdbnode_datacell(page->buf, rec_idx), tree->schema);
     for (uint32_t i = 0; i < rec->count; i++) {

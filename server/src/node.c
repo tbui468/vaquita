@@ -62,47 +62,6 @@ void* vdbintern_rightptr_key(uint8_t* buf) {
  */
 
 /*
-void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx) {
-    int off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
-    int data_off = *((uint32_t*)(buf + off));
-
-    return (void*)(buf + data_off + sizeof(uint32_t) * 2); //skip next and occcupied fields
-}*/
-
-uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx) {
-    int idx_off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
-    int datacell_off = *((uint32_t*)(buf + idx_off));
-    return (uint32_t*)(buf + datacell_off + sizeof(uint32_t));
-}
-
-void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec_size) {
-    uint8_t* src = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
-    uint8_t* dst = src + sizeof(uint32_t);
-    size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
-    memmove(dst, src, size);
-
-    uint32_t new_datacells_size = *vdbnode_datacells_size(buf) + sizeof(uint32_t) * 2 + rec_size;
-    *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
-
-    *vdbnode_datacells_size(buf) = new_datacells_size;
-    (*vdbnode_idxcell_count(buf))++;
-
-    int idx_off = VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
-    int datacell_off = *((uint32_t*)(buf + idx_off));
-    *((uint32_t*)(buf + datacell_off)) = 0; //next field
-    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = 1; //occupied field
-}
-
-//TODO: need to reimplement this 
-void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx) {
-    (*vdbnode_idxcell_count(buf))--;
-    uint8_t* dst = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
-    uint8_t* src = dst + sizeof(uint32_t);
-    size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
-    memmove(dst, src, size);
-}
-
-/*
  * Shared node functions
  * [type|parent_idx|next|idxcell count|datacells size|<block specific header data> ... |index cells...datacells]
  */
@@ -174,3 +133,10 @@ void* vdbnode_datacell(uint8_t* buf, uint32_t idxcell_idx) {
     return (void*)(buf + data_off + sizeof(uint32_t) * 2); //skip next and size fields
 }
 
+void vdbnode_free_cell(uint8_t* buf, uint32_t idxcell_idx) {
+    (*vdbnode_idxcell_count(buf))--;
+    uint8_t* dst = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
+    uint8_t* src = dst + sizeof(uint32_t);
+    size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
+    memmove(dst, src, size);
+}

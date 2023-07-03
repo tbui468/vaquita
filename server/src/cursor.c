@@ -139,7 +139,7 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
 
     }
 
-    vdbleaf_insert_record_cell(page->buf, i, vdbrecord_serialized_size(rec));
+    vdbnode_insert_idxcell(page->buf, i, vdbrecord_serialized_size(rec));
     vdbtree_leaf_write_record(tree, cursor->cur_node_idx, i, rec);
 
     vdbpager_unpin_page(page);
@@ -175,7 +175,7 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
     page->dirty = true;
 
-    vdbleaf_delete_idxcell(page->buf, cursor->cur_rec_idx);
+    vdbnode_free_cell(page->buf, cursor->cur_rec_idx);
 
     vdbpager_unpin_page(page);
 

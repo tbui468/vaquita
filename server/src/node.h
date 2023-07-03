@@ -37,12 +37,6 @@ void* vdbmeta_schema_ptr(uint8_t* buf);
 uint32_t* vdbintern_rightptr_block(uint8_t* buf);
 void* vdbintern_rightptr_key(uint8_t* buf);
 
-//leaf node
-//void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);
-uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx);
-void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec_size);
-void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx);
-
 //node functions
 enum VdbNodeType* vdbnode_type(uint8_t* buf);
 uint32_t* vdbnode_parent(uint8_t* buf);
@@ -53,5 +47,6 @@ bool vdbnode_can_fit(uint8_t* buf, uint32_t datacell_size);
 uint32_t vdbnode_append_idxcell(uint8_t* buf, uint32_t datacell_size);
 void vdbnode_insert_idxcell(uint8_t* buf, uint32_t idxcell_idx, uint32_t datacell_size);
 void* vdbnode_datacell(uint8_t* buf, uint32_t idxcell_idx);
+void vdbnode_free_cell(uint8_t* buf, uint32_t idxcell_idx);
 
 #endif //VDB_NODE_H

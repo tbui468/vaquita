@@ -83,10 +83,24 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
+    Note that blocks are almost all the same:
+        idxcells, datacells, etc
+        the only difference should be (some) header data
+        [type|parent_idx|idxcell count|datacells size|<block specific header data> ... |index cells...datacells]
+
     Move records from leaves to data blocks
         data blocks now will store both strings and records
+        Need to make a record ptr in leaves
+            block_idx
+            idxcell_idx
+            key
+
+    Reimplement delete and delete tests (find two tests on github)
+        
 
     indexing:
+        create index my_index on table_name (x, y);
+        drop index my_index;
         Add in data blocks to store record data
             leaves will now only hold ptrs to blocks/idx and keys
                 rename leaf functions to show that they hold recordptr and NOT records
@@ -124,7 +138,8 @@ Could try the entire galileo database with 1.7 billion records
 
     Logging
         use an append-only log to ensure data is not lost/corrupt if system
-        goes down while writing
+        goes down while writing.  Write to log first before writing from
+        tree to disk
 
     Redo projection:
         Rather than an array of structs for recordsets, use a struct of arrays

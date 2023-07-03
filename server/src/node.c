@@ -48,16 +48,8 @@ void* vdbmeta_schema_ptr(uint8_t* buf) {
  * [type|parent_idx|ptr count|datacells size|right ptr| ... |index cells...datacells]
  */
 
-uint32_t* vdbintern_nodeptr_count_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
-}
-
-uint32_t* vdbintern_datacells_size_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
-}
-
 struct VdbPtr* vdbintern_rightptr_ptr(uint8_t* buf) {
-    return (struct VdbPtr*)(buf + sizeof(uint32_t) * 4);
+    return (struct VdbPtr*)(buf + sizeof(uint32_t) * 5);
 }
 
 struct VdbPtr* vdbintern_nodeptr_ptr(uint8_t* buf, uint32_t idx) {
@@ -68,22 +60,22 @@ struct VdbPtr* vdbintern_nodeptr_ptr(uint8_t* buf, uint32_t idx) {
 }
 
 void vdbintern_append_nodeptr(uint8_t* buf, struct VdbPtr ptr) {
-    uint32_t count = *vdbintern_nodeptr_count_ptr(buf);
+    uint32_t count = *vdbnode_idxcell_count(buf);
     uint32_t indexcell_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * count;
-    uint32_t datacells_size = *vdbintern_datacells_size_ptr(buf);
+    uint32_t datacells_size = *vdbnode_datacells_size(buf);
     uint32_t datacell_off = VDB_PAGE_SIZE - datacells_size - sizeof(uint32_t) - sizeof(struct VdbValue);
 
     *((uint32_t*)(buf + indexcell_off)) = datacell_off;
     *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = ptr.block_idx;
     *((struct VdbValue*)(buf + datacell_off + sizeof(uint32_t) * 1)) = ptr.key;
 
-    *vdbintern_nodeptr_count_ptr(buf) = count + 1;
-    *vdbintern_datacells_size_ptr(buf) = datacells_size + sizeof(uint32_t) + sizeof(struct VdbValue);
+    *vdbnode_idxcell_count(buf) = count + 1;
+    *vdbnode_datacells_size(buf) = datacells_size + sizeof(uint32_t) + sizeof(struct VdbValue);
 }
 
 bool vdbintern_can_fit_nodeptr(uint8_t* buf) {
-    uint32_t indexcells_size = *vdbintern_nodeptr_count_ptr(buf) * sizeof(uint32_t);
-    uint32_t datacells_size = *vdbintern_datacells_size_ptr(buf);
+    uint32_t indexcells_size = *vdbnode_idxcell_count(buf) * sizeof(uint32_t);
+    uint32_t datacells_size = *vdbnode_datacells_size(buf);
     uint32_t ptr_entry_size = sizeof(uint32_t) * 2 + sizeof(struct VdbValue); //index cell + block_idx + key
 
     return VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE >= indexcells_size + datacells_size + ptr_entry_size;
@@ -93,18 +85,6 @@ bool vdbintern_can_fit_nodeptr(uint8_t* buf) {
  * Leaf node de/serialization
  * [type|parent_idx|record count|datacells size|next leaf idx| ... |index cells ... datacells]
  */
-
-uint32_t* vdbleaf_record_count_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
-}
-
-uint32_t* vdbleaf_datacells_size_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
-}
-
-uint32_t* vdbleaf_next_leaf_ptr(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
-}
 
 void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx) {
     int off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
@@ -122,14 +102,14 @@ uint32_t* vdbleaf_record_occupied_ptr(uint8_t* buf, uint32_t idx) {
 void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec_size) {
     uint8_t* src = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
     uint8_t* dst = src + sizeof(uint32_t);
-    size_t size = (*vdbleaf_record_count_ptr(buf) - idxcell_idx) * sizeof(uint32_t);
+    size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
     memmove(dst, src, size);
 
-    uint32_t new_datacells_size = *vdbleaf_datacells_size_ptr(buf) + sizeof(uint32_t) * 2 + rec_size;
+    uint32_t new_datacells_size = *vdbnode_datacells_size(buf) + sizeof(uint32_t) * 2 + rec_size;
     *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - new_datacells_size;
 
-    *vdbleaf_datacells_size_ptr(buf) = new_datacells_size;
-    (*vdbleaf_record_count_ptr(buf))++;
+    *vdbnode_datacells_size(buf) = new_datacells_size;
+    (*vdbnode_idxcell_count(buf))++;
 
     int idx_off = VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
     int datacell_off = *((uint32_t*)(buf + idx_off));
@@ -138,59 +118,16 @@ void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec
 }
 
 void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx) {
-    (*vdbleaf_record_count_ptr(buf))--;
+    (*vdbnode_idxcell_count(buf))--;
     uint8_t* dst = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
     uint8_t* src = dst + sizeof(uint32_t);
-    size_t size = (*vdbleaf_record_count_ptr(buf) - idxcell_idx) * sizeof(uint32_t);
+    size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
     memmove(dst, src, size);
-}
-
-/* 
- * Data node de/serialization
- * [type|parent_idx|next|idxcell count|datacells size| ... |index cells ... datacells]
- */
-
-uint32_t* vdbdata_next(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
-}
-
-uint32_t* vdbdata_idxcell_count(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
-}
-
-uint32_t* vdbdata_datacells_size(uint8_t* buf) {
-    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
-}
-
-void* vdbdata_datacell(uint8_t* buf, uint32_t idx) {
-    int off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
-    int data_off = *((uint32_t*)(buf + off));
-
-    return (void*)(buf + data_off);
-}
-
-//checks if enough space to fit idxcell and datacell
-bool vdbdata_can_fit(uint8_t* buf, uint32_t size) {
-    uint32_t remaining_size = VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - *vdbdata_idxcell_count(buf) * sizeof(uint32_t) - *vdbdata_datacells_size(buf);
-    return remaining_size >= size;
-}
-
-uint32_t vdbdata_insert_data(uint8_t* buf, uint32_t size) {
-    assert(vdbdata_can_fit(buf, size) && "data block not large enough to insert data");
-
-    uint32_t new_idx = *vdbdata_idxcell_count(buf);
-    (*vdbdata_idxcell_count(buf))++;
-
-    (*vdbdata_datacells_size(buf)) += (size - sizeof(uint32_t)); //don't include idxcell size 
-
-    uint32_t idxcell_off = VDB_PAGE_HDR_SIZE + new_idx * sizeof(uint32_t);
-    *((uint32_t*)(buf + idxcell_off)) = VDB_PAGE_SIZE - *vdbdata_datacells_size(buf);
-
-    return new_idx;
 }
 
 /*
  * Shared node functions
+ * [type|parent_idx|next|idxcell count|datacells size|<block specific header data> ... |index cells...datacells]
  */
 
 enum VdbNodeType* vdbnode_type(uint8_t* buf) {
@@ -201,4 +138,53 @@ uint32_t* vdbnode_parent(uint8_t* buf) {
     return (uint32_t*)(buf + sizeof(uint32_t));
 }
 
+uint32_t* vdbnode_next(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 2);
+}
 
+uint32_t* vdbnode_idxcell_count(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 3);
+}
+
+uint32_t* vdbnode_datacells_size(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 4);
+}
+
+bool vdbnode_can_fit(uint8_t* buf, uint32_t datacell_size) {
+    uint32_t remaining_size = VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE - *vdbnode_idxcell_count(buf) * sizeof(uint32_t) - *vdbnode_datacells_size(buf);
+    uint32_t idxcell_size = sizeof(uint32_t);
+    return remaining_size >= datacell_size + idxcell_size;
+}
+
+uint32_t vdbnode_append_idxcell(uint8_t* buf, uint32_t datacell_size) {
+    assert(vdbnode_can_fit(buf, datacell_size) && "node must be able to fit data");
+
+    uint32_t new_idx = (*vdbnode_idxcell_count(buf))++;
+    (*vdbnode_datacells_size(buf)) += datacell_size;
+
+    uint32_t idxcell_off = VDB_PAGE_HDR_SIZE + new_idx * sizeof(uint32_t);
+    *((uint32_t*)(buf + idxcell_off)) = VDB_PAGE_SIZE - *vdbnode_datacells_size(buf);
+
+    return new_idx;
+}
+
+void vdbnode_insert_idxcell(uint8_t* buf, uint32_t idxcell_idx, uint32_t datacell_size) {
+    assert(vdbnode_can_fit(buf, datacell_size) && "node must be able to fit data");
+
+    uint8_t* src = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
+    uint8_t* dst = src + sizeof(uint32_t);
+    size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
+    memmove(dst, src, size);
+
+    *vdbnode_datacells_size(buf) += datacell_size;
+    *((uint32_t*)(buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t))) = VDB_PAGE_SIZE - *vdbnode_datacells_size(buf);
+
+    (*vdbnode_idxcell_count(buf))++;
+}
+
+void* vdbnode_datacell(uint8_t* buf, uint32_t idxcell_idx) {
+    int off = VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
+    int data_off = *((uint32_t*)(buf + off));
+
+    return (void*)(buf + data_off);
+}

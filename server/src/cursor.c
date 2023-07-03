@@ -33,10 +33,17 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     cursor->cur_node_idx = leaf_idx;
 
 
-    while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
-        cursor->cur_rec_idx = 0;
-        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
+    //TODO this is causing problems - put this in for delete all to work
+    //need to skip delete records.  But we can't do this if it's the first record to be inserted...
+    //This requires a rewrite since it's confusing
+    if (*vdbmeta_last_leaf(meta_page->buf) != 0) {
+        while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
+            cursor->cur_rec_idx = 0;
+            cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
+        }
     }
+
+    vdbpager_unpin_page(meta_page);
 
     return cursor;
 }

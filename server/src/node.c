@@ -45,40 +45,15 @@ void* vdbmeta_schema_ptr(uint8_t* buf) {
 
 /*
  * Internal node de/serialization
- * [type|parent_idx|ptr count|datacells size|right ptr| ... |index cells...datacells]
+ * [type|parent_idx|next|idxcell count|datacells size|right ptr block|right ptr key| ... |index cells...datacells]
  */
 
-struct VdbPtr* vdbintern_rightptr_ptr(uint8_t* buf) {
-    return (struct VdbPtr*)(buf + sizeof(uint32_t) * 5);
+uint32_t* vdbintern_rightptr_block(uint8_t* buf) {
+    return (uint32_t*)(buf + sizeof(uint32_t) * 5);
 }
 
-struct VdbPtr* vdbintern_nodeptr_ptr(uint8_t* buf, uint32_t idx) {
-    int indexcell_off = VDB_PAGE_HDR_SIZE + idx * sizeof(uint32_t);
-    int datacell_off = *((uint32_t*)(buf + indexcell_off));
-
-    return (struct VdbPtr*)(buf + datacell_off);
-}
-
-void vdbintern_append_nodeptr(uint8_t* buf, struct VdbPtr ptr) {
-    uint32_t count = *vdbnode_idxcell_count(buf);
-    uint32_t indexcell_off = VDB_PAGE_HDR_SIZE + sizeof(uint32_t) * count;
-    uint32_t datacells_size = *vdbnode_datacells_size(buf);
-    uint32_t datacell_off = VDB_PAGE_SIZE - datacells_size - sizeof(uint32_t) - sizeof(struct VdbValue);
-
-    *((uint32_t*)(buf + indexcell_off)) = datacell_off;
-    *((uint32_t*)(buf + datacell_off + sizeof(uint32_t) * 0)) = ptr.block_idx;
-    *((struct VdbValue*)(buf + datacell_off + sizeof(uint32_t) * 1)) = ptr.key;
-
-    *vdbnode_idxcell_count(buf) = count + 1;
-    *vdbnode_datacells_size(buf) = datacells_size + sizeof(uint32_t) + sizeof(struct VdbValue);
-}
-
-bool vdbintern_can_fit_nodeptr(uint8_t* buf) {
-    uint32_t indexcells_size = *vdbnode_idxcell_count(buf) * sizeof(uint32_t);
-    uint32_t datacells_size = *vdbnode_datacells_size(buf);
-    uint32_t ptr_entry_size = sizeof(uint32_t) * 2 + sizeof(struct VdbValue); //index cell + block_idx + key
-
-    return VDB_PAGE_SIZE - VDB_PAGE_HDR_SIZE >= indexcells_size + datacells_size + ptr_entry_size;
+void* vdbintern_rightptr_key(uint8_t* buf) {
+    return (void*)(buf + sizeof(uint32_t) * 6);
 }
 
 /* 
@@ -117,6 +92,7 @@ void vdbleaf_insert_record_cell(uint8_t* buf, uint32_t idxcell_idx, uint32_t rec
     *((uint32_t*)(buf + datacell_off + sizeof(uint32_t))) = 1; //occupied field
 }
 
+//TODO: need to reimplement this 
 void vdbleaf_delete_idxcell(uint8_t* buf, uint32_t idxcell_idx) {
     (*vdbnode_idxcell_count(buf))--;
     uint8_t* dst = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);

@@ -34,11 +34,8 @@ uint32_t* vdbmeta_data_block_ptr(uint8_t* buf);
 void* vdbmeta_schema_ptr(uint8_t* buf);
 
 //internal node
-struct VdbPtr* vdbintern_rightptr_ptr(uint8_t* buf);
-struct VdbPtr* vdbintern_nodeptr_ptr(uint8_t* buf, uint32_t idx);
-
-void vdbintern_append_nodeptr(uint8_t* buf, struct VdbPtr ptr);
-bool vdbintern_can_fit_nodeptr(uint8_t* buf);
+uint32_t* vdbintern_rightptr_block(uint8_t* buf);
+void* vdbintern_rightptr_key(uint8_t* buf);
 
 //leaf node
 void* vdbleaf_record_ptr(uint8_t* buf, uint32_t idx);

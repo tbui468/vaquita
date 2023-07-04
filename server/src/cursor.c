@@ -16,8 +16,7 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     uint32_t leaf_idx;
     if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
         struct VdbValue largest_key;
-        vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
-        vdbtree_deserialize_from_data_block_if_varlen(tree, &largest_key);
+        vdbtree_deserialize_value(tree, &largest_key, vdbmeta_largest_key(meta_page->buf));
 
         //right append
         if (vdbvalue_compare(key, largest_key) > 0) {
@@ -31,17 +30,6 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
 
     cursor->cur_rec_idx = 0;
     cursor->cur_node_idx = leaf_idx;
-
-
-    //TODO this is causing problems - put this in for delete all to work
-    //need to skip delete records.  But we can't do this if it's the first record to be inserted...
-    //This requires a rewrite since it's confusing
-    if (*vdbmeta_last_leaf(meta_page->buf) != 0) {
-        while (cursor->cur_node_idx != 0 && cursor->cur_rec_idx >= vdbtree_leaf_read_record_count(cursor->tree, cursor->cur_node_idx)) {
-            cursor->cur_rec_idx = 0;
-            cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(cursor->tree, cursor->cur_node_idx);
-        }
-    }
 
     vdbpager_unpin_page(meta_page);
 
@@ -70,6 +58,36 @@ struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
     return rec;
 }
 
+uint32_t vdbtree_leaf_find_insertion_idx(struct VdbTree* tree, uint32_t leaf_idx, struct VdbValue* key) {
+    uint32_t i = 0;
+    uint32_t left = 0;
+    uint32_t right = vdbtree_leaf_read_record_count(tree, leaf_idx);
+    while (right > 0) {
+        i = (right - left) / 2 + left;
+        struct VdbValue k = vdbtree_leaf_read_record_key(tree, leaf_idx, i);
+
+        //record key is smaller than key at i
+        int result = vdbvalue_compare(*key, k);
+        if (result < 0) {
+            if (right - left <= 1) {
+                break;
+            }
+            right = i;
+        //record key is larger than key at i
+        } else if (result > 0) {
+            if (right - left <= 1) {
+                i++;
+                break;
+            }
+            left = i;
+        } else {
+            assert(false && "duplicate keys not allowed");
+        }
+    }
+
+    return i;
+}
+
 void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     struct VdbTree* tree = cursor->tree;
     struct VdbValue rec_key = rec->data[tree->schema->key_idx];
@@ -86,22 +104,14 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     //sets largest key in meta block if necessary
     if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
         struct VdbValue largest_key;
-        vdbvalue_deserialize(&largest_key, vdbmeta_largest_key(meta_page->buf));
-        vdbtree_deserialize_from_data_block_if_varlen(tree, &largest_key);
+        vdbtree_deserialize_value(tree, &largest_key, vdbmeta_largest_key(meta_page->buf));
 
         //right append
         if (vdbvalue_compare(rec_key, largest_key) > 0) {
-            vdbtree_serialize_to_data_block_if_varlen(tree, &rec_key);
-            vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
+            vdbtree_serialize_value(tree, vdbmeta_largest_key(meta_page->buf), &rec_key);
         }
     } else { //first record being inserted
-        vdbtree_serialize_to_data_block_if_varlen(tree, &rec_key);
-        vdbvalue_serialize(vdbmeta_largest_key(meta_page->buf), rec_key);
-
-        //Need to traverse again since cursor init will result in a node/record index of 0
-        //when vdbcursor_init is called.  vdcursor_init will skip any leaves with 0 records
-        //since records may be deleted.  
-        cursor->cur_node_idx = vdb_tree_traverse_to(tree, vdbtree_meta_read_root(tree), rec_key);
+        vdbtree_serialize_value(tree, vdbmeta_largest_key(meta_page->buf), &rec_key);
     }
 
     *vdbmeta_last_leaf(meta_page->buf) = cursor->cur_node_idx;
@@ -111,36 +121,15 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
     page->dirty = true;
 
-    //binary search
-    uint32_t i = 0;
-    uint32_t left = 0;
-    uint32_t right = vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx);
-    while (right > 0) {
-        i = (right - left) / 2 + left;
-        struct VdbValue key = vdbtree_leaf_read_record_key(tree, cursor->cur_node_idx, i);
 
-        //record key is smaller than key at i
-        int result = vdbvalue_compare(rec_key, key);
-        if (result < 0) {
-            if (right - left <= 1) {
-                break;
-            }
-            right = i;
-        //record key is larger than key at i
-        } else if (result > 0) {
-            if (right - left <= 1) {
-                i++;
-                break;
-            }
-            left = i;
-        } else {
-            assert(false && "duplicate keys not allowed");
-        }
+    uint32_t i = vdbtree_leaf_find_insertion_idx(tree, cursor->cur_node_idx, &rec_key);
 
-    }
 
+    //TODO: should be inserting record into data block here
     vdbnode_insert_idxcell(page->buf, i, vdbrecord_serialized_size(rec));
     vdbtree_leaf_write_record(tree, cursor->cur_node_idx, i, rec);
+
+    //TODO: insert struct VdbRecPtr into leaf here using data idx + idxcell idx
 
     vdbpager_unpin_page(page);
 }

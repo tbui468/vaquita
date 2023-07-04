@@ -11,14 +11,26 @@ static uint32_t vdbtree_data_init(struct VdbTree* tree, uint32_t parent_idx);
 static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx);
 static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx);
 
-static void vdbtree_serialize_value(struct VdbTree* tree, uint8_t* buf, struct VdbValue* v) {
+void vdbtree_serialize_value(struct VdbTree* tree, uint8_t* buf, struct VdbValue* v) {
     vdbtree_serialize_to_data_block_if_varlen(tree, v);
     vdbvalue_serialize(buf, *v);
 }
 
-static void vdbtree_deserialize_value(struct VdbTree* tree, struct VdbValue* v, uint8_t* buf) {
+void vdbtree_deserialize_value(struct VdbTree* tree, struct VdbValue* v, uint8_t* buf) {
     vdbvalue_deserialize(v, buf);
     vdbtree_deserialize_from_data_block_if_varlen(tree, v);
+}
+
+static void vdbtree_serialize_recptr(struct VdbTree* tree, uint8_t* buf, struct VdbRecPtr* p) {
+    *((uint32_t*)buf) = p->block_idx;
+    *((uint32_t*)(buf + sizeof(uint32_t))) = p->idxcell_idx;
+    vdbtree_serialize_value(tree, buf + sizeof(uint32_t) * 2, &p->key);
+}
+
+static void vdbtree_deserialize_recptr(struct VdbTree* tree, struct VdbRecPtr* p, uint8_t* buf) {
+    p->block_idx = *((uint32_t*)buf);
+    p->idxcell_idx = *((uint32_t*)(buf + sizeof(uint32_t)));
+    vdbtree_deserialize_value(tree, &p->key, buf + sizeof(uint32_t));
 }
 
 /*

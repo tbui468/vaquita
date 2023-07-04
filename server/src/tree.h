@@ -50,8 +50,8 @@ uint32_t vdbtree_traverse_to_first_leaf(struct VdbTree* tree, uint32_t idx);
 uint32_t vdbtree_meta_read_root(struct VdbTree* tree);
 uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx);
 
-void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v);
-void vdbtree_deserialize_from_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v);
+void vdbtree_serialize_value(struct VdbTree* tree, uint8_t* buf, struct VdbValue* v);
+void vdbtree_deserialize_value(struct VdbTree* tree, struct VdbValue* v, uint8_t* buf);
 
 void vdbtree_print(struct VdbTree* tree);
 

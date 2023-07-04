@@ -17,7 +17,7 @@ struct VdbPtr {
     struct VdbValue key;
 };
 
-struct VdbRecordPtr {
+struct VdbRecPtr {
     uint32_t block_idx;
     uint32_t idxcell_idx;
     struct VdbValue key;

@@ -83,10 +83,17 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
-    Move records from leaves to data blocks
-        data blocks now will store both strings and records
-        Essentially, reuse struct VdbPtr for record pointers too
-        Just store block idxs - do a binary search fo
+    Reimplement update
+        add tests back in from github (2)
+        need to free any variable length data if different size from updated value
+        need to implement free of cells
+        could probably also implement defragging of data blocks
+            when should a data block be defragged (vacuumed)?
+            whenever the current data block is full, and before a new data block is allocated,
+            defrag blocks in list until one has enough space (also insert this block in in data block ptr in meta block)
+
+    Reimplement delete
+        add tests back in from github (2)
 
     indexing:
         create index my_index on table_name (x, y);
@@ -98,23 +105,13 @@ Could try the entire galileo database with 1.7 billion records
         Meta nodes should also use idxcell and datacell format
             store index names/root as cells in meta node
 
-    Reimplement delete and delete tests (find two tests on github)
-        update should be looked at too
-
     Defrag nodes
         Add freed datacells to freelist (in vdbnode_free_cell)
         Defrag datacellsa and update vdbnode_datacells_size field
 
-    update, insert, and delete need to update all indexes now
-
-    update and delete need to deal with variable length data
-
-    auto keyword to allow auto incrementing keys (integers)
-        create table planets (id auto, name string, moons);
-        should not be allowed to manually set key at this point
-
-    Add BETWEEN keyword to allow easier query of ranges
-        selecting rectangles/arcs in star viewer will be easy using this
+    Transactions
+        If something fails part-way through, any changes should be reverted
+        Need to log changes and undo if necessary
 
     Page eviction
         Use O_DIRECT and O_SYNC (along with switching from fopen to open)

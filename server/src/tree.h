@@ -53,6 +53,11 @@ uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx);
 void vdbtree_serialize_value(struct VdbTree* tree, uint8_t* buf, struct VdbValue* v);
 void vdbtree_deserialize_value(struct VdbTree* tree, struct VdbValue* v, uint8_t* buf);
 
+struct VdbRecPtr vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r);
+struct VdbRecord* vdbtree_read_record_from_datablock(struct VdbTree* tree, struct VdbRecPtr* p);
+void vdbtree_serialize_recptr(struct VdbTree* tree, uint8_t* buf, struct VdbRecPtr* p);
+struct VdbRecPtr vdbtree_deserialize_recptr(struct VdbTree* tree, uint8_t* buf);
+
 void vdbtree_print(struct VdbTree* tree);
 
 

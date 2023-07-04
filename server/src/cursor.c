@@ -124,12 +124,9 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
 
     uint32_t i = vdbtree_leaf_find_insertion_idx(tree, cursor->cur_node_idx, &rec_key);
 
-
-    //TODO: should be inserting record into data block here
-    vdbnode_insert_idxcell(page->buf, i, vdbrecord_serialized_size(rec));
-    vdbtree_leaf_write_record(tree, cursor->cur_node_idx, i, rec);
-
-    //TODO: insert struct VdbRecPtr into leaf here using data idx + idxcell idx
+    struct VdbRecPtr p = vdbtree_write_record_to_datablock(tree, rec);
+    vdbnode_insert_idxcell(page->buf, i, sizeof(uint32_t) * 2 + vdbvalue_serialized_size(p.key));
+    vdbtree_serialize_recptr(tree, vdbnode_datacell(page->buf, i), &p);
 
     vdbpager_unpin_page(page);
 }

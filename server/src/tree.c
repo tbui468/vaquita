@@ -10,6 +10,9 @@ static struct VdbPtr vdbtree_intern_read_ptr(struct VdbTree* tree, uint32_t idx,
 static uint32_t vdbtree_data_init(struct VdbTree* tree, uint32_t parent_idx);
 static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx);
 static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx);
+void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v);
+void vdbtree_deserialize_from_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v);
+uint32_t vdbtree_get_data_block(struct VdbTree* tree, uint32_t datacell_size);
 
 void vdbtree_serialize_value(struct VdbTree* tree, uint8_t* buf, struct VdbValue* v) {
     vdbtree_serialize_to_data_block_if_varlen(tree, v);
@@ -21,16 +24,53 @@ void vdbtree_deserialize_value(struct VdbTree* tree, struct VdbValue* v, uint8_t
     vdbtree_deserialize_from_data_block_if_varlen(tree, v);
 }
 
-static void vdbtree_serialize_recptr(struct VdbTree* tree, uint8_t* buf, struct VdbRecPtr* p) {
+void vdbtree_serialize_recptr(struct VdbTree* tree, uint8_t* buf, struct VdbRecPtr* p) {
     *((uint32_t*)buf) = p->block_idx;
     *((uint32_t*)(buf + sizeof(uint32_t))) = p->idxcell_idx;
     vdbtree_serialize_value(tree, buf + sizeof(uint32_t) * 2, &p->key);
 }
 
-static void vdbtree_deserialize_recptr(struct VdbTree* tree, struct VdbRecPtr* p, uint8_t* buf) {
-    p->block_idx = *((uint32_t*)buf);
-    p->idxcell_idx = *((uint32_t*)(buf + sizeof(uint32_t)));
-    vdbtree_deserialize_value(tree, &p->key, buf + sizeof(uint32_t));
+struct VdbRecPtr vdbtree_deserialize_recptr(struct VdbTree* tree, uint8_t* buf) {
+    struct VdbRecPtr p;
+
+    p.block_idx = *((uint32_t*)buf);
+    p.idxcell_idx = *((uint32_t*)(buf + sizeof(uint32_t)));
+    vdbtree_deserialize_value(tree, &p.key, buf + sizeof(uint32_t) * 2);
+
+    return p;
+}
+
+struct VdbRecPtr vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r) {
+    uint32_t data_idx = vdbtree_get_data_block(tree, vdbrecord_fixedlen_size(r));
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
+
+    uint32_t idxcell_idx = vdbnode_append_idxcell(page->buf, vdbrecord_fixedlen_size(r));
+
+    for (uint32_t i = 0; i < r->count; i++) {
+        vdbtree_serialize_to_data_block_if_varlen(tree, &r->data[i]);
+    }
+    vdbrecord_serialize(vdbnode_datacell(page->buf, idxcell_idx), r);
+
+    vdbpager_unpin_page(page);
+
+    struct VdbRecPtr p;
+    p.block_idx = data_idx;
+    p.idxcell_idx = idxcell_idx;
+    p.key = r->data[tree->schema->key_idx];
+
+    return p;
+}
+
+struct VdbRecord* vdbtree_read_record_from_datablock(struct VdbTree* tree, struct VdbRecPtr* p) {
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, p->block_idx);
+
+    struct VdbRecord* r = vdbrecord_deserialize(vdbnode_datacell(page->buf, p->idxcell_idx), tree->schema);
+    for (uint32_t i = 0; i < r->count; i++) {
+        vdbtree_deserialize_from_data_block_if_varlen(tree, &r->data[i]);
+    }
+
+    vdbpager_unpin_page(page);
+    return r;
 }
 
 /*
@@ -273,7 +313,6 @@ void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
     page->dirty = true;
-  
      
     for (uint32_t i = 0; i < rec->count; i++) {
         vdbtree_serialize_to_data_block_if_varlen(tree, &rec->data[i]);
@@ -313,13 +352,11 @@ struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, u
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
 
-    struct VdbRecord* rec = vdbrecord_deserialize(vdbnode_datacell(page->buf, rec_idx), tree->schema);
-    for (uint32_t i = 0; i < rec->count; i++) {
-        vdbtree_deserialize_from_data_block_if_varlen(tree, &rec->data[i]);
-    }
+    struct VdbRecPtr p = vdbtree_deserialize_recptr(tree, vdbnode_datacell(page->buf, rec_idx));
+    struct VdbRecord* r = vdbtree_read_record_from_datablock(tree, &p);
 
     vdbpager_unpin_page(page);
-    return rec;
+    return r;
 }
 
 uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, struct VdbValue new_right_key) {
@@ -481,16 +518,12 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
 
 }
 
-void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v) {
-    if (v->type != VDBT_TYPE_STR) {
-        return;
-    }
-
+uint32_t vdbtree_get_data_block(struct VdbTree* tree, uint32_t datacell_size) {
     struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
     uint32_t data_idx = *vdbmeta_data_block_ptr(meta_page->buf);
-
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
-    if (!vdbnode_can_fit(page->buf, sizeof(uint32_t) + v->as.Str.len + sizeof(uint8_t))) {
+
+    if (!vdbnode_can_fit(page->buf, datacell_size)) {
         uint32_t old_data_idx = data_idx;
         data_idx = vdbtree_data_init(tree, 0);
         *vdbmeta_data_block_ptr(meta_page->buf) = data_idx;
@@ -499,11 +532,23 @@ void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbV
         *vdbnode_next(page->buf) = old_data_idx;
     }
 
-    uint32_t idxcell_idx = vdbnode_append_idxcell(page->buf, sizeof(uint32_t) + v->as.Str.len + sizeof(uint8_t));
-    vdbvalue_serialize_string(vdbnode_datacell(page->buf, idxcell_idx), v);
-
     vdbpager_unpin_page(page);
     vdbpager_unpin_page(meta_page);
+
+    return data_idx;
+}
+
+void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v) {
+    if (v->type != VDBT_TYPE_STR) {
+        return;
+    }
+
+    uint32_t datacell_size = sizeof(uint32_t) + v->as.Str.len + sizeof(uint8_t);
+    uint32_t data_idx = vdbtree_get_data_block(tree, datacell_size);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
+
+    uint32_t idxcell_idx = vdbnode_append_idxcell(page->buf, datacell_size);
+    vdbvalue_serialize_string(vdbnode_datacell(page->buf, idxcell_idx), v);
 
     v->as.Str.block_idx = data_idx;
     v->as.Str.idxcell_idx = idxcell_idx;

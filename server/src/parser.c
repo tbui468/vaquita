@@ -37,6 +37,89 @@ enum VdbReturnCode vdbparser_parse(struct VdbTokenList* tokens, struct VdbStmtLi
         return VDBRC_SUCCESS;
 }
 
+char* vdbexpr_to_string(struct VdbExpr* expr) {
+    switch (expr->type) {
+        case VDBET_LITERAL: {
+            int len = expr->as.literal.token.len;
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memcpy(s, expr->as.literal.token.lexeme, len);
+            s[len] = '\0';
+            return s;
+        }
+        case VDBET_IDENTIFIER: {
+            int len = expr->as.identifier.token.len;
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memcpy(s, expr->as.identifier.token.lexeme, len);
+            s[len] = '\0';
+            return s;
+        }
+        case VDBET_UNARY: {
+            char* right = vdbexpr_to_string(expr->as.unary.right);
+            int len = expr->as.unary.op.len + strlen(right);
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memcpy(s, expr->as.unary.op.lexeme, expr->as.unary.op.len);
+            memcpy(s + expr->as.unary.op.len, right, strlen(right));
+            s[len] = '\0';
+            free_w(right, strlen(right) + 1);
+            return s;
+        }
+        case VDBET_BINARY: {
+            char* left = vdbexpr_to_string(expr->as.binary.left);
+            char* right = vdbexpr_to_string(expr->as.binary.right);
+            int op_len = expr->as.binary.op.len;
+            int len = strlen(left) + strlen(right) + op_len + 2; //2 spaces between op and operands
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memset(s, ' ', sizeof(char) * (len + 1));
+            memcpy(s, left, strlen(left));
+            memcpy(s + strlen(left) + 1, expr->as.binary.op.lexeme, op_len);
+            memcpy(s + strlen(left) + op_len + 2, right, strlen(right));
+            s[len] = '\0';
+            free_w(left, strlen(left) + 1);
+            free_w(right, strlen(right) + 1);
+            return s;
+        }
+        case VDBET_IS_NULL: {
+            char* left = vdbexpr_to_string(expr->as.is_null.left);
+            char* null_s = " is null";
+            int len = strlen(left) + strlen(null_s);
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memcpy(s, left, strlen(left));
+            memcpy(s + strlen(left), null_s, strlen(null_s));
+            s[len] = '\0';
+            free_w(left, strlen(left) + 1);
+            return s;
+        }
+        case VDBET_IS_NOT_NULL: {
+            char* left = vdbexpr_to_string(expr->as.is_not_null.left);
+            char* null_s = " is not null";
+            int len = strlen(left) + strlen(null_s);
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memcpy(s, left, strlen(left));
+            memcpy(s + strlen(left), null_s, strlen(null_s));
+            s[len] = '\0';
+            free_w(left, strlen(left) + 1);
+            return s;
+        }
+        case VDBET_CALL: {
+            char* arg = vdbexpr_to_string(expr->as.call.arg);
+            int name_len = expr->as.call.fcn_name.len;
+            int len = strlen(arg) + name_len + 2; //two parentheses
+            char* s = malloc_w(sizeof(char) * (len + 1));
+            memcpy(s, expr->as.call.fcn_name.lexeme, name_len);
+            s[name_len] = '(';
+            memcpy(s + name_len + 1, arg, strlen(arg));
+            s[name_len + 1 + strlen(arg)] = ')';
+            s[len] = '\0';
+            free_w(arg, strlen(arg) + 1);
+            return s;
+        }
+        default:
+            assert(false && "invalid expr");
+    }
+
+    return NULL;
+}
+
 void vdbexpr_print(struct VdbExpr* expr) {
     switch (expr->type) {
         case VDBET_LITERAL:

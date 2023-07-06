@@ -66,7 +66,6 @@ Example
 Major components
 Todos
 
-
 *************************Performance***************
 Takes ~5s to insert 119000 records from HYG
 
@@ -82,23 +81,6 @@ Could try the entire galileo database with 1.7 billion records
         Get flask project running in nginx (with gunicorn)
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
-
-    Redo client output to make it prettier to put on github
-        show databases
-        show tables
-            show table should return tuple (rather than individual strings)
-            describe table should return tuple (rather than individual strings)
-            select should return attribute names first before tuples
-
-        describe planets
-            first row is 'field', 'type', 'key'
-                id, int, 'primary'
-                name, string, ' '
-
-        select statements
-            first row is fields: id, name, avg(mass)
-                1, "Mercury"
-                2, "Venus"
 
     Finish README:
         build instructions

@@ -227,6 +227,29 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
     struct VdbRecordSet* final = vdbrecordset_init(NULL);
     struct VdbRecordSet* cur = head;
 
+    //add column names to tuple
+    struct VdbExpr* first_expr = projection->exprs[0];
+    if (first_expr->type == VDBET_IDENTIFIER && first_expr->as.identifier.token.type == VDBT_STAR) {
+        uint32_t count = cursor->tree->schema->count;
+        struct VdbValue data[count];
+        for (uint32_t i = 0; i < count; i++) {
+            char* name = cursor->tree->schema->names[i];
+            data[i] = vdbstring(name, strlen(name));
+        }
+        struct VdbRecord* r = vdbrecord_init(count, data);
+        vdbrecordset_append_record(final, r);
+    } else {
+        uint32_t count = projection->count;
+        struct VdbValue data[count];
+        for (uint32_t i = 0; i < count; i++) {
+            char* s = vdbexpr_to_string(projection->exprs[i]);
+            data[i] = vdbstring(s, strlen(s)); 
+            free_w(s, strlen(s) + 1);
+        }
+        struct VdbRecord* r = vdbrecord_init(count, data);
+        vdbrecordset_append_record(final, r);
+    }
+
     while (cur) {
         uint32_t max = aggregate ? 1 : cur->count;
         for (uint32_t i = 0; i < max; i++) {

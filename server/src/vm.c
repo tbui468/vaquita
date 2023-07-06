@@ -70,11 +70,6 @@ static void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t 
     uint8_t is_tuple = 0;
     vdbbytelist_append_byte(bl, is_tuple);
 
-    /*
-    uint32_t one = 1;
-    vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
-    vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));*/
-
     uint8_t type = VDBT_TYPE_STR;
     vdbbytelist_append_byte(bl, type);
     uint32_t len = size;
@@ -273,14 +268,24 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
             case VDBST_SHOW_TABS: {
                 struct Vdb* db = (struct Vdb*)(*h);
 
-                const char* msg = "tables:";
-                vdbvm_output_string(output, msg, strlen(msg));
+                struct VdbRecordSet* final = vdbrecordset_init(NULL);
+
+                struct VdbValue data = vdbstring("tables", strlen("tables")); 
+                struct VdbRecord* r = vdbrecord_init(1, &data);
+                vdbrecordset_append_record(final, r);
 
                 for (uint32_t i = 0; i < db->trees->count; i++) {
                     struct VdbTree* tree = db->trees->trees[i];
-                    snprintf_w(buf, MAX_BUF_SIZE, "\t%.*s", strlen(tree->name), tree->name);
-                    vdbvm_output_string(output, buf, strlen(buf));
+                    snprintf_w(buf, MAX_BUF_SIZE, "%.*s", strlen(tree->name), tree->name);
+
+                    struct VdbValue data = vdbstring(buf, strlen(buf)); 
+                    struct VdbRecord* r = vdbrecord_init(1, &data);
+                    vdbrecordset_append_record(final, r);
                 }
+
+
+                vdbrecordset_serialize(final, output);
+                vdbrecordset_free(final);
 
                 break;
             }
@@ -426,8 +431,14 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 char* table_name = to_static_string(stmt->target);
                 struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
 
-                snprintf(buf, MAX_BUF_SIZE, "%s:", table_name);
-                vdbvm_output_string(output, buf, strlen(buf));
+                struct VdbRecordSet* final = vdbrecordset_init(NULL);
+
+                struct VdbValue data[3];
+                data[0] = vdbstring("field", strlen("field")); 
+                data[1] = vdbstring("type", strlen("type")); 
+                data[2] = vdbstring("key", strlen("key")); 
+                struct VdbRecord* r = vdbrecord_init(3, data);
+                vdbrecordset_append_record(final, r);
 
                 for (uint32_t i = 0; i < tree->schema->count; i++) {
                     char* type;
@@ -453,9 +464,22 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                             assert(false && "invalid schema data type");
                             break;
                     }
-                    snprintf(buf, MAX_BUF_SIZE, "\t%.*s: %.*s", (int)strlen(tree->schema->names[i]), tree->schema->names[i], len, type);
-                    vdbvm_output_string(output, buf, strlen(buf));
+
+                    struct VdbValue data[3];
+                    data[0] = vdbstring(tree->schema->names[i], strlen(tree->schema->names[i])); 
+                    data[1] = vdbstring(type, len); 
+                    if (i == tree->schema->key_idx) {
+                        data[2] = vdbstring("pri", 3);
+                    } else {
+                        data[2] = vdbstring(" ", 1);
+                    }
+                    struct VdbRecord* r = vdbrecord_init(3, data);
+                    vdbrecordset_append_record(final, r);
                 }
+
+
+                vdbrecordset_serialize(final, output);
+                vdbrecordset_free(final);
 
                 break;
             }

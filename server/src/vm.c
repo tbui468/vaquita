@@ -67,9 +67,14 @@ VDBHANDLE vdbvm_open_db(const char* name) {
 }
 
 static void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
+    uint8_t is_tuple = 0;
+    vdbbytelist_append_byte(bl, is_tuple);
+
+    /*
     uint32_t one = 1;
     vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
-    vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));
+    vdbbytelist_append_bytes(bl, (uint8_t*)&one, sizeof(uint32_t));*/
+
     uint8_t type = VDBT_TYPE_STR;
     vdbbytelist_append_byte(bl, type);
     uint32_t len = size;
@@ -233,8 +238,11 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     break;
                 } 
 
-                const char* msg = "databases:";
-                vdbvm_output_string(output, msg, strlen(msg));
+                struct VdbRecordSet* final = vdbrecordset_init(NULL);
+
+                struct VdbValue data = vdbstring("databases", strlen("databases")); 
+                struct VdbRecord* r = vdbrecord_init(1, &data);
+                vdbrecordset_append_record(final, r);
 
                 struct dirent* ent;
                 while ((ent = readdir(d)) != NULL) {
@@ -248,11 +256,17 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
                         continue;
 
-                    snprintf_w(buf, MAX_BUF_SIZE, "\t%.*s", entry_len - ext_len, ent->d_name);
-                    vdbvm_output_string(output, buf, strlen(buf));
+                    snprintf_w(buf, MAX_BUF_SIZE, "%.*s", entry_len - ext_len, ent->d_name);
+
+                    struct VdbValue data = vdbstring(buf, strlen(buf)); 
+                    struct VdbRecord* r = vdbrecord_init(1, &data);
+                    vdbrecordset_append_record(final, r);
                 }
 
                 closedir_w(d);
+
+                vdbrecordset_serialize(final, output);
+                vdbrecordset_free(final);
 
                 break;
             }
@@ -603,26 +617,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
 
                 vdbcursor_apply_limit(cursor, final, stmt->as.select.limit);
 
-                vdbbytelist_append_bytes(output, (uint8_t*)&final->count, sizeof(uint32_t));
-                if (final->count > 0) {
-                    vdbbytelist_append_bytes(output, (uint8_t*)&final->records[0]->count, sizeof(uint32_t));
-                } else {
-                    uint32_t zero = 0;
-                    vdbbytelist_append_bytes(output, (uint8_t*)&zero, sizeof(uint32_t));
-                }
-
-                for (uint32_t i = 0; i < final->count; i++) {
-                    struct VdbRecord* r = final->records[i];
-                    vdbbytelist_resize(output, vdbrecord_serialized_size(r));
-                    for (uint32_t j = 0; j < r->count; j++) {
-                        struct VdbValue v = r->data[j];
-                        if (v.type == VDBT_TYPE_STR) {
-                            output->count += vdbvalue_serialize_string(output->values + output->count, &v);
-                        } else {
-                            output->count += vdbvalue_serialize(output->values + output->count, v);
-                        }
-                    }
-                }
+                vdbrecordset_serialize(final, output);
 
                 vdbcursor_free(cursor);
                 vdbrecordset_free(final);

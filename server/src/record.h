@@ -34,6 +34,7 @@ struct VdbRecord* vdbrecord_deserialize(uint8_t* buf, struct VdbSchema* schema);
 struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key);
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);
 void vdbrecordset_free(struct VdbRecordSet* rs);
+void vdbrecordset_serialize(struct VdbRecordSet* rs, struct VdbByteList* bl);
 
 
 #endif //VDB_RECORD_H

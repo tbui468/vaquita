@@ -1,4 +1,4 @@
 created database sol
-databases:
-	sol
+databases
+sol
 dropped database sol

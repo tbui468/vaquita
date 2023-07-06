@@ -83,6 +83,53 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
+    Redo client output to make it prettier to put on github
+        show databases
+        show tables
+            show table should return tuple (rather than individual strings)
+            describe table should return tuple (rather than individual strings)
+            select should return attribute names first before tuples
+
+        describe planets
+            first row is 'field', 'type', 'key'
+                id, int, 'primary'
+                name, string, ' '
+
+        select statements
+            first row is fields: id, name, avg(mass)
+                1, "Mercury"
+                2, "Venus"
+
+    Finish README:
+        build instructions
+        running instructions (pick port number for server, and port number to connect to for client)
+        examples using script (one is enough)
+        examples using cli (show all currently supported features)
+        describe current features
+        features to come
+
+    Clean up github
+        delete ALL projects I don't want to share (really, just keep compilers/interpreters/solidity data serializer, neural network visualizer)
+
+    Fix CV
+        Make it ready for submission
+            work: sorting and search algorithms
+                  tetris, asteroids, pacman, battleship (in pygame)
+
+            wedding website: ??? Should I put that on?
+
+            Personal projects: neural network visualizer, compiler/linker for custom programming language, SQl implementation
+            Languages: C/Python
+
+    Finish implementing vdbnode_free_cell()
+        add a freelist to header of nodes
+        add datacell to freelist when a cell is freed
+
+    Implement vdbnode_defrag()
+        shift all free datacells to the right to remove gaps
+        change idxcell values to reflect the newly shifted datacells
+        return the newly allocated (or total?) free space
+
     Reimplement update
         add tests back in from github (2)
         need to free any variable length data if different size from updated value
@@ -94,6 +141,7 @@ Could try the entire galileo database with 1.7 billion records
 
     Reimplement delete
         add tests back in from github (2)
+        delete should delete idxcell and add datacells to freelist (next field should be set)
 
     indexing:
         create index my_index on table_name (x, y);
@@ -105,9 +153,8 @@ Could try the entire galileo database with 1.7 billion records
         Meta nodes should also use idxcell and datacell format
             store index names/root as cells in meta node
 
-    Defrag nodes
-        Add freed datacells to freelist (in vdbnode_free_cell)
-        Defrag datacellsa and update vdbnode_datacells_size field
+    Make sure the cli works correctly
+        make it more like mysql 
 
     Transactions
         If something fails part-way through, any changes should be reverted

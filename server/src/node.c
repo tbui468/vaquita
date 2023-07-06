@@ -134,9 +134,12 @@ void* vdbnode_datacell(uint8_t* buf, uint32_t idxcell_idx) {
 }
 
 void vdbnode_free_cell(uint8_t* buf, uint32_t idxcell_idx) {
+    //free idxcell
     (*vdbnode_idxcell_count(buf))--;
     uint8_t* dst = buf + VDB_PAGE_HDR_SIZE + idxcell_idx * sizeof(uint32_t);
     uint8_t* src = dst + sizeof(uint32_t);
     size_t size = (*vdbnode_idxcell_count(buf) - idxcell_idx) * sizeof(uint32_t);
     memmove(dst, src, size);
+
+    //add datacell to freelist
 }

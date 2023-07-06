@@ -137,3 +137,31 @@ void vdbrecordset_free(struct VdbRecordSet* rs) {
     if (rs->key) vdbbytelist_free(rs->key);
 }
 
+void vdbrecordset_serialize(struct VdbRecordSet* rs, struct VdbByteList* bl) {
+    uint8_t is_tuple = 1;
+    vdbbytelist_append_byte(bl, is_tuple);
+
+    vdbbytelist_append_bytes(bl, (uint8_t*)&rs->count, sizeof(uint32_t));
+    if (rs->count > 0) {
+        vdbbytelist_append_bytes(bl, (uint8_t*)&rs->records[0]->count, sizeof(uint32_t));
+    } else {
+        uint32_t zero = 0;
+        vdbbytelist_append_bytes(bl, (uint8_t*)&zero, sizeof(uint32_t));
+    }
+
+    for (uint32_t i = 0; i < rs->count; i++) {
+        struct VdbRecord* r = rs->records[i];
+        vdbbytelist_resize(bl, vdbrecord_serialized_size(r));
+        for (uint32_t j = 0; j < r->count; j++) {
+            struct VdbValue v = r->data[j];
+
+            //vdbvalue_serialize will serialize block_idx/idxcell_idx by default, so
+            //need to call vdbvalue_serialize_string to write the actual string
+            if (v.type == VDBT_TYPE_STR) {
+                bl->count += vdbvalue_serialize_string(bl->values + bl->count, &v);
+            } else {
+                bl->count += vdbvalue_serialize(bl->values + bl->count, v);
+            }
+        }
+    }
+}

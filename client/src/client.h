@@ -233,6 +233,13 @@ bool vdbreader_has_unread_bytes(struct VdbReader* r) {
     return r->idx < *((uint32_t*)(r->buf));
 }
 
+uint8_t vdbreader_next_is_tuple(struct VdbReader* r) {
+    uint8_t is_tuple = *((uint8_t*)(r->buf + r->idx));
+    r->idx += sizeof(uint8_t);
+
+    return is_tuple;
+}
+
 void vdbreader_next_set_dim(struct VdbReader* r, uint32_t* row, uint32_t* col) {
     *row = *((int32_t*)(r->buf + r->idx));
     r->idx += sizeof(int32_t);

@@ -2,6 +2,7 @@ created database sol
 opened database sol
 created table planets
 inserted 1 record(s) into planets
+id, name, rings
 1, null, false
 closed database sol
 dropped database sol

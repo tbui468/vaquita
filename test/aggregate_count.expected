@@ -2,8 +2,10 @@ created database sol
 opened database sol
 created table planets
 inserted 4 record(s) into planets
+ring_system, count(number_of_moons)
 false, 3
 true, 1
+ring_system, count(10)
 false, 3
 true, 1
 closed database sol

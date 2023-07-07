@@ -3,6 +3,7 @@ opened database sol
 created table planets
 inserted 1 record(s) into planets
 inserted 1 record(s) into planets
+id, name, moons
 2, Mars, 2
 closed database sol
 dropped database sol

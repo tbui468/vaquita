@@ -2,6 +2,7 @@ created database sol
 opened database sol
 created table planets
 inserted 3 record(s) into planets
+id, name, mass, number_of_moons, surface_pressure, ring_system
 1, Venus, 487.000000, 0, 92.000000, false
 2, Earth, -0.059700, 1, 1.000000, false
 3, Mars, 0.002300, 2, 0.010000, false

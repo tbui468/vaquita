@@ -2,7 +2,9 @@ created database sol
 opened database sol
 created table planets
 inserted 4 record(s) into planets
+ring_system, max(mass)
 false, 2.320000
+ring_system, max(mass)
 false, 2.320000
 true, 5.000000
 closed database sol

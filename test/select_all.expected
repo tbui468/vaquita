@@ -2,6 +2,7 @@ created database sol
 opened database sol
 created table planets
 inserted 3 record(s) into planets
+id, name, mass, atmosphere
 1, Neptune, 20, false
 2, Mars, 10, true
 3, Venus, 10, false

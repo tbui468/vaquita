@@ -2,6 +2,7 @@ created database sol
 opened database sol
 created table planets
 inserted 4 record(s) into planets
+ring_system, sum(moons)
 true, 5
 closed database sol
 dropped database sol

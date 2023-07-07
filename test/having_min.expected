@@ -2,7 +2,9 @@ created database sol
 opened database sol
 created table planets
 inserted 4 record(s) into planets
+ring_system, min(mass)
 false, 2.320000
+ring_system, min(mass)
 true, 3.230000
 closed database sol
 dropped database sol

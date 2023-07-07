@@ -2,11 +2,17 @@ created database sol
 opened database sol
 created table planets
 inserted 3 record(s) into planets
+name
 Venus
+name
 Venus
+name
 Venus
+name
 Mars
+name
 Mars
+name
 Mars
 closed database sol
 dropped database sol

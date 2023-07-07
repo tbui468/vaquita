@@ -2,8 +2,11 @@ created database sol
 opened database sol
 created table planets
 inserted 2 record(s) into planets
+id, name, moons, gravity
 2, Earth, 1, 9.810000
+id, name, moons, gravity
 2, Earth, 1, 9.810000
+id, name, moons, gravity
 1, Mars, 2, 7.890000
 closed database sol
 dropped database sol

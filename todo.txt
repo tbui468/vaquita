@@ -41,11 +41,20 @@
     Walkthrough of git source code (cool!) 
         https://fabiensanglard.net/git_code_review/
 
-    wyag.thb.lt
-        writing version control software like git (pretty cool)
+    Version control (like git):
+        wyag.thb.lt
 
-    Basic web server in python
+    Basic web server in python:
         https://bhch.github.io/posts/2017/11/writing-an-http-server-from-scratch/
+
+    Write a debugger:
+        https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/
+
+    Writing a blockchain:
+        https://www.youtube.com/watch?v=3aJI1ABdjQk&t=1046s&ab_channel=HaseebQureshi
+
+    Youtube neural network series by Andre Karpathy:
+
 
     Nginx Tutorial
         https://www.freecodecamp.org/news/the-nginx-handbook/
@@ -88,7 +97,18 @@ Could try the entire galileo database with 1.7 billion records
         examples using script (one is enough)
         examples using cli (show all currently supported features)
         describe current features
+            4 data types: string, int, float, boolean
+            select
+                projection
+                selection
+                grouping
+                    aggregate functions
+                    having
+                null checks
+            insert
         features to come
+            update and delete records
+            bug fixes (especially related to invalid SQL statements)
 
     Clean up github
         delete ALL projects I don't want to share (really, just keep compilers/interpreters/solidity data serializer, neural network visualizer)

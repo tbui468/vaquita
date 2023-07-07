@@ -2,6 +2,7 @@ created database sol
 opened database sol
 created table planets
 inserted 4 record(s) into planets
+name, ring_system
 Venus, true
 Venus, false
 Mars, true

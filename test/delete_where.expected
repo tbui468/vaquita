@@ -1,0 +1,10 @@
+created database sol
+opened database sol
+created table planets
+inserted 3 record(s) into planets
+1 row(s) deleted
+1 row(s) deleted
+id, name, mass, number_of_moons, surface_pressure, ring_system
+2, Earth, 5.970000, 1, 1.000000, false
+closed database sol
+dropped database sol

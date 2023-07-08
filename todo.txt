@@ -97,25 +97,6 @@ Could try the entire galileo database with 1.7 billion records
         A lot of problems are caused by having empty leaves.  If freeing an idxcell results in a leaf/data
             block having a 0 idxcell_count, should 
 
-    Rewrite cursor:
-        struct VdbCursor* vdbcursor_init(struct VdbTree* tree);
-            should start at first leaf/record
-            should iterate to next leaf if no records in leaf
-
-        void vdbcursor_seek
-            should go to a given key
-
-        bool vdbcursor_at_end
-            should return true if next leaf idx == 0 and cur_rec_idx >= idxcell_count
-
-    querying an empty table crashes program
-        Change code so this passes:
-            query_empty_table.sql
-
-    Delete
-        call vdbnode_free_cell on any strings in record
-        call vdbnode_free_cell on record
-
     Update
         make a test to update
             create database sol;

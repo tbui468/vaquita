@@ -558,14 +558,20 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
                 struct VdbCursor* cursor = vdbcursor_init(tree);
 
+                int deleted_count = 0;
+
                 while (!vdbcursor_at_end(cursor)) {
                     if (vdbcursor_record_passes_selection(cursor, stmt->as.delete.selection)) {
                         vdbcursor_delete_record(cursor);
+                        deleted_count++;
                     } else {
                         struct VdbRecord* rec = vdbcursor_fetch_record(cursor);
                         vdbrecord_free(rec);
                     }
                 }
+
+                snprintf(buf, MAX_BUF_SIZE, "%d row(s) deleted", deleted_count);
+                vdbvm_output_string(output, buf, strlen(buf));
 
                 vdbcursor_free(cursor);
                 break;

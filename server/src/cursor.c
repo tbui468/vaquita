@@ -173,7 +173,17 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
     page->dirty = true;
 
-    //TODO: need to free any string cells in record before freeing record cell
+    //free any string cells in record before freeing record cell
+    struct VdbRecord* rec = vdbtree_leaf_read_record(cursor->tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbValue v = rec->data[i];
+        if (v.type == VDBT_TYPE_STR) {
+            struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, v.as.Str.block_idx);
+            vdbnode_free_cell(data_page->buf, v.as.Str.idxcell_idx);
+            vdbpager_unpin_page(data_page);
+        }
+    }
+
     vdbnode_free_cell(page->buf, cursor->cur_rec_idx);
 
     vdbpager_unpin_page(page);

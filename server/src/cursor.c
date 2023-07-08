@@ -5,11 +5,29 @@
 
 #include "cursor.h"
 
-struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
+//creates cursor pointing to first row (or end if no records are present)
+struct VdbCursor* vdbcursor_init(struct VdbTree* tree) {
     struct VdbCursor* cursor = malloc_w(sizeof(struct VdbCursor));
 
     cursor->tree = tree;
 
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+
+    cursor->cur_rec_idx = 0;
+    uint32_t root = *vdbmeta_root_ptr(meta_page->buf);
+    cursor->cur_node_idx = vdbtree_traverse_to_first_leaf(tree, root);
+
+    while (cursor->cur_node_idx != 0 && vdbtree_leaf_read_record_count(tree, cursor->cur_node_idx) == 0) {
+        cursor->cur_node_idx = vdbtree_leaf_read_next_leaf(tree, cursor->cur_node_idx);
+    }
+
+    vdbpager_unpin_page(meta_page);
+
+    return cursor;
+}
+
+void vdbcursor_seek(struct VdbCursor* cursor, struct VdbValue key) {
+    struct VdbTree* tree = cursor->tree;
     struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
 
     //get leaf
@@ -32,8 +50,10 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key) {
     cursor->cur_node_idx = leaf_idx;
 
     vdbpager_unpin_page(meta_page);
+}
 
-    return cursor;
+bool vdbcursor_at_end(struct VdbCursor* cursor) {
+    return cursor->cur_node_idx == 0;
 }
 
 void vdbcursor_free(struct VdbCursor* cursor) {
@@ -41,10 +61,6 @@ void vdbcursor_free(struct VdbCursor* cursor) {
 }
 
 struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor) {
-    if (cursor->cur_node_idx == 0) {
-        return NULL;
-    }
-
     struct VdbTree* tree = cursor->tree;
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
@@ -153,14 +169,11 @@ bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr*
 }
 
 void vdbcursor_delete_record(struct VdbCursor* cursor) {
-    if (cursor->cur_node_idx == 0) {
-        return;
-    }
-
     struct VdbTree* tree = cursor->tree;
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
     page->dirty = true;
 
+    //TODO: need to free any string cells in record before freeing record cell
     vdbnode_free_cell(page->buf, cursor->cur_rec_idx);
 
     vdbpager_unpin_page(page);

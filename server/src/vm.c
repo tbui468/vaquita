@@ -461,6 +461,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                             len = 4;
                             break;
                         default:
+                            type = "int"; // to silence warning
+                            len = 0; // to silence warning
                             assert(false && "invalid schema data type");
                             break;
                     }
@@ -507,7 +509,8 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                     rec.count = tree->schema->count;
                     rec.data = data;
                  
-                    struct VdbCursor* cursor = vdbcursor_init(tree, rec.data[tree->schema->key_idx]);
+                    struct VdbCursor* cursor = vdbcursor_init(tree);
+                    vdbcursor_seek(cursor, rec.data[tree->schema->key_idx]);
                     vdbcursor_insert_record(cursor, &rec);
                     vdbcursor_free(cursor);
 
@@ -535,9 +538,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 char* table_name = to_static_string(stmt->target);
                 struct Vdb* db = (struct Vdb*)(*h);
                 struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
-                struct VdbCursor* cursor = vdbcursor_init(tree, vdbint(0)); //cursor to begining of table
+                struct VdbCursor* cursor = vdbcursor_init(tree);
 
-                while (cursor->cur_node_idx != 0) {
+                while (!vdbcursor_at_end(cursor)) {
                     if (vdbcursor_record_passes_selection(cursor, stmt->as.update.selection)) {
                         vdbcursor_update_record(cursor, stmt->as.update.attributes, stmt->as.update.values);
                     } else {
@@ -553,9 +556,9 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 char* table_name = to_static_string(stmt->target);
                 struct Vdb* db = (struct Vdb*)(*h);
                 struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
-                struct VdbCursor* cursor = vdbcursor_init(tree, vdbint(0)); //cursor to begining of table
+                struct VdbCursor* cursor = vdbcursor_init(tree);
 
-                while (cursor->cur_node_idx != 0) {
+                while (!vdbcursor_at_end(cursor)) {
                     if (vdbcursor_record_passes_selection(cursor, stmt->as.delete.selection)) {
                         vdbcursor_delete_record(cursor);
                     } else {
@@ -571,16 +574,15 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 char* table_name = to_static_string(stmt->target);
                 struct Vdb* db = (struct Vdb*)(*h);
                 struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
-                struct VdbCursor* cursor = vdbcursor_init(tree, vdbint(0)); //cursor to beginning of table
+                struct VdbCursor* cursor = vdbcursor_init(tree);
 
                 struct VdbHashTable* distinct_table = vdbhashtable_init();
                 struct VdbHashTable* grouping_table = vdbhashtable_init();
 
-                struct VdbRecord* rec;
-
                 struct VdbRecordSet* head = NULL;
 
-                while ((rec = vdbcursor_fetch_record(cursor))) {
+                while (!vdbcursor_at_end(cursor)) {
+                    struct VdbRecord* rec = vdbcursor_fetch_record(cursor);
                     struct VdbRecordSet* rs = vdbrecordset_init(NULL);
                     vdbrecordset_append_record(rs, rec);
 

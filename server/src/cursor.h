@@ -13,7 +13,9 @@ struct VdbCursor {
     uint32_t cur_rec_idx;
 };
 
-struct VdbCursor* vdbcursor_init(struct VdbTree* tree, struct VdbValue key);
+struct VdbCursor* vdbcursor_init(struct VdbTree* tree);
+void vdbcursor_seek(struct VdbCursor* cursor, struct VdbValue key);
+bool vdbcursor_at_end(struct VdbCursor* cursor);
 void vdbcursor_free(struct VdbCursor* cursor);
 struct VdbRecord* vdbcursor_fetch_record(struct VdbCursor* cursor);
 void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec);

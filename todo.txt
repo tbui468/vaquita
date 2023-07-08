@@ -91,6 +91,47 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
+    Is the problem trying to use select when table has no entries?
+        cursor_init should NOT be starting at vdbint(0) - this assumes integer key, which may not be true
+
+        A lot of problems are caused by having empty leaves.  If freeing an idxcell results in a leaf/data
+            block having a 0 idxcell_count, should 
+
+    Rewrite cursor:
+        struct VdbCursor* vdbcursor_init(struct VdbTree* tree);
+            should start at first leaf/record
+            should iterate to next leaf if no records in leaf
+
+        void vdbcursor_seek
+            should go to a given key
+
+        bool vdbcursor_at_end
+            should return true if next leaf idx == 0 and cur_rec_idx >= idxcell_count
+
+    querying an empty table crashes program
+        Change code so this passes:
+            query_empty_table.sql
+
+    Delete
+        call vdbnode_free_cell on any strings in record
+        call vdbnode_free_cell on record
+
+    Update
+        make a test to update
+            create database sol;
+            open sol;
+
+            create table planets (id int key, name string, mass float, atmosphere bool);
+            insert into planets (id, name, mass, atmosphere) values (1, "Neptune", 20.0, false), (2, "Mars", 10.0, true), (3, "Venus", 10.0, false);
+            update planets set name="new_name", mass=3.23, atmosphere=true;
+            select * from planets;
+
+            close sol;
+            drop database sol;
+            exit;
+        call vdbnode_free_cell on any strings
+        rewrite record (including new strings)
+
     Finish README:
         build instructions
         running instructions (pick port number for server, and port number to connect to for client)
@@ -132,18 +173,8 @@ Could try the entire galileo database with 1.7 billion records
         change idxcell values to reflect the newly shifted datacells
         return the newly allocated (or total?) free space
 
-    Reimplement update
-        add tests back in from github (2)
-        need to free any variable length data if different size from updated value
-        need to implement free of cells
-        could probably also implement defragging of data blocks
-            when should a data block be defragged (vacuumed)?
-            whenever the current data block is full, and before a new data block is allocated,
-            defrag blocks in list until one has enough space (also insert this block in in data block ptr in meta block)
-
-    Reimplement delete
-        add tests back in from github (2)
-        delete should delete idxcell and add datacells to freelist (next field should be set)
+    insert/update/delete should (occasionally) defrag 
+        and use old data blocks rather than always appending
 
     indexing:
         create index my_index on table_name (x, y);

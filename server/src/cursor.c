@@ -140,7 +140,7 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
 
     uint32_t i = vdbtree_leaf_find_insertion_idx(tree, cursor->cur_node_idx, &rec_key);
 
-    struct VdbRecPtr p = vdbtree_write_record_to_datablock(tree, rec);
+    struct VdbRecPtr p = vdbtree_append_record_to_datablock(tree, rec);
     vdbnode_insert_idxcell(page->buf, i, sizeof(uint32_t) * 2 + vdbvalue_serialized_size(p.key));
     vdbtree_serialize_recptr(tree, vdbnode_datacell(page->buf, i), &p);
 
@@ -173,18 +173,17 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
     page->dirty = true;
 
-    //free any string cells in record before freeing record cell
     struct VdbRecord* rec = vdbtree_leaf_read_record(cursor->tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+
+    //free any string cells in record before freeing record cell
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue v = rec->data[i];
         if (v.type == VDBT_TYPE_STR) {
-            struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, v.as.Str.block_idx);
-            vdbnode_free_cell(data_page->buf, v.as.Str.idxcell_idx);
-            vdbpager_unpin_page(data_page);
+            vdbtree_free_datablock_string(tree, &v);
         }
     }
 
-    vdbnode_free_cell(page->buf, cursor->cur_rec_idx);
+    vdbnode_free_cell_and_defrag_node(page->buf, cursor->cur_rec_idx);
 
     vdbpager_unpin_page(page);
 
@@ -209,6 +208,16 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
+    //free all strings in datablocks - will just rewrite entire record for the time being
+    //could optimize this by not freeing unchanged strings
+    for (uint32_t i = 0; i < rec->count; i++) {
+        struct VdbValue v = rec->data[i];
+        if (v.type == VDBT_TYPE_STR) {
+            vdbtree_free_datablock_string(tree, &v);
+        }
+    }
+
+    //modify updated columns
     for (int i = 0; i < attrs->count; i++) {
         for (uint32_t j = 0; j < tree->schema->count; j++) {
             if (strncmp(attrs->tokens[i].lexeme, tree->schema->names[j], attrs->tokens[i].len) == 0) {
@@ -218,7 +227,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
         }
     }
 
-    vdbtree_leaf_write_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx, rec);
+    vdbtree_write_record_to_datablock(tree, rec, cursor->cur_node_idx, cursor->cur_rec_idx);
 
     vdbrecord_free(rec);
     vdbpager_unpin_page(page);

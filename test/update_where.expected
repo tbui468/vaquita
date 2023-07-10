@@ -2,10 +2,10 @@ created database sol
 opened database sol
 created table planets
 inserted 3 record(s) into planets
-3 row(s) updated
+1 row(s) updated
 id, name, mass, atmosphere, moons
-1, new_name, 0.000000, true, 0
+1, Venus, 20.000000, false, 0
 2, new_name, 0.000000, true, 0
-3, new_name, 0.000000, true, 0
+3, Mars, 10.000000, false, 2
 closed database sol
 dropped database sol

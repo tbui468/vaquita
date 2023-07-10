@@ -43,8 +43,13 @@ uint32_t* vdbnode_parent(uint8_t* buf);
 uint32_t* vdbnode_next(uint8_t* buf);
 uint32_t* vdbnode_idxcell_count(uint8_t* buf);
 uint32_t* vdbnode_datacells_size(uint8_t* buf);
+uint32_t* vdbnode_idxcells_freelist(uint8_t* buf);
+uint32_t* vdbnode_datacells_freelist(uint8_t* buf);
+void vdbnode_free_cell_and_defrag_datacells_only(uint8_t* buf, uint32_t idxcell_idx);
+void vdbnode_free_cell_and_defrag_node(uint8_t* buf, uint32_t idxcell_idx);
+
 bool vdbnode_can_fit(uint8_t* buf, uint32_t datacell_size);
-uint32_t vdbnode_append_idxcell(uint8_t* buf, uint32_t datacell_size);
+uint32_t vdbnode_new_idxcell(uint8_t* buf, uint32_t datacell_size);
 void vdbnode_insert_idxcell(uint8_t* buf, uint32_t idxcell_idx, uint32_t datacell_size);
 void* vdbnode_datacell(uint8_t* buf, uint32_t idxcell_idx);
 void vdbnode_free_cell(uint8_t* buf, uint32_t idxcell_idx);

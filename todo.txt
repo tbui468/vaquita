@@ -56,6 +56,13 @@
     Youtube neural network series by Andre Karpathy:
 
 
+    The architecture of open source applications
+        https://aosabook.org/en/
+        graph database in 500 lines of code
+        dog database in 500 lines of code
+        BerkeleyDB architecture
+        NoSQL Ecosystem
+
     Nginx Tutorial
         https://www.freecodecamp.org/news/the-nginx-handbook/
 
@@ -90,28 +97,6 @@ Could try the entire galileo database with 1.7 billion records
         Get flask project running in nginx (with gunicorn)
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
-
-    Is the problem trying to use select when table has no entries?
-        cursor_init should NOT be starting at vdbint(0) - this assumes integer key, which may not be true
-
-        A lot of problems are caused by having empty leaves.  If freeing an idxcell results in a leaf/data
-            block having a 0 idxcell_count, should 
-
-    Update
-        make a test to update
-            create database sol;
-            open sol;
-
-            create table planets (id int key, name string, mass float, atmosphere bool);
-            insert into planets (id, name, mass, atmosphere) values (1, "Neptune", 20.0, false), (2, "Mars", 10.0, true), (3, "Venus", 10.0, false);
-            update planets set name="new_name", mass=3.23, atmosphere=true;
-            select * from planets;
-
-            close sol;
-            drop database sol;
-            exit;
-        call vdbnode_free_cell on any strings
-        rewrite record (including new strings)
 
     Finish README:
         build instructions

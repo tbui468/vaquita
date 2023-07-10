@@ -43,7 +43,7 @@ uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx);
 struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx);
 uint32_t vdbtree_meta_read_primary_key_counter(struct VdbTree* tree);
 struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t leaf_idx, uint32_t rec_idx);
-void vdbtree_leaf_write_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx, struct VdbRecord* rec);
+void vdbtree_free_datablock_string(struct VdbTree* tree, struct VdbValue* v);
 
 uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValue key);
 uint32_t vdbtree_traverse_to_first_leaf(struct VdbTree* tree, uint32_t idx);
@@ -53,7 +53,8 @@ uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx);
 void vdbtree_serialize_value(struct VdbTree* tree, uint8_t* buf, struct VdbValue* v);
 void vdbtree_deserialize_value(struct VdbTree* tree, struct VdbValue* v, uint8_t* buf);
 
-struct VdbRecPtr vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r);
+struct VdbRecPtr vdbtree_append_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r);
+void vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r, uint32_t leaf_idx, uint32_t leaf_idxcell_idx);
 struct VdbRecord* vdbtree_read_record_from_datablock(struct VdbTree* tree, struct VdbRecPtr* p);
 void vdbtree_serialize_recptr(struct VdbTree* tree, uint8_t* buf, struct VdbRecPtr* p);
 struct VdbRecPtr vdbtree_deserialize_recptr(struct VdbTree* tree, uint8_t* buf);

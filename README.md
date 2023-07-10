@@ -1,29 +1,26 @@
-# VaquitaSQL - an SQL-92 Implementation
+# VaquitaSQL - an SQL Implementation
 
 ## Basic Usage
-### Clone the Repository
-git clone https://github.com/tbui468/vaquita.git<br>
-
 ### Building the Server
 
 ```
-cd vaquita<br>
-cd server<br>
-mkdir build<br>
-cd build<br>
-cmake ..<br>
-cmake --build .<br>
+cd vaquita
+cd server
+mkdir build
+cd build
+cmake ..
+cmake --build .
 ```
 
 ### Building the Client
 
 ```
-cd vaquita<br>
-cd client<br>
-mkdir build<br>
-cd build<br>
-cmake ..<br>
-cmake --build .<br>
+cd vaquita
+cd client
+mkdir build
+cd build
+cmake ..
+cmake --build .
 ```
 
 ### Client Using REPL
@@ -80,40 +77,60 @@ vdb> exit;
 ./vdbclient script.sql
 ```
 
-## Currently Supported SQL
-### Data Definition
-create database <database>;
-show databases;
-drop database <database>;
-if exists drop database <database>;
-open <database>;
+## Supported SQL
 
-show tables;
-describe <table>;
-drop table <table>;
-if exists drop table <table>;
-create table <table> (<column definitions>);
+### Data Types
+int<br>
+float<br>
+string<br>
+bool<br>
 
-### Data Manipulation
-insert into <table> (<field>) values (<values>);
+### Data Definition and Manipulation
+create database [name]<br>
+drop database [name]<br>
+if exsits drop database [name]<br>
+show databases<br>
+open [name]<br>
+close [name]<br>
 
-### Data Query
-select distinct <projection> from <table> where <selection> order by <field> desc limit <count>;
-select <projection/aggregate> from <table> group by <field> having <aggregate selection>;
+create table [name] [column definitions]<br>
+drop table [name]<br>
+if exsits drop table [name]<br>
+show tables<br>
+describe [name]<br>
 
-### Data Control
-NA
+insert into [table] [columns] values [values]<br>
+update [table] set [columns = values]<br>
+delete from [table]<br>
 
-## Todo
-Update
-Delete
-Joins
-Foreign Keys
-Transactions
-Subqueries
-Derived Tables
-Indexing
-Logging
-Page Eviction
-Locking
-Better Error Handling
+### Data Query<br>
+select<br>
+distinct<br>
+where<br>
+order by<br>
+desc<br>
+limit<br>
+group by<br>
+having<br>
+avg<br>
+count<br>
+max<br>
+min<br>
+sum<br>
+
+## Architecture
+
+Image goes here<br>
+
+## Not Yet Implemented
+Joins<br>
+Alter<br>
+Foreign Keys<br>
+Transactions<br>
+Subqueries<br>
+Derived Tables<br>
+Indexing<br>
+Logging<br>
+Page Eviction<br>
+Locking<br>
+Improved Error Handling/Messages<br>

@@ -5,25 +5,30 @@
 git clone https://github.com/tbui468/vaquita.git<br>
 
 ### Building the Server
+
+```
 cd vaquita<br>
 cd server<br>
 mkdir build<br>
 cd build<br>
 cmake ..<br>
 cmake --build .<br>
+```
 
 ### Building the Client
+
+```
 cd vaquita<br>
 cd client<br>
 mkdir build<br>
 cd build<br>
 cmake ..<br>
 cmake --build .<br>
-
-### Start the Server
-./vdb
+```
 
 ### Client Using REPL
+
+```
 ./vdbclient
 
 vdb> create database sol;
@@ -67,9 +72,13 @@ vdb> close sol;
 closed database sol
 
 vdb> exit;
+```
 
 ### Client Using Script
-./vdbclient script.sql<br>
+
+```
+./vdbclient script.sql
+```
 
 ## Currently Supported SQL
 ### Data Definition

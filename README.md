@@ -120,7 +120,7 @@ sum<br>
 
 ## Architecture
 
-Image goes here<br>
+![architecture diagram](diagram.png)
 
 ## Not Yet Implemented
 Joins<br>
@@ -133,4 +133,5 @@ Indexing<br>
 Logging<br>
 Page Eviction<br>
 Locking<br>
+Recovery<br>
 Improved Error Handling/Messages<br>

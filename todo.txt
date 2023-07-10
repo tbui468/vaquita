@@ -99,23 +99,9 @@ Could try the entire galileo database with 1.7 billion records
             since we are only using this to run in development
 
     Finish README:
-        build instructions
-        running instructions (pick port number for server, and port number to connect to for client)
-        examples using script (one is enough)
-        examples using cli (show all currently supported features)
-        describe current features
-            4 data types: string, int, float, boolean
-            select
-                projection
-                selection
-                grouping
-                    aggregate functions
-                    having
-                null checks
-            insert
-        features to come
-            update and delete records
-            bug fixes (especially related to invalid SQL statements)
+        Make diagram colors black (rather than grey)
+        add diagram.png to project
+        Include diagram.png in markdown file
 
     Clean up github
         delete ALL projects I don't want to share (really, just keep compilers/interpreters/solidity data serializer, neural network visualizer)

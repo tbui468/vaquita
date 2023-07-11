@@ -1,0 +1,12 @@
+created database sol
+opened database sol
+created table planets
+inserted 3 record(s) into planets
+3 row(s) updated
+id, name, moons
+1, Neptune, 120
+2, Mars, 110
+3, Venus, 110
+dropped table planets
+closed database sol
+dropped database sol

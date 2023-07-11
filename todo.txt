@@ -98,13 +98,13 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
-    Finish README:
-        Make diagram colors black (rather than grey)
-        add diagram.png to project
-        Include diagram.png in markdown file
-
     Clean up github
-        delete ALL projects I don't want to share (really, just keep compilers/interpreters/solidity data serializer, neural network visualizer)
+        make sure tama-lang still kinda runs
+            recall that I was trying to add arrays, got stuck, and then quit
+        write a better README for tama-lang
+            include build instructions
+            examples
+            architecture diagram
 
     Fix CV
         Make it ready for submission
@@ -113,20 +113,21 @@ Could try the entire galileo database with 1.7 billion records
 
             wedding website: ??? Should I put that on?
 
-            Personal projects: neural network visualizer, compiler/linker for custom programming language, SQl implementation
+            Link github
             Languages: C/Python
 
-    Finish implementing vdbnode_free_cell()
-        add a freelist to header of nodes
-        add datacell to freelist when a cell is freed
+    transactions
+        start transaction;
+        update accounts set balance = balance - 100 where id = 1; //does this work with the current implementation???
+        update accounts set balance = balance + 100 where id = 2;
+        commit;
 
-    Implement vdbnode_defrag()
-        shift all free datacells to the right to remove gaps
-        change idxcell values to reflect the newly shifted datacells
-        return the newly allocated (or total?) free space
+        start transaction;
+        update accounts set balance = balance - 100 where id = 1;
+        update accounts set balance = balance + 100 where id = 2;
+        rollback;
 
-    insert/update/delete should (occasionally) defrag 
-        and use old data blocks rather than always appending
+        Get this working first, then watch CMU lectures to get more info
 
     indexing:
         create index my_index on table_name (x, y);
@@ -138,12 +139,52 @@ Could try the entire galileo database with 1.7 billion records
         Meta nodes should also use idxcell and datacell format
             store index names/root as cells in meta node
 
-    Make sure the cli works correctly
-        make it more like mysql 
+    
 
     Transactions
+        Watch this video on logging:
+            https://www.youtube.com/watch?v=hh21I1702OY&ab_channel=CMUDatabaseGroup
+
+            Watch from 41:30 for WAL
+
+        Force:
+            Are txns forced to write a page to disk before it can message to the world that it's committed?
+            if force:
+                all updates must be on disk before txn allowed to commit
+            else: no-force
+                updates NOT required to be on disk when txn commits
+        Steal
+            Example, txn1 needs more memory, but a page needs to be evicted.  If txn2 has uncommitted
+            updates on a page, can txn1 steal from txn2?  Can txn1 evict txn2's uncommitted updates on
+            a page (steal it)
+
+            if steal:
+                txn1 can evict page and write uncommitted txn2 updates to disk (potentially overwriting 
+                last commited txn)
+            else: //no steal
+                if a page has uncommitted updates, cannot evict
+
+        No-steal + Force
+            easy to implement/rollback/but can't do it if data can't all fit into memory
+            use shadow pages to get over memory limits
+
+
+        'torn writes'
+            
+
         If something fails part-way through, any changes should be reverted
         Need to log changes and undo if necessary
+
+    WAL needs to include ALL writes to the table (meta, internal, leaf, and data blocks)
+        when ANY change (including transaction) is made, DON'T modify in-memory data
+        instead append the change to the WAL file
+        if a block has to be read, it MUST check the WAL file first.
+            read in-memory block
+            check WAL for ALL changes...?
+
+        if rolledback, just discard WAL
+        if commited, 
+        
 
     Page eviction
         Use O_DIRECT and O_SYNC (along with switching from fopen to open)

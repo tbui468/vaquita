@@ -198,15 +198,17 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
     struct VdbTree* tree = cursor->tree;
     struct VdbValueList* vl = vdbvaluelist_init();
 
-    for (int i = 0; i < values->count; i++) {
-        struct VdbValue v = vdbexpr_eval(values->exprs[i], NULL, NULL);
-        vdbvaluelist_append_value(vl, v);
-    }
-
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
     page->dirty = true;
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
+    struct VdbRecordSet* rs = vdbrecordset_init(NULL);
+    vdbrecordset_append_record(rs, rec);
+
+    for (int i = 0; i < values->count; i++) {
+        struct VdbValue v = vdbexpr_eval(values->exprs[i], rs, tree->schema);
+        vdbvaluelist_append_value(vl, v);
+    }
 
     //free all strings in datablocks - will just rewrite entire record for the time being
     //could optimize this by not freeing unchanged strings
@@ -229,7 +231,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 
     vdbtree_write_record_to_datablock(tree, rec, cursor->cur_node_idx, cursor->cur_rec_idx);
 
-    vdbrecord_free(rec);
+    vdbrecordset_free(rs); //record is freed by recordset
     vdbpager_unpin_page(page);
     vdbvaluelist_free(vl);
 

@@ -674,6 +674,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* outpu
                 }
             }
             default:
+                printf("statement execution not implemented\n");
                 break;
         }
     }

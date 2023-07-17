@@ -70,7 +70,10 @@ enum VdbStmtType {
     VDBST_UPDATE,
     VDBST_DELETE,
     VDBST_SELECT,
-    VDBST_EXIT
+    VDBST_EXIT,
+    VDBST_BEGIN,
+    VDBST_COMMIT,
+    VDBST_ROLLBACK
 };
 
 struct VdbStmt {

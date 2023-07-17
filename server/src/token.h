@@ -69,7 +69,10 @@ enum VdbTokenType {
     VDBT_HAVING,
     VDBT_LIMIT,
     VDBT_KEY,
-    VDBT_COMMENT
+    VDBT_COMMENT,
+    VDBT_BEGIN,
+    VDBT_COMMIT,
+    VDBT_ROLLBACK
 };
 
 struct VdbToken {

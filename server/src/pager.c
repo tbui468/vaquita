@@ -99,8 +99,11 @@ struct VdbPage* vdbpager_pin_page(struct VdbPager* pager, char* name, FILE* f, u
     return page;
 }
 
-void vdbpager_unpin_page(struct VdbPage* page) {
+void vdbpager_unpin_page(struct VdbPage* page, bool dirty) {
     page->pin_count--;
+    if (dirty) {
+        page->dirty = true;
+    }
 }
 
 void vdbpager_evict_pages(struct VdbPager* pager, const char* name) {

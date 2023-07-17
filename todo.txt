@@ -1,42 +1,5 @@
-    Efficiency of dbms can be estimated with number IO operations
-
-    Use gdb to walk through code (Cherno recommended debugger to learn to read code)
-        https://www.cs.yale.edu/homes/aspnes/pinewiki/C(2f)Debugging.html
-        Try it on the xv6 (or the risc-v version) - would gdb even work with vm?
-
-    https://github.com/firstcontributions/first-contributionsool
-        go to this link and do a basic contribution
-
-    Use ChatGPT to help write paper on neural network to learn
-        eviction policy for pager - integration of neural networks
-        into legacy code
-
-    check out nandgame for website on how to create processor from scratch
-        then try to do it using verilog
-
-    Use Yahoo or some other database standard metric to focus on core features
-
-    cstack.github.io for short guide to basics of SQL implementation (not complete)
-
-    Read Edward Sciore's book on implementing a relational database
-        Chapter 4: Memory Management (PDF 92)
-
-    Use SDL and Vulkan to visualize stars/planets/moons in galaxy
-
-    sqlite documentation has great explanation of how bytecode works
-
-    handmade.network has cool mini projects (such as barebones OS with only a few thousand lines of C)
-
-    OS
-        James Molloy has a good website for OS dev
-        use qemu
-        use OS dev so that we can set up skeleton project
-
-    Look here for two star databases:
-        https://github.com/astronexus/HYG-Database
-        One has around 100,000 stars, one has about 200,000 stars/objects and one database has over 2.5 million(!) stars
-
-    valgrind --leak-check=full --show-leak-kinds=all --log-file="output.txt" -v ./../build/src/vdb sol.sql
+    Valgrind 
+        valgrind --leak-check=full --show-leak-kinds=all --log-file="output.txt" -v ./../build/src/vdb sol.sql
 
     Walkthrough of git source code (cool!) 
         https://fabiensanglard.net/git_code_review/
@@ -54,7 +17,7 @@
         https://www.youtube.com/watch?v=3aJI1ABdjQk&t=1046s&ab_channel=HaseebQureshi
 
     Youtube neural network series by Andre Karpathy:
-
+        link here
 
     The architecture of open source applications
         https://aosabook.org/en/
@@ -98,14 +61,6 @@ Could try the entire galileo database with 1.7 billion records
             set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
             since we are only using this to run in development
 
-    Clean up github
-        make sure tama-lang still kinda runs
-            recall that I was trying to add arrays, got stuck, and then quit
-        write a better README for tama-lang
-            include build instructions
-            examples
-            architecture diagram
-
     Fix CV
         Make it ready for submission
             work: sorting and search algorithms
@@ -116,18 +71,21 @@ Could try the entire galileo database with 1.7 billion records
             Link github
             Languages: C/Python
 
-    transactions
-        start transaction;
-        update accounts set balance = balance - 100 where id = 1; //does this work with the current implementation???
-        update accounts set balance = balance + 100 where id = 2;
-        commit;
+    Redo select so that something like this works:
+        select upper('AdbdD'), lower('AdfBZ'); 
 
-        start transaction;
-        update accounts set balance = balance - 100 where id = 1;
-        update accounts set balance = balance + 100 where id = 2;
-        rollback;
+    LRU eviction policy
+        Make a replacer struct, or put it inside of struct Pager
 
-        Get this working first, then watch CMU lectures to get more info
+    Make it possible for multiple clients to access at same time
+        Multiple clients is okay, but how should server handle multiple connections?
+        How is it dealing with multiple connections now?  (It's not)
+
+    Switch over to google cpp coding style
+        https://gist.github.com/davidzchen/9187878
+
+    joins
+        full join
 
     indexing:
         create index my_index on table_name (x, y);
@@ -138,8 +96,6 @@ Could try the entire galileo database with 1.7 billion records
 
         Meta nodes should also use idxcell and datacell format
             store index names/root as cells in meta node
-
-    
 
     Transactions
         Watch this video on logging:

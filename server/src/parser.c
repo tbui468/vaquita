@@ -1014,6 +1014,7 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
             return NULL;
     }
 }
+
 struct VdbExpr* vdbparser_parse_unary(struct VdbParser* parser) {
     if (vdbparser_peek_token(parser).type == VDBT_MINUS) {
         struct VdbToken op = vdbparser_next_token(parser);
@@ -1055,6 +1056,7 @@ struct VdbExpr* vdbparser_parse_relational(struct VdbParser* parser) {
 
     return left;
 }
+
 struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser) {
     struct VdbExpr* left = vdbparser_parse_relational(parser);
     while (vdbparser_peek_token(parser).type == VDBT_EQUALS || 
@@ -1076,6 +1078,7 @@ struct VdbExpr* vdbparser_parse_equality(struct VdbParser* parser) {
 
     return left;
 }
+
 struct VdbExpr* vdbparser_parse_not(struct VdbParser* parser) {
     if (vdbparser_peek_token(parser).type == VDBT_NOT) {
         struct VdbToken not = vdbparser_next_token(parser);
@@ -1084,6 +1087,7 @@ struct VdbExpr* vdbparser_parse_not(struct VdbParser* parser) {
         return vdbparser_parse_equality(parser);
     }
 }
+
 struct VdbExpr* vdbparser_parse_and(struct VdbParser* parser) {
     struct VdbExpr* left = vdbparser_parse_not(parser);
     while (vdbparser_peek_token(parser).type == VDBT_AND) {
@@ -1093,6 +1097,7 @@ struct VdbExpr* vdbparser_parse_and(struct VdbParser* parser) {
 
     return left;
 }
+
 struct VdbExpr* vdbparser_parse_or(struct VdbParser* parser) {
     struct VdbExpr* left = vdbparser_parse_and(parser);
     while (vdbparser_peek_token(parser).type == VDBT_OR) {
@@ -1102,13 +1107,7 @@ struct VdbExpr* vdbparser_parse_or(struct VdbParser* parser) {
 
     return left;
 }
-/*
-struct VdbExpr* vdbparser_parse_assignment(struct VdbParser* parser) {
-}
-struct VdbExpr* vdbparser_parse_sequence(struct VdbParser* parser) {
-    //commas
-}
-*/
+
 struct VdbExpr* vdbparser_parse_expr(struct VdbParser* parser) {
     return vdbparser_parse_or(parser);
 }
@@ -1388,8 +1387,20 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
             stmt->type = VDBST_EXIT;
             break; 
         }
+        case VDBT_BEGIN: {
+            stmt->type = VDBST_BEGIN;
+            break;
+        }
+        case VDBT_COMMIT: {
+            stmt->type = VDBST_COMMIT;
+            break;
+        }
+        case VDBT_ROLLBACK: {
+            stmt->type = VDBST_ROLLBACK;
+            break;
+        }
         default:
-            printf("not implemented yet\n");
+            printf("invalid token\n");
             break;
     }
 

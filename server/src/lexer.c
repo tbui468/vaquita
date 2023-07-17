@@ -122,6 +122,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_AVG;
             break;
         case 'b':
+            if (t->len == 5 && strncmp("begin", t->lexeme, 5) == 0)
+                t->type = VDBT_BEGIN;
             if (t->len == 4 && strncmp("bool", t->lexeme, 4) == 0)
                 t->type = VDBT_TYPE_BOOL;
             if (t->len == 2 && strncmp("by", t->lexeme, 2) == 0)
@@ -130,6 +132,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
         case 'c':
             if (t->len == 5 && strncmp("close", t->lexeme, 5) == 0)
                 t->type = VDBT_CLOSE;
+            if (t->len == 6 && strncmp("commit", t->lexeme, 6) == 0)
+                t->type = VDBT_COMMIT;
             if (t->len == 5 && strncmp("count", t->lexeme, 5) == 0)
                 t->type = VDBT_COUNT;
             if (t->len == 6 && strncmp("create", t->lexeme, 6) == 0)
@@ -214,6 +218,10 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_OR;
             if (t->len == 5 && strncmp("order", t->lexeme, 5) == 0)
                 t->type = VDBT_ORDER;
+            break;
+        case 'r':
+            if (t->len == 8 && strncmp("rollback", t->lexeme, 8) == 0)
+                t->type = VDBT_ROLLBACK;
             break;
         case 's':
             if (t->len == 6 && strncmp("string", t->lexeme, 6) == 0)

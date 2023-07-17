@@ -233,7 +233,7 @@ int serve() {
                 vdbserver_send(new_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
 
                 if (end) {
-                    printf("client released database handle\n");
+                    //printf("client released database handle\n");
                     break;
                 }
             }

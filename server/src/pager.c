@@ -36,6 +36,8 @@ uint32_t vdbpager_fresh_page(FILE* f) {
     uint32_t idx = ftell_w(f) / VDB_PAGE_SIZE;
     fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
 
+//    printf("pages in db: %d\n", idx + 1);
+
     return idx;
 }
 
@@ -65,6 +67,30 @@ static void vdbpager_flush_page(struct VdbPage* p) {
     p->dirty = false;
 }
 
+static struct VdbPage* vdbpager_evict_first_unpinned(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
+    uint32_t i; 
+    for (i = 0; i < pager->count; i++) {
+        struct VdbPage* p = &pager->pages[i];
+        if (p->pin_count == 0) {
+            if (p->dirty) {
+                vdbpager_flush_page(p);
+            }
+
+            p->dirty = false;
+            p->pin_count = 0;
+            p->idx = idx;
+            fseek_w(f, p->idx * VDB_PAGE_SIZE, SEEK_SET);
+            fread_w(p->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
+            p->f = f;
+            p->name = strdup_w(name);
+            return p;
+        }
+    }
+    
+    printf("buffer pool doesn't have enough space!!! Bug!!!\n");
+    return NULL;
+}
+
 struct VdbPage* vdbpager_pin_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
     struct VdbPage* page = NULL;
     for (uint32_t i = 0; i < pager->count; i++) {
@@ -75,21 +101,14 @@ struct VdbPage* vdbpager_pin_page(struct VdbPager* pager, char* name, FILE* f, u
         }
     }
 
+    const int MAX_PAGES = 8;
+
+
     //not cached, so read from disk
     if (!page) {
-        //TODO: evict here if necessary before loading page.  Only evict a page if pin_count == 0
-        /*if (pager->pages->count >= 32) {
-            for (uint32_t i = 0; i < pager->pages->count; i++) {
-                struct VdbPage* p = pager->pages->pages[i];
-                if (p->pin_count == 0) {
-                    _vdb_pager_flush_page(p);
-                    _vdb_pager_free_page(p);
-                    pager->pages->pages[i] = _vdb_pager_load_page(name, f, idx);
-                    page = pager->pages->pages[i];
-                    break;
-                }
-            }
-        } else*/ {
+        if (pager->count >= MAX_PAGES) {
+            page = vdbpager_evict_first_unpinned(pager, name, f, idx);
+        } else {
             page = vdbpager_load_page(pager, name, f, idx);
         }
     }

@@ -559,6 +559,8 @@ void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbV
 
     v->as.Str.block_idx = data_idx;
     v->as.Str.idxcell_idx = idxcell_idx;
+
+    vdbpager_unpin_page(page, true);
 }
 
 void vdbtree_deserialize_from_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v) {
@@ -651,8 +653,12 @@ static void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t dept
     } else {
         printf(": ");
         for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
-            //uint32_t key = vdbtree_leaf_read_record_key(tree, idx, i).as.Int;
-            //printf("%d", key);
+
+            struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+            struct VdbRecPtr p = vdbtree_deserialize_recptr(tree, vdbnode_datacell(page->buf, i));
+            vdbpager_unpin_page(page, false);
+            printf("%d", p.block_idx);
+
             if (i < vdbtree_leaf_read_record_count(tree, idx) - 1) {
                 printf(", ");
             }

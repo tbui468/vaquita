@@ -40,20 +40,16 @@
             stop (shutdown immediately)
         nginx -t (check if config file is okay)
 
-***********************Documentation*****************************
-Example
-Major components
-Todos
-
-*************************Performance***************
-Takes ~5s to insert 119000 records from HYG
-
-Try AHYG (expecting this to take around 2 minutes for 2.5 million records)
-    need to push the limits of memory usage so that page eviction can be tested
-
-Could try the entire galileo database with 1.7 billion records
 
 *******************************TODO**************************************************
+    Database System Concepts:
+        Chapter 1: Introduction
+        Chapter 2: Introduction to the Relational Model
+            The join operation is a sequence of what two other operations?
+            What does 'arity' mean?  Why must arity of two relations be the same when using the union operator?
+        Chapter 3: Introduction to SQL
+            Page 74 - queries on multiple relations
+
     Get flask running on nginx
         How to Use Nginx as a Reverse-Proxy (freecodecamp book) <---------START HERE
         Finish reading online book
@@ -71,21 +67,26 @@ Could try the entire galileo database with 1.7 billion records
             Link github
             Languages: C/Python
 
-    Redo select so that something like this works:
-        select upper('AdbdD'), lower('AdfBZ'); 
-
-    LRU eviction policy
-        Make a replacer struct, or put it inside of struct Pager
-
-    Make it possible for multiple clients to access at same time
-        Multiple clients is okay, but how should server handle multiple connections?
-        How is it dealing with multiple connections now?  (It's not)
-
     Switch over to google cpp coding style
         https://gist.github.com/davidzchen/9187878
 
-    joins
-        full join
+    Redo select so that something like this works:
+        select upper('AdbdD'), lower('AdfBZ'); 
+
+    B+ Tree
+        Make it possible for multiple clients to access at same time
+            Multiple clients is okay, but how should server handle multiple connections?
+            How is it dealing with multiple connections now?  (It's not)
+
+            Need read/write locks on nodes - just lock entire root for now
+
+    Query Execution
+        Implement EXPLAIN command to show:
+            Binder
+            Planner
+            Optimizer
+
+        joins
 
     indexing:
         create index my_index on table_name (x, y);

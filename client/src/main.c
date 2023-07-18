@@ -113,10 +113,30 @@ char* load_file(const char* path) {
 }
 
 int main(int argc, char** argv) {
-    VDBHANDLE h = vdbclient_connect("127.0.0.1", "3333");
+    int opt;
+    bool set_port = false;
+    char* port_arg;
+    while ((opt = getopt(argc, argv, "p:")) != -1) {
+        switch (opt) {
+            case 'p':
+                set_port = true;
+                port_arg = optarg;
+                break;
+            default:
+                printf("usage: vdbclient -p [port number] [sql file]\n");
+                exit(1);
+                break;
+        }
+    }
 
-    if (argc > 1) {
-        char* queries = load_file(argv[1]);
+    if (!set_port) {
+        port_arg = "3333";
+    }
+
+    VDBHANDLE h = vdbclient_connect("127.0.0.1", port_arg);
+
+    if (optind < argc) {
+        char* queries = load_file(argv[argc - 1]);
 
         struct VdbReader r = vdbclient_execute_query(h, queries);
 
@@ -148,7 +168,7 @@ int main(int argc, char** argv) {
 
         free(queries);
 
-    } else if (argc == 1) {
+    } else {
         char* line = NULL; //not including this in memory allocation tracker
         size_t len = 0;
         ssize_t nread;

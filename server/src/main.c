@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <errno.h>
 
-#define PORT "3333"
 #define BACKLOG 10
 //end network stuff
 
@@ -60,6 +59,7 @@ bool vdbserver_recv(int sockfd, char* buf, int len) {
     return true;
 }
 
+//TODO: this should be in the vm
 bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
@@ -140,7 +140,7 @@ void* get_in_addr(struct sockaddr* sa) {
     return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-int serve() {
+int vdbtcp_listen(const char* port) {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -148,7 +148,7 @@ int serve() {
     hints.ai_flags = AI_PASSIVE; //use local ip address
 
     struct addrinfo* servinfo;
-    if (getaddrinfo(NULL, PORT, &hints, &servinfo) != 0) {
+    if (getaddrinfo(NULL, port, &hints, &servinfo) != 0) {
         return 1;
     }
 
@@ -182,6 +182,7 @@ int serve() {
         exit(1);
     }
 
+    //what was this for again?
     struct sigaction sa;
     sa.sa_handler = sigchld_handler;
     sigemptyset(&sa.sa_mask);
@@ -190,72 +191,98 @@ int serve() {
         exit(1);
     }
 
-    //main accept loop
-    socklen_t sin_size;
+    return sockfd;
+}
+
+int vdbtcp_accept(int listenerfd) {
+    socklen_t sin_size = sizeof(struct sockaddr_storage);
     struct sockaddr_storage their_addr;
-    int new_fd;
+    int new_fd = accept(listenerfd, (struct sockaddr*)&their_addr, &sin_size);
+
+    return new_fd;
+}
+
+void vdbtcp_handle_client(int conn_fd) {
+    VDBHANDLE h = NULL;
 
     while (true) {
-        sin_size = sizeof(struct sockaddr_storage);
-        new_fd = accept(sockfd, (struct sockaddr*)&their_addr, &sin_size);
-        if (new_fd == -1)
-            continue;
+        int32_t request_len;
+        if (!vdbserver_recv(conn_fd, (char*)&request_len, sizeof(int32_t))) {
+            printf("client disconnected\n");
+            break;
+        }
+        char buf[request_len + 1];
+        if (!vdbserver_recv(conn_fd, buf, request_len)) {
+            printf("client disconnected\n");
+            break;
+        }
+        buf[request_len] = '\0';
 
-        //inet_ntop(their_addr.ss_family, get_in_addr((struct sockaddr*)&their_addr), s, sizeof(s));
+        struct VdbByteList* response_buf = vdbbytelist_init();
+        uint32_t count = response_buf->count;
+        vdbbytelist_append_bytes(response_buf, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
+
+        bool end = execute_query(&h, buf, response_buf);
+        *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
+
+        vdbserver_send(conn_fd, (char*)(response_buf->values), sizeof(uint32_t));
+        vdbserver_send(conn_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
+
+        if (end) {
+            //printf("client released database handle\n");
+            break;
+        }
+    }
+}
+
+int vdbtcp_serve(const char* port) {
+
+    int listener_fd = vdbtcp_listen(port);
+
+    //main accept loop
+    while (true) {
+        int conn_fd = vdbtcp_accept(listener_fd);
+        if (conn_fd == -1)
+            continue;
 
         if (!fork()) {
             //this is child process
-            close(sockfd); //child doesn't need listener
+            close(listener_fd);
 
-            VDBHANDLE h = NULL;
+            vdbtcp_handle_client(conn_fd);
 
-            while (true) {
-                int32_t request_len;
-                if (!vdbserver_recv(new_fd, (char*)&request_len, sizeof(int32_t))) {
-                    printf("client disconnected\n");
-                    break;
-                }
-                char buf[request_len + 1];
-                if (!vdbserver_recv(new_fd, buf, request_len)) {
-                    printf("client disconnected\n");
-                    break;
-                }
-                buf[request_len] = '\0';
-
-                struct VdbByteList* response_buf = vdbbytelist_init();
-                uint32_t count = response_buf->count;
-                vdbbytelist_append_bytes(response_buf, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
-
-                bool end = execute_query(&h, buf, response_buf);
-                *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
-
-                vdbserver_send(new_fd, (char*)(response_buf->values), sizeof(uint32_t));
-                vdbserver_send(new_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
-
-                if (end) {
-                    //printf("client released database handle\n");
-                    break;
-                }
-            }
-
-            close(new_fd);
+            close(conn_fd);
             exit(0);
         }
 
-        //parent doesn't need this
-        close(new_fd);
+        //parent process
+        close(conn_fd);
     } 
 
     return 0;
 }
 
 int main(int argc, char** argv) {
-    argv = argv;
-    if (argc > 1) {
-        printf("usage: vdb\n");
-    } else {
-        serve();
+    int opt;
+    bool set_port = false;
+    char* port_arg;
+    while ((opt = getopt(argc, argv, "p:")) != -1) {
+        switch (opt) {
+            case 'p':
+                set_port = true;
+                port_arg = optarg;
+                break;
+            default:
+                printf("usage: vdb -p [port number]\n");
+                exit(1);
+                break;
+        }
     }
+
+    if (!set_port) {
+        port_arg = "3333";
+    }
+    vdbtcp_serve(port_arg);
 
     return 0;
 }

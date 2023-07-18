@@ -48,14 +48,20 @@
             The join operation is a sequence of what two other operations?
             What does 'arity' mean?  Why must arity of two relations be the same when using the union operator?
         Chapter 3: Introduction to SQL
-            Page 74 - queries on multiple relations
+            select * from instructors order by age asc, salary desc; <----this should be allowed in vaquita
+            How are these two SQL queries different?  Which is more correct for finding average?
+                select avg(salary) from instructors where department = "CS";
+                select avg(distinct salary) from instructors where departement = "CS";
+            Why should this query be erroneuous?
+                select count(moons), name from planets group by atmosphere;
+            The 'with' clause used to create temporary tables looks a lot like QUEL 'range of' statements
+                eg, range of s is Student;
+            Page 108: Modification of the Database
 
-    Get flask running on nginx
-        How to Use Nginx as a Reverse-Proxy (freecodecamp book) <---------START HERE
-        Finish reading online book
-        Get flask project running in nginx (with gunicorn)
-            set this up the simpliest way possible - no need to worry about systemmd or other fancy stuff
-            since we are only using this to run in development
+    How Linux Works:
+        Chapter 1: The Big Picture
+            How are root and superuser related?
+        Chapter 2: Basic Commands and Directory Hierarchy
 
     Fix CV
         Make it ready for submission
@@ -73,12 +79,24 @@
     Redo select so that something like this works:
         select upper('AdbdD'), lower('AdfBZ'); 
 
-    B+ Tree
-        Make it possible for multiple clients to access at same time
-            Multiple clients is okay, but how should server handle multiple connections?
-            How is it dealing with multiple connections now?  (It's not)
+    Multiple clients should share same handle
+        Opening two clients now will produce two seperate database handles - this shouldn't happen
+        When the server is started, it should create a handle for ALL databases
+        then when a client opens a database, pass that handle to to client
+        Depending on client SQL, use the correct lock on root
+        VDBHANDLE vdbvm_open_db(const char* name) <----- in vm.c
+            this function currently allocates memory and initializes the database handle
+            this needs to run when the database server starts running.  Then the function vdbvm_open_db
+            just passes this pre-opened handle to all clients that request it
 
-            Need read/write locks on nodes - just lock entire root for now
+        We are calling fork now, which forks EVERYTHING (right?), including the vm
+            and entire database system.  This all needs to be shared, so have each 
+            tcp connection spawn a new thread.  Make a new tcp.c/h translation
+            unit to simplify all of this
+
+        Use a multi-reader/single-writer lock on root for now
+            Just use a plain mtx_lock for now for reading/writing
+            it's not fast or efficient, but it'll do for now
 
     Query Execution
         Implement EXPLAIN command to show:
@@ -87,6 +105,8 @@
             Optimizer
 
         joins
+            cross join
+            inner join
 
     indexing:
         create index my_index on table_name (x, y);

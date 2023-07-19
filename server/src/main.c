@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <threads.h>
 
 //network includes
 #include <sys/types.h>
@@ -235,6 +236,19 @@ void vdbtcp_handle_client(int conn_fd) {
     }
 }
 
+int vdbtcp_handle_client_thread(void* args) {
+    thrd_t t = thrd_current();
+    thrd_detach(t);
+    int fd = *((int*)args);
+    free_w(args, sizeof(int));
+
+    vdbtcp_handle_client(fd);
+
+    close(fd);
+
+    return 0;
+}
+
 int vdbtcp_serve(const char* port) {
 
     int listener_fd = vdbtcp_listen(port);
@@ -245,18 +259,12 @@ int vdbtcp_serve(const char* port) {
         if (conn_fd == -1)
             continue;
 
-        if (!fork()) {
-            //this is child process
-            close(listener_fd);
 
-            vdbtcp_handle_client(conn_fd);
+        int* ptr = malloc_w(sizeof(int));
+        *ptr = conn_fd;
 
-            close(conn_fd);
-            exit(0);
-        }
-
-        //parent process
-        close(conn_fd);
+        thrd_t t;
+        thrd_create(&t, &vdbtcp_handle_client_thread, ptr);
     } 
 
     return 0;

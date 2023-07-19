@@ -19,6 +19,9 @@
     Youtube neural network series by Andre Karpathy:
         link here
 
+    OS from scratch
+        https://github.com/cfenollosa/os-tutorial/tree/master
+
     The architecture of open source applications
         https://aosabook.org/en/
         graph database in 500 lines of code
@@ -54,14 +57,24 @@
                 select avg(distinct salary) from instructors where departement = "CS";
             Why should this query be erroneuous?
                 select count(moons), name from planets group by atmosphere;
+            Does this work in vaquita?
+                select avg(moons) from planets;
             The 'with' clause used to create temporary tables looks a lot like QUEL 'range of' statements
                 eg, range of s is Student;
-            Page 108: Modification of the Database
 
-    How Linux Works:
-        Chapter 1: The Big Picture
-            How are root and superuser related?
-        Chapter 2: Basic Commands and Directory Hierarchy
+        Chapter 4: Intermediate SQL (p. 124)
+            What is a natural join?
+            What is one reason to use 'on' rather than 'where' when joining tables?
+            Explain in simple terms the difference between an inner join and outer join?
+            How are the scopes of views different from those when using 'with'?
+            Transactions p143 <-----read here
+
+        Do all easy problems in datalemur
+            https://datalemur.com/questions
+
+    Implementation of Ingres
+
+    Implementation of Postgres
 
     Fix CV
         Make it ready for submission
@@ -73,26 +86,20 @@
             Link github
             Languages: C/Python
 
+    Look at bustub for architecture inspiration
+
     Switch over to google cpp coding style
         https://gist.github.com/davidzchen/9187878
 
-    Redo select so that something like this works:
-        select upper('AdbdD'), lower('AdfBZ'); 
+    Redo select so that these work:
+        select upper('AdbdD'), lower('AdfBZ');
+        select sum(moons) from planets; 
 
     Multiple clients should share same handle
-        Opening two clients now will produce two seperate database handles - this shouldn't happen
-        When the server is started, it should create a handle for ALL databases
-        then when a client opens a database, pass that handle to to client
-        Depending on client SQL, use the correct lock on root
-        VDBHANDLE vdbvm_open_db(const char* name) <----- in vm.c
+        VDBHANDLE vdbvm_open_db(const char* name) <----- in vm.c <------------START HERE
             this function currently allocates memory and initializes the database handle
             this needs to run when the database server starts running.  Then the function vdbvm_open_db
             just passes this pre-opened handle to all clients that request it
-
-        We are calling fork now, which forks EVERYTHING (right?), including the vm
-            and entire database system.  This all needs to be shared, so have each 
-            tcp connection spawn a new thread.  Make a new tcp.c/h translation
-            unit to simplify all of this
 
         Use a multi-reader/single-writer lock on root for now
             Just use a plain mtx_lock for now for reading/writing

@@ -138,8 +138,6 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_COUNT;
             if (t->len == 6 && strncmp("create", t->lexeme, 6) == 0)
                 t->type = VDBT_CREATE;
-            if (t->len == 7 && strncmp("connect", t->lexeme, 7) == 0)
-                t->type = VDBT_CONNECT;
             break;
         case 'd':
             if (t->len == 4 && strncmp("drop", t->lexeme, 4) == 0)

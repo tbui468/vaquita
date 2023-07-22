@@ -46,7 +46,6 @@ enum VdbTokenType {
     VDBT_DATABASE,
     VDBT_TABLES,
     VDBT_DESCRIBE,
-    VDBT_CONNECT,
     VDBT_INVALID,
     VDBT_IF,
     VDBT_EXISTS,

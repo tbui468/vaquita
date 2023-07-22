@@ -72,7 +72,6 @@ void vdbtoken_print(struct VdbToken t) {
         case VDBT_DATABASE: printf("VDBT_DATABASE\n"); break;
         case VDBT_TABLES: printf("VDBT_TABLES\n"); break;
         case VDBT_DESCRIBE: printf("VDBT_DESCRIBE\n"); break;
-        case VDBT_CONNECT: printf("VDBT_CONNECT\n"); break;
         case VDBT_INVALID: printf("VDBT_INVALID: %.*s\n", t.len, t.lexeme); break;
         case VDBT_NULL: printf("VDBT_NULL\n"); break;
         case VDBT_IF: printf("VDBT_IF\n"); break;

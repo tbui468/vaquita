@@ -5,7 +5,7 @@
 
 typedef void* VDBHANDLE;
 
-struct Vdb {
+struct VdbDatabase {
     char* name;
     struct VdbPager* pager;
     struct VdbTreeList* trees;

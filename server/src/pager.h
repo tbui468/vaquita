@@ -13,7 +13,7 @@ struct VdbPage {
     uint32_t pin_count;
     uint8_t buf[VDB_PAGE_SIZE];
     FILE* f;
-    char* name;
+    char* name; //relation name
 };
 
 struct VdbPager {

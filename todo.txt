@@ -67,7 +67,13 @@
             What is one reason to use 'on' rather than 'where' when joining tables?
             Explain in simple terms the difference between an inner join and outer join?
             How are the scopes of views different from those when using 'with'?
-            Transactions p143 <-----read here
+            What does 'coalesce' function do?
+            What does the 'check' constraint do?
+            Why is the 'initially deferred' clause sometimes useful?
+            How are assertions different from check constraints?
+            Along with B+ Tree, what other data structure can be used to store an index?
+
+        Chapter 5: Advanced SQL (p. 183) <---------START HERE
 
         Do all easy problems in datalemur
             https://datalemur.com/questions
@@ -84,7 +90,7 @@
             wedding website: ??? Should I put that on?
 
             Link github
-            Languages: C/Python
+            Languages: C/Python/SQL
 
     Look at bustub for architecture inspiration
 
@@ -96,14 +102,50 @@
         select sum(moons) from planets; 
 
     Multiple clients should share same handle
-        VDBHANDLE vdbvm_open_db(const char* name) <----- in vm.c <------------START HERE
-            this function currently allocates memory and initializes the database handle
-            this needs to run when the database server starts running.  Then the function vdbvm_open_db
-            just passes this pre-opened handle to all clients that request it
+        remove VDBST_CLOSE
+        remove close [db] from tests
+
+        allow user to open different databases one after another
+        write a test for open_multiple_dbs.sql
+            create 2 databases
+            add tables/rows in database 1 and database 2
+            open database 1
+            query some data
+            open database 2
+            query some data
+
+        s_output and s_buf are NOT thread safe!!!
+            Need to use thread-specific data for these two
+
+        Make struct VdbDatabaseList
+        Make struct VdbServer
+        Initialize struct VdbServer and have it open all database/create master pager
+        Add database name to struct VdbPage (will need to rename 'name' to 'table_name')
+        When searching for page, make sure idx, table_name, and database_name all match (only checking table_name and idx now)
+        Have struct VdbServer return the correct database handle for a client uses 'open'
+        Remove the 'close' command - client will either 'exit' or use 'open' again to open different database
+
+        open sol; //this should just return the handle for a single database
+        close sol; //should this even be a thing?  Just allow user to exit/open a different database
 
         Use a multi-reader/single-writer lock on root for now
             Just use a plain mtx_lock for now for reading/writing
             it's not fast or efficient, but it'll do for now
+
+        struct VdbServer {
+            struct VdbPager* pager;
+            struct VdbDatabaseList* dbs;
+        };
+
+        struct VdbDatabase {
+            char* name;
+            struct VdbTreeList* trees;
+        };
+
+        database handle returned to client on calling 'open [db name]' 
+            should be an opaque pointer to struct VdbDatabase.  But then pages
+            also need to track database name along with table name if all
+            will share a single pager
 
     Query Execution
         Implement EXPLAIN command to show:

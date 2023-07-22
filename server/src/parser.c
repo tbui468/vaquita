@@ -1128,11 +1128,6 @@ void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenL
 
 enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt) {
     switch (vdbparser_next_token(parser).type) {
-        case VDBT_CONNECT: {
-            stmt->type = VDBST_CONNECT;
-            //TODO: How to read in port?  What kind of token will that be?
-            break;
-        }
         case VDBT_SHOW: {
             if (vdbparser_peek_token(parser).type == VDBT_DATABASES) {
                 stmt->type = VDBST_SHOW_DBS;

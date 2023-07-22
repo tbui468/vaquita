@@ -22,6 +22,7 @@
 #include "parser.h"
 #include "vm.h"
 
+VDBHANDLE h;
 
 void vdbserver_send(int sockfd, char* buf, int len) {
     ssize_t written = 0;
@@ -204,7 +205,6 @@ int vdbtcp_accept(int listenerfd) {
 }
 
 void vdbtcp_handle_client(int conn_fd) {
-    VDBHANDLE h = NULL;
 
     while (true) {
         int32_t request_len;
@@ -252,6 +252,8 @@ int vdbtcp_handle_client_thread(void* args) {
 int vdbtcp_serve(const char* port) {
 
     int listener_fd = vdbtcp_listen(port);
+
+    h = NULL;
 
     //main accept loop
     while (true) {

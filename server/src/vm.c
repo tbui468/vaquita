@@ -206,8 +206,8 @@ enum VdbReturnCode vdbvm_drop_table(VDBHANDLE h, const char* name) {
         strcat(path, tree->name);
         strcat(path, ".vtb");
         
+        vdbpager_evict_pages(db->pager, tree->f);
         vdb_tree_close(tree);
-        vdbpager_evict_pages(db->pager, name);
 
         remove_w(path);
 

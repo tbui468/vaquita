@@ -11,9 +11,11 @@ static void vdbpager_flush_page(struct VdbPage* p);
 
 struct VdbPager* vdbpager_init() {
     struct VdbPager* pager = malloc_w(sizeof(struct VdbPager));
+
     pager->count = 0;
     pager->capacity = 4096;
     pager->pages = malloc_w(sizeof(struct VdbPage) * pager->capacity);
+
     return pager;
 }
 
@@ -23,8 +25,8 @@ void vdbpager_free(struct VdbPager* pager) {
         if (p->dirty) {
             vdbpager_flush_page(p);
         }
-        free_w(p->name, sizeof(char) * (strlen(p->name) + 1)); //also free null terminator
     }
+
     free_w(pager->pages, sizeof(struct VdbPage) * pager->capacity);
     free_w(pager, sizeof(struct VdbPager));
 }
@@ -36,12 +38,10 @@ uint32_t vdbpager_fresh_page(FILE* f) {
     uint32_t idx = ftell_w(f) / VDB_PAGE_SIZE;
     fwrite_w(buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
 
-//    printf("pages in db: %d\n", idx + 1);
-
     return idx;
 }
 
-struct VdbPage* vdbpager_load_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
+struct VdbPage* vdbpager_load_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
     if (pager->count >= pager->capacity) {
         int old_cap = pager->capacity;
         pager->capacity *= 2;
@@ -56,7 +56,6 @@ struct VdbPage* vdbpager_load_page(struct VdbPager* pager, char* name, FILE* f, 
     fseek_w(f, p->idx * VDB_PAGE_SIZE, SEEK_SET);
     fread_w(p->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
     p->f = f;
-    p->name = strdup_w(name);
 
     return p;
 }
@@ -67,7 +66,7 @@ static void vdbpager_flush_page(struct VdbPage* p) {
     p->dirty = false;
 }
 
-static struct VdbPage* vdbpager_evict_first_unpinned(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
+static struct VdbPage* vdbpager_evict_first_unpinned(struct VdbPager* pager, FILE* f, uint32_t idx) {
     uint32_t i; 
     for (i = 0; i < pager->count; i++) {
         struct VdbPage* p = &pager->pages[i];
@@ -82,7 +81,6 @@ static struct VdbPage* vdbpager_evict_first_unpinned(struct VdbPager* pager, cha
             fseek_w(f, p->idx * VDB_PAGE_SIZE, SEEK_SET);
             fread_w(p->buf, sizeof(uint8_t), VDB_PAGE_SIZE, f);
             p->f = f;
-            p->name = strdup_w(name);
             return p;
         }
     }
@@ -91,25 +89,25 @@ static struct VdbPage* vdbpager_evict_first_unpinned(struct VdbPager* pager, cha
     return NULL;
 }
 
-struct VdbPage* vdbpager_pin_page(struct VdbPager* pager, char* name, FILE* f, uint32_t idx) {
+struct VdbPage* vdbpager_pin_page(struct VdbPager* pager, FILE* f, uint32_t idx) {
     struct VdbPage* page = NULL;
     for (uint32_t i = 0; i < pager->count; i++) {
         struct VdbPage* p = &pager->pages[i];
-        if (p->idx == idx && !strncmp(p->name, name, strlen(name))) {
+        if (p->idx == idx && fileno(f) == fileno(p->f)) {
             page = p;
             break;
         }
     }
 
-    const int MAX_PAGES = 8;
-
+    const int MAX_PAGES = 8; //TODO: replace with larger number (artificially small to test eviction)
 
     //not cached, so read from disk
     if (!page) {
         if (pager->count >= MAX_PAGES) {
-            page = vdbpager_evict_first_unpinned(pager, name, f, idx);
+            //TODO: replace with LRU or other eviction algorithm later
+            page = vdbpager_evict_first_unpinned(pager, f, idx);
         } else {
-            page = vdbpager_load_page(pager, name, f, idx);
+            page = vdbpager_load_page(pager, f, idx);
         }
     }
 
@@ -125,11 +123,10 @@ void vdbpager_unpin_page(struct VdbPage* page, bool dirty) {
     }
 }
 
-void vdbpager_evict_pages(struct VdbPager* pager, const char* name) {
+void vdbpager_evict_pages(struct VdbPager* pager, FILE* f) {
     for (uint32_t i = 0; i < pager->count; i++) {
         struct VdbPage* p = &pager->pages[i];
-        if (!strncmp(name, p->name, strlen(name))) {
-            free_w(p->name, sizeof(char) * (strlen(p->name) + 1));
+        if (fileno(p->f) == fileno(f)) {
             memcpy(pager->pages + i, pager->pages + pager->count - 1, sizeof(struct VdbPage));
             pager->count--;
             i--;

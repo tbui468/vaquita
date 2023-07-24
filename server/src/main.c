@@ -22,9 +22,25 @@
 #include "parser.h"
 #include "vm.h"
 
+
+struct VdbServer {
+    struct VdbPager* pager;
+    struct VdbDatabaseList* dbs;
+    int db_count;
+    int db_capacity;
+};
+
+void vdbserver_init() {
+
+}
+
+void vdbserver_free() {
+
+}
+
 VDBHANDLE h;
 
-void vdbserver_send(int sockfd, char* buf, int len) {
+void vdbtcp_send(int sockfd, char* buf, int len) {
     ssize_t written = 0;
     ssize_t n;
 
@@ -41,7 +57,7 @@ void vdbserver_send(int sockfd, char* buf, int len) {
     }
 }
 
-bool vdbserver_recv(int sockfd, char* buf, int len) {
+bool vdbtcp_recv(int sockfd, char* buf, int len) {
     ssize_t nread = 0;
     ssize_t n;
     while (nread < len) {
@@ -208,12 +224,12 @@ void vdbtcp_handle_client(int conn_fd) {
 
     while (true) {
         int32_t request_len;
-        if (!vdbserver_recv(conn_fd, (char*)&request_len, sizeof(int32_t))) {
+        if (!vdbtcp_recv(conn_fd, (char*)&request_len, sizeof(int32_t))) {
             printf("client disconnected\n");
             break;
         }
         char buf[request_len + 1];
-        if (!vdbserver_recv(conn_fd, buf, request_len)) {
+        if (!vdbtcp_recv(conn_fd, buf, request_len)) {
             printf("client disconnected\n");
             break;
         }
@@ -226,8 +242,8 @@ void vdbtcp_handle_client(int conn_fd) {
         bool end = execute_query(&h, buf, response_buf);
         *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
 
-        vdbserver_send(conn_fd, (char*)(response_buf->values), sizeof(uint32_t));
-        vdbserver_send(conn_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
+        vdbtcp_send(conn_fd, (char*)(response_buf->values), sizeof(uint32_t));
+        vdbtcp_send(conn_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
 
         if (end) {
             //printf("client released database handle\n");

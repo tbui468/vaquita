@@ -1,49 +1,3 @@
-    Valgrind 
-        valgrind --leak-check=full --show-leak-kinds=all --log-file="output.txt" -v ./../build/src/vdb sol.sql
-
-    Walkthrough of git source code (cool!) 
-        https://fabiensanglard.net/git_code_review/
-
-    Version control (like git):
-        wyag.thb.lt
-
-    Basic web server in python:
-        https://bhch.github.io/posts/2017/11/writing-an-http-server-from-scratch/
-
-    Write a debugger:
-        https://blog.tartanllama.xyz/writing-a-linux-debugger-setup/
-
-    Writing a blockchain:
-        https://www.youtube.com/watch?v=3aJI1ABdjQk&t=1046s&ab_channel=HaseebQureshi
-
-    Youtube neural network series by Andre Karpathy:
-        link here
-
-    OS from scratch
-        https://github.com/cfenollosa/os-tutorial/tree/master
-
-    The architecture of open source applications
-        https://aosabook.org/en/
-        graph database in 500 lines of code
-        dog database in 500 lines of code
-        BerkeleyDB architecture
-        NoSQL Ecosystem
-
-    Nginx Tutorial
-        https://www.freecodecamp.org/news/the-nginx-handbook/
-
-        /etc/nginx/nginx.config
-
-        nginx (to start)
-        service nginx status (to check status)
-        nginx -s
-            quit (shutdown gracefully)
-            reload (reload configuration file)
-            reopen (reopen log files)
-            stop (shutdown immediately)
-        nginx -t (check if config file is okay)
-
-
 *******************************TODO**************************************************
     Database System Concepts:
         Chapter 1: Introduction
@@ -74,9 +28,13 @@
             Along with B+ Tree, what other data structure can be used to store an index?
 
         Chapter 5: Advanced SQL (p. 183) <---------START HERE
+        Read Entire book
 
-        Do all easy problems in datalemur
-            https://datalemur.com/questions
+    Read Database Design and Implementation
+    Read Designing Data-Intensive Applications
+
+        Do ALL exercises in Chapter 3, 4, and 5 in Database Systems using Postgres
+            Solutions are on db-book.com (and database download is there too)
 
     Implementation of Ingres
 
@@ -101,27 +59,17 @@
         select upper('AdbdD'), lower('AdfBZ');
         select sum(moons) from planets; 
 
+    VDBHANDLE h; is now a static global variable in main.c
+        why is this bad?
+            If a two clients try to use two different databases, it all breaks
+        struct VdbServer should open ALL databases on initialization
+            when an 'open' sql command is received, just pass the handle for that database (that was already opened on init)
+        
+
     Multiple clients should share same handle
-        remove VDBST_CLOSE
-        remove close [db] from tests
-
-        allow user to open different databases one after another
-        write a test for open_multiple_dbs.sql
-            create 2 databases
-            add tables/rows in database 1 and database 2
-            open database 1
-            query some data
-            open database 2
-            query some data
-
-        s_output and s_buf are NOT thread safe!!!
-            Need to use thread-specific data for these two
-
         Make struct VdbDatabaseList
         Make struct VdbServer
         Initialize struct VdbServer and have it open all database/create master pager
-        Add database name to struct VdbPage (will need to rename 'name' to 'table_name')
-        When searching for page, make sure idx, table_name, and database_name all match (only checking table_name and idx now)
         Have struct VdbServer return the correct database handle for a client uses 'open'
         Remove the 'close' command - client will either 'exit' or use 'open' again to open different database
 

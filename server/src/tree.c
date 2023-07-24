@@ -42,7 +42,7 @@ struct VdbRecPtr vdbtree_deserialize_recptr(struct VdbTree* tree, uint8_t* buf) 
 
 struct VdbRecPtr vdbtree_append_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r) {
     uint32_t data_idx = vdbtree_get_data_block(tree, vdbrecord_fixedlen_size(r));
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, data_idx);
 
     uint32_t idxcell_idx = vdbnode_new_idxcell(page->buf, vdbrecord_fixedlen_size(r));
 
@@ -62,12 +62,12 @@ struct VdbRecPtr vdbtree_append_record_to_datablock(struct VdbTree* tree, struct
 }
 
 void vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r, uint32_t leaf_idx, uint32_t leaf_idxcell_idx) {
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, leaf_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, leaf_idx);
     //TODO: need to free value if its heap allocated
     struct VdbRecPtr p = vdbtree_deserialize_recptr(tree, vdbnode_datacell(page->buf, leaf_idxcell_idx));
     vdbpager_unpin_page(page, false);
 
-    struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, p.block_idx);
+    struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->f, p.block_idx);
     for (uint32_t i = 0; i < r->count; i++) {
         vdbtree_serialize_to_data_block_if_varlen(tree, &r->data[i]);
     }
@@ -76,7 +76,7 @@ void vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r
 }
 
 struct VdbRecord* vdbtree_read_record_from_datablock(struct VdbTree* tree, struct VdbRecPtr* p) {
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, p->block_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, p->block_idx);
 
     struct VdbRecord* r = vdbrecord_deserialize(vdbnode_datacell(page->buf, p->idxcell_idx), tree->schema);
     for (uint32_t i = 0; i < r->count; i++) {
@@ -92,7 +92,7 @@ struct VdbRecord* vdbtree_read_record_from_datablock(struct VdbTree* tree, struc
  */
 
 static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx) {
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     enum VdbNodeType type = *vdbnode_type(page->buf);
     vdbpager_unpin_page(page, false);
     return type;
@@ -104,7 +104,7 @@ static enum VdbNodeType vdbtree_node_type(struct VdbTree* tree, uint32_t idx) {
 
 static uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema) {
     uint32_t idx = vdbpager_fresh_page(tree->f);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     *vdbnode_type(page->buf) = VDBN_META;
     *vdbnode_parent(page->buf) = 0;
@@ -121,7 +121,7 @@ static uint32_t vdbtree_meta_init(struct VdbTree* tree, struct VdbSchema* schema
 
 uint32_t vdbtree_meta_read_primary_key_counter(struct VdbTree* tree) {
     assert(vdbtree_node_type(tree, 0) == VDBN_META);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, 0);
     uint32_t pk_counter = *vdbmeta_auto_counter_ptr(page->buf);
     vdbpager_unpin_page(page, false);
     return pk_counter;
@@ -129,7 +129,7 @@ uint32_t vdbtree_meta_read_primary_key_counter(struct VdbTree* tree) {
 
 uint32_t vdbtree_meta_read_root(struct VdbTree* tree) {
     assert(vdbtree_node_type(tree, 0) == VDBN_META);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, 0);
     uint32_t root_idx = *vdbmeta_root_ptr(page->buf);
     vdbpager_unpin_page(page, false);
     return root_idx;
@@ -137,14 +137,14 @@ uint32_t vdbtree_meta_read_root(struct VdbTree* tree) {
 
 static void vdbtree_meta_write_root(struct VdbTree* tree, uint32_t root_idx) {
     assert(vdbtree_node_type(tree, 0) == VDBN_META);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, 0);
     *vdbmeta_root_ptr(page->buf) = root_idx;
     vdbpager_unpin_page(page, true);
 }
 
 uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree) {
     assert(vdbtree_node_type(tree, 0) == VDBN_META);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, 0);
     *vdbmeta_auto_counter_ptr(page->buf) += 1;
     uint32_t pk_counter = *vdbmeta_auto_counter_ptr(page->buf);
     vdbpager_unpin_page(page, true);
@@ -158,7 +158,7 @@ uint32_t vdbtree_meta_increment_primary_key_counter(struct VdbTree* tree) {
 
 static uint32_t vdbtree_intern_init(struct VdbTree* tree, uint32_t parent_idx) {
     uint32_t idx = vdbpager_fresh_page(tree->f);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     *vdbnode_type(page->buf) = VDBN_INTERN;
     *vdbnode_parent(page->buf) = parent_idx;
@@ -175,7 +175,7 @@ static uint32_t vdbtree_intern_init(struct VdbTree* tree, uint32_t parent_idx) {
 
 static void vdbtree_intern_write_right_ptr(struct VdbTree* tree, uint32_t idx, struct VdbPtr ptr) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     *vdbintern_rightptr_block(page->buf) = ptr.block_idx;
     vdbtree_serialize_value(tree, vdbintern_rightptr_key(page->buf), &ptr.key);
     vdbpager_unpin_page(page, true);
@@ -183,7 +183,7 @@ static void vdbtree_intern_write_right_ptr(struct VdbTree* tree, uint32_t idx, s
 
 static void vdbtree_intern_write_new_ptr(struct VdbTree* tree, uint32_t idx, struct VdbPtr ptr) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     uint32_t block_idx_size = sizeof(uint32_t);
     uint32_t key_size = vdbvalue_serialized_size(ptr.key);
@@ -198,7 +198,7 @@ static void vdbtree_intern_write_new_ptr(struct VdbTree* tree, uint32_t idx, str
 
 static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     uint32_t count = *vdbnode_idxcell_count(page->buf);
     vdbpager_unpin_page(page, false);
     return count;
@@ -206,7 +206,7 @@ static uint32_t vdbtree_intern_read_ptr_count(struct VdbTree* tree, uint32_t idx
 
 static struct VdbPtr vdbtree_intern_read_ptr(struct VdbTree* tree, uint32_t idx, uint32_t ptr_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     struct VdbPtr ptr;
     uint8_t* buf = vdbnode_datacell(page->buf, ptr_idx);
@@ -219,7 +219,7 @@ static struct VdbPtr vdbtree_intern_read_ptr(struct VdbTree* tree, uint32_t idx,
 
 static struct VdbPtr vdbtree_intern_read_right_ptr(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     struct VdbPtr right;
     right.block_idx = *vdbintern_rightptr_block(page->buf);
@@ -231,7 +231,7 @@ static struct VdbPtr vdbtree_intern_read_right_ptr(struct VdbTree* tree, uint32_
 
 static uint32_t vdbtree_intern_read_parent(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     uint32_t parent = *vdbnode_parent(page->buf);
     vdbpager_unpin_page(page, false);
     return parent;
@@ -239,14 +239,14 @@ static uint32_t vdbtree_intern_read_parent(struct VdbTree* tree, uint32_t idx) {
 
 static void vdbtree_intern_write_parent(struct VdbTree* tree, uint32_t idx, uint32_t parent) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     *vdbnode_parent(page->buf) = parent;
     vdbpager_unpin_page(page, true);
 }
 
 static bool vdbtree_intern_can_fit_ptr(struct VdbTree* tree, uint32_t idx, struct VdbValue key) {
     assert(vdbtree_node_type(tree, idx) == VDBN_INTERN);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     uint32_t block_idx_size = sizeof(uint32_t);
     bool can_fit = vdbnode_can_fit(page->buf, vdbvalue_serialized_size(key) + block_idx_size);
     vdbpager_unpin_page(page, false);
@@ -296,7 +296,7 @@ static uint32_t vdbtree_intern_split(struct VdbTree* tree, uint32_t idx, struct 
 
 static uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
     uint32_t idx = vdbpager_fresh_page(tree->f);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     *vdbnode_type(page->buf) = VDBN_LEAF;
     *vdbnode_parent(page->buf) = parent_idx;
@@ -313,7 +313,7 @@ static uint32_t vdbtree_leaf_init(struct VdbTree* tree, uint32_t parent_idx) {
 
 static uint32_t vdbtree_leaf_read_parent(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     uint32_t parent_idx = *vdbnode_parent(page->buf);
     vdbpager_unpin_page(page, false);
     return parent_idx;
@@ -321,7 +321,7 @@ static uint32_t vdbtree_leaf_read_parent(struct VdbTree* tree, uint32_t idx) {
 
 uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     uint32_t count = *vdbnode_idxcell_count(page->buf);
     vdbpager_unpin_page(page, false);
     return count;
@@ -329,7 +329,7 @@ uint32_t vdbtree_leaf_read_record_count(struct VdbTree* tree, uint32_t idx) {
 
 struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, idx, rec_idx);
     if (!rec) printf("rec is null\n"); //TODO: this should never happend...?
@@ -346,7 +346,7 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
 }
 
 void vdbtree_free_datablock_string(struct VdbTree* tree, struct VdbValue* v) {
-    struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, v->as.Str.block_idx);
+    struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->f, v->as.Str.block_idx);
 
     vdbnode_free_cell_and_defrag_datacells_only(data_page->buf, v->as.Str.idxcell_idx);
 
@@ -355,7 +355,7 @@ void vdbtree_free_datablock_string(struct VdbTree* tree, struct VdbValue* v) {
 
 struct VdbRecord* vdbtree_leaf_read_record(struct VdbTree* tree, uint32_t idx, uint32_t rec_idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     struct VdbRecPtr p = vdbtree_deserialize_recptr(tree, vdbnode_datacell(page->buf, rec_idx));
     struct VdbRecord* r = vdbtree_read_record_from_datablock(tree, &p);
@@ -384,7 +384,7 @@ uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, struct VdbValue 
     struct VdbPtr new_right = {new_leaf, new_right_key};
     vdbtree_intern_write_right_ptr(tree, parent, new_right);
 
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     *vdbnode_next(page->buf) = new_leaf;
     vdbpager_unpin_page(page, true);
 
@@ -393,7 +393,7 @@ uint32_t vdbtree_leaf_split(struct VdbTree* tree, uint32_t idx, struct VdbValue 
 
 uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx) {
     assert(vdbtree_node_type(tree, idx) == VDBN_LEAF);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
     uint32_t next_leaf_idx = *vdbnode_next(page->buf);
 
     vdbpager_unpin_page(page, false);
@@ -407,7 +407,7 @@ uint32_t vdbtree_leaf_read_next_leaf(struct VdbTree* tree, uint32_t idx) {
 
 static uint32_t vdbtree_data_init(struct VdbTree* tree, uint32_t parent_idx) {
     uint32_t idx = vdbpager_fresh_page(tree->f);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
 
     *vdbnode_type(page->buf) = VDBN_DATA;
     *vdbnode_parent(page->buf) = parent_idx;
@@ -451,7 +451,7 @@ struct VdbTree* vdb_tree_open(const char* name, FILE* f, struct VdbPager* pager)
     tree->pager = pager;
     tree->meta_idx = 0;
 
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, 0);
     tree->schema = vdbschema_deserialize(vdbmeta_schema_ptr(page->buf));
     vdbpager_unpin_page(page, false);
 
@@ -524,16 +524,16 @@ uint32_t vdb_tree_traverse_to(struct VdbTree* tree, uint32_t idx, struct VdbValu
 }
 
 uint32_t vdbtree_get_data_block(struct VdbTree* tree, uint32_t datacell_size) {
-    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->f, 0);
     uint32_t data_idx = *vdbmeta_data_block_ptr(meta_page->buf);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, data_idx);
 
     if (!vdbnode_can_fit(page->buf, datacell_size)) {
         uint32_t old_data_idx = data_idx;
         data_idx = vdbtree_data_init(tree, 0);
         *vdbmeta_data_block_ptr(meta_page->buf) = data_idx;
         vdbpager_unpin_page(page, false);
-        page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
+        page = vdbpager_pin_page(tree->pager, tree->f, data_idx);
         *vdbnode_next(page->buf) = old_data_idx;
         vdbpager_unpin_page(page, true);
     } else {
@@ -552,7 +552,7 @@ void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbV
 
     uint32_t datacell_size = sizeof(uint32_t) + v->as.Str.len + sizeof(uint8_t);
     uint32_t data_idx = vdbtree_get_data_block(tree, datacell_size);
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, data_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, data_idx);
 
     uint32_t idxcell_idx = vdbnode_new_idxcell(page->buf, datacell_size);
     vdbvalue_serialize_string(vdbnode_datacell(page->buf, idxcell_idx), v);
@@ -568,7 +568,7 @@ void vdbtree_deserialize_from_data_block_if_varlen(struct VdbTree* tree, struct 
         return;
     }
 
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, v->as.Str.block_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, v->as.Str.block_idx);
     void* ptr = vdbnode_datacell(page->buf, v->as.Str.idxcell_idx);
     vdbvalue_deserialize_string(v, ptr);
 
@@ -654,7 +654,7 @@ static void vdbtree_print_node(struct VdbTree* tree, uint32_t idx, uint32_t dept
         printf(": ");
         for (uint32_t i = 0; i < vdbtree_leaf_read_record_count(tree, idx); i++) {
 
-            struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, idx);
+            struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, idx);
             struct VdbRecPtr p = vdbtree_deserialize_recptr(tree, vdbnode_datacell(page->buf, i));
             vdbpager_unpin_page(page, false);
             printf("%d", p.block_idx);

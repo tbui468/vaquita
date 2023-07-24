@@ -11,7 +11,7 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree) {
 
     cursor->tree = tree;
 
-    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->f, 0);
 
     cursor->cur_rec_idx = 0;
     uint32_t root = *vdbmeta_root_ptr(meta_page->buf);
@@ -28,7 +28,7 @@ struct VdbCursor* vdbcursor_init(struct VdbTree* tree) {
 
 void vdbcursor_seek(struct VdbCursor* cursor, struct VdbValue key) {
     struct VdbTree* tree = cursor->tree;
-    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->f, 0);
 
     //get leaf
     uint32_t leaf_idx;
@@ -108,7 +108,7 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     struct VdbTree* tree = cursor->tree;
     struct VdbValue rec_key = rec->data[tree->schema->key_idx];
 
-    struct VdbPage* cur_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    struct VdbPage* cur_page = vdbpager_pin_page(tree->pager, tree->f, cursor->cur_node_idx);
     bool can_fit_rec = vdbnode_can_fit(cur_page->buf, vdbrecord_fixedlen_size(rec));
     vdbpager_unpin_page(cur_page, false);
 
@@ -116,7 +116,7 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
         cursor->cur_node_idx = vdbtree_leaf_split(tree, cursor->cur_node_idx, rec_key);
     }
 
-    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->name, tree->f, 0);
+    struct VdbPage* meta_page = vdbpager_pin_page(tree->pager, tree->f, 0);
     //sets largest key in meta block if necessary
     if (*vdbmeta_last_leaf(meta_page->buf) != 0) { //not the first record being inserted
         struct VdbValue largest_key;
@@ -133,7 +133,7 @@ void vdbcursor_insert_record(struct VdbCursor* cursor, struct VdbRecord* rec) {
     *vdbmeta_last_leaf(meta_page->buf) = cursor->cur_node_idx;
     vdbpager_unpin_page(meta_page, true);
 
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, cursor->cur_node_idx);
     uint32_t i = vdbtree_leaf_find_insertion_idx(tree, cursor->cur_node_idx, &rec_key);
 
     struct VdbRecPtr p = vdbtree_append_record_to_datablock(tree, rec);
@@ -166,7 +166,7 @@ bool vdbcursor_record_passes_selection(struct VdbCursor* cursor, struct VdbExpr*
 
 void vdbcursor_delete_record(struct VdbCursor* cursor) {
     struct VdbTree* tree = cursor->tree;
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, cursor->cur_node_idx);
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(cursor->tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
@@ -193,7 +193,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
     struct VdbTree* tree = cursor->tree;
     struct VdbValueList* vl = vdbvaluelist_init();
 
-    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->name, tree->f, cursor->cur_node_idx);
+    struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, cursor->cur_node_idx);
 
     struct VdbRecord* rec = vdbtree_leaf_read_record(tree, cursor->cur_node_idx, cursor->cur_rec_idx);
     struct VdbRecordSet* rs = vdbrecordset_init(NULL);

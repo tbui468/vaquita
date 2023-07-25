@@ -37,20 +37,13 @@ for f in files:
         names.append(f)
 
 names.sort()
+
 for n in names:
     if test(n[:-4]):
         passed +=1 
     else:
         failed += 1
 
-"""
-names.sort()
-for n in names:
-    if results[n]:
-        print(n.ljust(30, " "), GREEN + "passed" + ENDC)
-    else:
-        print(n.ljust(30, " "), RED + "failed" + ENDC)
-"""
 
 print("")
 print(GREEN + "passed: " + str(passed) + "  " + RED + "failed: " + str(failed) + ENDC + "  of " + str(len(names)) + " tests")

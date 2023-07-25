@@ -12,6 +12,145 @@ struct VdbByteList* s_output;
 #define MAX_BUF_SIZE 1024
 char s_buf[MAX_BUF_SIZE]; //TODO: !!!! NOT THREAD SAFE!!!
 
+struct VdbServer server;
+
+
+enum VdbReturnCode vdbvm_drop_table(VDBHANDLE h, const char* name);
+
+struct VdbDatabase* vdbvm_open_db(const char* dirname) {
+    struct VdbDatabase* db = malloc_w(sizeof(struct VdbDatabase));
+    db->pager = server.pager;
+    db->trees = vdb_treelist_init();
+    int len = strlen(dirname) - 4;
+    db->name = malloc_w(sizeof(char) * (len + 1));
+    memcpy(db->name, dirname, len);
+    db->name[len] = '\0';
+
+    //error if database doesn't exist
+    DIR* d;
+    if (!(d = opendir(dirname))) {
+        return NULL;
+    }
+
+    //open all table files
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        int entry_len = strlen(ent->d_name);
+        const char* ext = ".vtb";
+        int ext_len = strlen(ext);
+
+        if (entry_len <= ext_len)
+            continue;
+
+        if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
+            continue;
+
+        char path[FILENAME_MAX];
+        path[0] = '\0';
+        strcat(path, dirname);
+        strcat(path, "/");
+        strcat(path, ent->d_name);
+        FILE* f = fopen_w(path, "r+");
+        setbuf(f, NULL);
+
+        char* s = malloc_w(sizeof(char) * (entry_len - 3));
+        memcpy(s, ent->d_name, entry_len - 4);
+        s[entry_len - 3] = '\0';
+        struct VdbTree* tree = vdb_tree_open(s, f, db->pager);
+        vdb_treelist_append_tree(db->trees, tree);
+    }
+
+    closedir_w(d);
+
+    return db;
+}
+
+void vdbserver_init() {
+    server.pager = vdbpager_init();
+    server.dbs = vdbdblist_init();
+   
+    //open current directory
+    char dirname[FILENAME_MAX];
+    dirname[0] = '\0';
+    strcat(dirname, "./");
+
+    DIR* d;
+    if (!(d = opendir(dirname))) {
+        printf("error opening database\n");
+    }
+
+    struct dirent* ent;
+    while ((ent = readdir(d)) != NULL) {
+        int entry_len = strlen(ent->d_name);
+        const char* ext = ".vdb";
+        int ext_len = strlen(ext);
+
+        if (entry_len <= ext_len)
+            continue;
+
+        if (strncmp(ent->d_name + entry_len - ext_len, ext, ext_len) != 0)
+            continue;
+
+        //found entry with .vdb extension
+        struct VdbDatabase* db = vdbvm_open_db(ent->d_name);
+        vdbdblist_append_db(server.dbs, db);
+    }
+
+}
+
+void vdbserver_free() {
+    vdbdblist_free(server.dbs);
+    vdbpager_free(server.pager);
+}
+
+void vdbdb_free(struct VdbDatabase* db) {
+    vdb_treelist_free(db->trees);
+    free_w(db->name, sizeof(char) * (strlen(db->name) + 1)); //include null terminator
+    free_w(db, sizeof(struct VdbDatabase));
+}
+
+struct VdbDatabaseList *vdbdblist_init() {
+    struct VdbDatabaseList *l = malloc_w(sizeof(struct VdbDatabaseList));
+
+    l->capacity = 8;
+    l->count = 0;
+    l->dbs = malloc_w(sizeof(struct VdbDatabase*) * l->capacity);
+
+    return l;
+}
+
+void vdbdblist_free(struct VdbDatabaseList* l) {
+    for (int i = 0; i < l->count; i++) {
+        vdbdb_free(l->dbs[i]);
+    }
+
+    free_w(l->dbs, sizeof(struct VdbDatabase*) * l->capacity);
+    free_w(l, sizeof(struct VdbDatabaseList));
+}
+
+void vdbdblist_append_db(struct VdbDatabaseList* l, struct VdbDatabase* d) {
+    if (l->count + 1 > l->capacity) {
+        int old_cap = l->capacity; 
+        l->capacity *= 2;
+        l->dbs = realloc_w(l->dbs, sizeof(struct VdbDatabase*) * l->capacity, sizeof(struct VdbDatabase*) * old_cap);
+    }
+
+    l->dbs[l->count++] = d;
+}
+
+struct VdbDatabase* vdbdblist_remove_db(struct VdbDatabaseList* l, const char* name) {
+    for (int i = 0; i < l->count; i++) {
+        struct VdbDatabase* db = l->dbs[i];
+        if (!strncmp(name, db->name, strlen(name))) {
+            l->dbs[i] = l->dbs[l->count-1];
+            l->count--;
+            return db;
+        }
+    }
+
+    return NULL;
+}
+
 static char* to_static_string(struct VdbToken t) {
     static char s[256];
     memcpy(s, t.lexeme, t.len);
@@ -19,7 +158,17 @@ static char* to_static_string(struct VdbToken t) {
     return s;
 }
 
-VDBHANDLE vdbvm_open_db(const char* name) {
+VDBHANDLE vdbvm_return_db(const char* name) {
+    for (int i = 0; i < server.dbs->count; i++) {
+        struct VdbDatabase* db = server.dbs->dbs[i];
+        if (!strncmp(name, db->name, strlen(name))) {
+            return (VDBHANDLE)db; 
+        }
+    }
+
+    return NULL;
+
+    /*
     //intialize struct Vdb
     struct VdbDatabase* db = malloc_w(sizeof(struct VdbDatabase));
     db->pager = vdbpager_init();
@@ -67,7 +216,7 @@ VDBHANDLE vdbvm_open_db(const char* name) {
 
     closedir_w(d);
     
-    return (VDBHANDLE)db;
+    return (VDBHANDLE)db;*/
 }
 
 static void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
@@ -163,6 +312,14 @@ static bool vdbvm_db_exists(const char* db_name) {
 
 
 enum VdbReturnCode vdbvm_drop_db(const char* name) {
+
+    struct VdbDatabase* db = vdbdblist_remove_db(server.dbs, name);
+    for (int i = 0; i < db->trees->count; i++) {
+        struct VdbTree* t = db->trees->trees[i];
+        vdbvm_drop_table((VDBHANDLE)db, t->name);
+    }
+    vdbdb_free(db);
+
     char dirname[FILENAME_MAX];
     dirname[0] = '\0';
     strcat(dirname, name);
@@ -289,6 +446,8 @@ static void vdbvm_create_db_executor(struct VdbToken target) {
     DIR* d;
     if (!(d = opendir(dirname))) {
         mkdir_w(dirname, 0777);
+        struct VdbDatabase* db = vdbvm_open_db(dirname);
+        vdbdblist_append_db(server.dbs, db);
     } else {
         closedir_w(d);
         snprintf(s_buf, MAX_BUF_SIZE, "failed to create database %s", db_name);
@@ -381,11 +540,11 @@ static void vdbvm_drop_tab_executor(VDBHANDLE* h, struct VdbToken target) {
     }
 }
 
-static void vdbvm_open_db_executor(VDBHANDLE* h, struct VdbToken target) {
+static void vdbvm_return_db_executor(VDBHANDLE* h, struct VdbToken target) {
     char* db_name = to_static_string(target);
 
     if (vdbvm_db_exists(db_name)) {
-        if ((*h = vdbvm_open_db(db_name))) {
+        if ((*h = vdbvm_return_db(db_name))) {
             snprintf(s_buf, MAX_BUF_SIZE, "opened database %s", db_name);
             vdbvm_output_string(s_output, s_buf, strlen(s_buf));
         } else {
@@ -400,16 +559,11 @@ static void vdbvm_open_db_executor(VDBHANDLE* h, struct VdbToken target) {
 }
 
 static void vdbvm_close_db_executor(VDBHANDLE* h, struct VdbToken target) {
-    struct VdbDatabase* db = (struct VdbDatabase*)(*h);
     char* db_name = to_static_string(target);
-
-    vdbpager_free(db->pager);
-    vdb_treelist_free(db->trees);
-    free_w(db->name, sizeof(char) * (strlen(db->name) + 1)); //include null terminator
-    free_w(db, sizeof(struct VdbDatabase));
 
     snprintf(s_buf, MAX_BUF_SIZE, "closed database %s", db_name);
     vdbvm_output_string(s_output, s_buf, strlen(s_buf));
+
     *h = NULL;
 }
 
@@ -667,7 +821,7 @@ static void vdbvm_exit_executor(VDBHANDLE* h) {
     }
 }
 
-bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* final_output) {
+bool vdbvm_execute_stmts(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* final_output) {
     s_output = final_output; //TODO!!!!NOT THREAD SAFE!!!
 
     for (int i = 0; i < sl->count; i++) {
@@ -703,7 +857,7 @@ bool vdb_execute(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* final
                 vdbvm_drop_tab_executor(h, stmt->target);
                 break;
             case VDBST_OPEN:
-                vdbvm_open_db_executor(h, stmt->target);
+                vdbvm_return_db_executor(h, stmt->target);
                 break;
             case VDBST_CLOSE:
                 vdbvm_close_db_executor(h, stmt->target);

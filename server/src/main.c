@@ -21,24 +21,8 @@
 #include "lexer.h"
 #include "parser.h"
 #include "vm.h"
+#include "pager.h"
 
-
-struct VdbServer {
-    struct VdbPager* pager;
-    struct VdbDatabaseList* dbs;
-    int db_count;
-    int db_capacity;
-};
-
-void vdbserver_init() {
-
-}
-
-void vdbserver_free() {
-
-}
-
-VDBHANDLE h;
 
 void vdbtcp_send(int sockfd, char* buf, int len) {
     ssize_t written = 0;
@@ -77,8 +61,7 @@ bool vdbtcp_recv(int sockfd, char* buf, int len) {
     return true;
 }
 
-//TODO: this should be in the vm
-bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
+bool vdbserver_execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
 
@@ -120,7 +103,7 @@ bool execute_query(VDBHANDLE* h, char* query, struct VdbByteList* output) {
     //printf("parsing time: %.2lf\n", difftime(end_time, start_time));
     time(&start_time);
 
-    bool end = vdb_execute(stmts, h, output);
+    bool end = vdbvm_execute_stmts(stmts, h, output);
 
     time(&end_time);
     //printf("executing time: %.2lf\n", difftime(end_time, start_time));
@@ -222,12 +205,15 @@ int vdbtcp_accept(int listenerfd) {
 
 void vdbtcp_handle_client(int conn_fd) {
 
+    VDBHANDLE h = NULL;
+
     while (true) {
         int32_t request_len;
         if (!vdbtcp_recv(conn_fd, (char*)&request_len, sizeof(int32_t))) {
             printf("client disconnected\n");
             break;
         }
+
         char buf[request_len + 1];
         if (!vdbtcp_recv(conn_fd, buf, request_len)) {
             printf("client disconnected\n");
@@ -239,7 +225,7 @@ void vdbtcp_handle_client(int conn_fd) {
         uint32_t count = response_buf->count;
         vdbbytelist_append_bytes(response_buf, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
 
-        bool end = execute_query(&h, buf, response_buf);
+        bool end = vdbserver_execute_query(&h, buf, response_buf);
         *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
 
         vdbtcp_send(conn_fd, (char*)(response_buf->values), sizeof(uint32_t));
@@ -266,10 +252,7 @@ int vdbtcp_handle_client_thread(void* args) {
 }
 
 int vdbtcp_serve(const char* port) {
-
     int listener_fd = vdbtcp_listen(port);
-
-    h = NULL;
 
     //main accept loop
     while (true) {
@@ -292,6 +275,7 @@ int main(int argc, char** argv) {
     int opt;
     bool set_port = false;
     char* port_arg;
+
     while ((opt = getopt(argc, argv, "p:")) != -1) {
         switch (opt) {
             case 'p':
@@ -308,7 +292,10 @@ int main(int argc, char** argv) {
     if (!set_port) {
         port_arg = "3333";
     }
+
+    vdbserver_init();
     vdbtcp_serve(port_arg);
+    vdbserver_free();
 
     return 0;
 }

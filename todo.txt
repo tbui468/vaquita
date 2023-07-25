@@ -27,8 +27,14 @@
             How are assertions different from check constraints?
             Along with B+ Tree, what other data structure can be used to store an index?
 
-        Chapter 5: Advanced SQL (p. 183) <---------START HERE
-        Read Entire book
+        Chapter 5: Advanced SQL (p. 183)
+            Give an example of when an SQL trigger could be useful
+            Could a trigger be used to send an email when a user registers with a website?
+            What is 'windowing' (with regards to aggregate functions)?
+            What are 'rollup' and 'cube' used for?
+            Are 'rollup' and 'cube' fundmental SQL commands, or can these queries be done with other SQL?
+
+        Chapter 6: Database Design Using the E-R Model (p. 241)
 
     Read Database Design and Implementation
     Read Designing Data-Intensive Applications
@@ -59,41 +65,13 @@
         select upper('AdbdD'), lower('AdfBZ');
         select sum(moons) from planets; 
 
-    VDBHANDLE h; is now a static global variable in main.c
-        why is this bad?
-            If a two clients try to use two different databases, it all breaks
-        struct VdbServer should open ALL databases on initialization
-            when an 'open' sql command is received, just pass the handle for that database (that was already opened on init)
-        
-
-    Multiple clients should share same handle
-        Make struct VdbDatabaseList
-        Make struct VdbServer
-        Initialize struct VdbServer and have it open all database/create master pager
-        Have struct VdbServer return the correct database handle for a client uses 'open'
-        Remove the 'close' command - client will either 'exit' or use 'open' again to open different database
-
-        open sol; //this should just return the handle for a single database
-        close sol; //should this even be a thing?  Just allow user to exit/open a different database
+    Lock database (for both reading/writing)
 
         Use a multi-reader/single-writer lock on root for now
             Just use a plain mtx_lock for now for reading/writing
             it's not fast or efficient, but it'll do for now
 
-        struct VdbServer {
-            struct VdbPager* pager;
-            struct VdbDatabaseList* dbs;
-        };
-
-        struct VdbDatabase {
-            char* name;
-            struct VdbTreeList* trees;
-        };
-
-        database handle returned to client on calling 'open [db name]' 
-            should be an opaque pointer to struct VdbDatabase.  But then pages
-            also need to track database name along with table name if all
-            will share a single pager
+    Make syntax match postgresql (makes my life easier and also makes direction clearer)
 
     Query Execution
         Implement EXPLAIN command to show:

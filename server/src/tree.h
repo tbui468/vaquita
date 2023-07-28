@@ -18,8 +18,8 @@ struct VdbTree {
 
 struct VdbTreeList {
     struct VdbTree** trees;
-    uint32_t count;
-    uint32_t capacity;
+    int count;
+    int capacity;
 };
 
 struct VdbPage* vdb_tree_pin_page(struct VdbTree* tree, uint32_t idx);

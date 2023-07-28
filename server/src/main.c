@@ -23,6 +23,11 @@
 #include "vm.h"
 #include "pager.h"
 
+struct VdbThreadContext {
+    int conn_fd;
+    struct VdbByteList* output;
+};
+
 
 void vdbtcp_send(int sockfd, char* buf, int len) {
     ssize_t written = 0;
@@ -103,7 +108,7 @@ bool vdbserver_execute_query(VDBHANDLE* h, char* query, struct VdbByteList* outp
     //printf("parsing time: %.2lf\n", difftime(end_time, start_time));
     time(&start_time);
 
-    bool end = vdbvm_execute_stmts(stmts, h, output);
+    bool end = vdbvm_execute_stmts(h, stmts, output);
 
     time(&end_time);
     //printf("executing time: %.2lf\n", difftime(end_time, start_time));
@@ -203,33 +208,34 @@ int vdbtcp_accept(int listenerfd) {
     return new_fd;
 }
 
-void vdbtcp_handle_client(int conn_fd) {
+void vdbtcp_handle_client(struct VdbThreadContext* c) {
 
     VDBHANDLE h = NULL;
 
     while (true) {
         int32_t request_len;
-        if (!vdbtcp_recv(conn_fd, (char*)&request_len, sizeof(int32_t))) {
+        if (!vdbtcp_recv(c->conn_fd, (char*)&request_len, sizeof(int32_t))) {
             printf("client disconnected\n");
             break;
         }
 
         char buf[request_len + 1];
-        if (!vdbtcp_recv(conn_fd, buf, request_len)) {
+        if (!vdbtcp_recv(c->conn_fd, buf, request_len)) {
             printf("client disconnected\n");
             break;
         }
+
         buf[request_len] = '\0';
 
-        struct VdbByteList* response_buf = vdbbytelist_init();
-        uint32_t count = response_buf->count;
-        vdbbytelist_append_bytes(response_buf, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
+        c->output->count = 0;
+        uint32_t count = c->output->count;
+        vdbbytelist_append_bytes(c->output, (uint8_t*)&count, sizeof(uint32_t)); //saving space for length
 
-        bool end = vdbserver_execute_query(&h, buf, response_buf);
-        *((uint32_t*)(response_buf->values)) = (uint32_t)(response_buf->count); //filling in bytelist length
+        bool end = vdbserver_execute_query(&h, buf, c->output);
+        *((uint32_t*)(c->output->values)) = (uint32_t)(c->output->count); //filling in bytelist length
 
-        vdbtcp_send(conn_fd, (char*)(response_buf->values), sizeof(uint32_t));
-        vdbtcp_send(conn_fd, (char*)(response_buf->values + sizeof(uint32_t)), response_buf->count - sizeof(uint32_t));
+        vdbtcp_send(c->conn_fd, (char*)(c->output->values), sizeof(uint32_t));
+        vdbtcp_send(c->conn_fd, (char*)(c->output->values + sizeof(uint32_t)), c->output->count - sizeof(uint32_t));
 
         if (end) {
             //printf("client released database handle\n");
@@ -241,12 +247,18 @@ void vdbtcp_handle_client(int conn_fd) {
 int vdbtcp_handle_client_thread(void* args) {
     thrd_t t = thrd_current();
     thrd_detach(t);
-    int fd = *((int*)args);
+
+    struct VdbThreadContext c;
+    c.conn_fd = *((int*)args);
+    c.output = vdbbytelist_init();
+
     free_w(args, sizeof(int));
 
-    vdbtcp_handle_client(fd);
+    vdbtcp_handle_client(&c);
 
-    close(fd);
+    vdbbytelist_free(c.output);
+
+    close(c.conn_fd);
 
     return 0;
 }

@@ -596,8 +596,7 @@ void vdb_treelist_append_tree(struct VdbTreeList* tl, struct VdbTree* tree) {
 
 struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name) {
     struct VdbTree* t;
-    uint32_t i;
-    for (i = 0; i < tl->count; i++) {
+    for (int i = 0; i < tl->count; i++) {
         t = tl->trees[i];
         if (strncmp(name, t->name, strlen(name)) == 0)
             return t;
@@ -608,7 +607,7 @@ struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name) 
 
 struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* name) {
     struct VdbTree* t = NULL;
-    uint32_t i;
+    int i;
     for (i = 0; i < tl->count; i++) {
         t = tl->trees[i];
         if (strncmp(name, t->name, strlen(name)) == 0)
@@ -623,7 +622,7 @@ struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* nam
 }
 
 void vdb_treelist_free(struct VdbTreeList* tl) {
-    for (uint32_t i = 0; i < tl->count; i++) {
+    for (int i = 0; i < tl->count; i++) {
         struct VdbTree* t = tl->trees[i];
         vdb_tree_close(t);
     }

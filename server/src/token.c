@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 
 #include "token.h"
 #include "util.h"
@@ -100,4 +101,9 @@ void vdbtokenlist_print(struct VdbTokenList* tl) {
         struct VdbToken t = tl->tokens[i];
         vdbtoken_print(t);
     }
+}
+
+void vdbtoken_serialize_lexeme(char* buf, struct VdbToken t) {
+    memcpy(buf, t.lexeme, t.len);
+    buf[t.len] = '\0';
 }

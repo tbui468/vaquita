@@ -1,6 +1,8 @@
 #ifndef VDB_VM_H
 #define VDB_VM_H
 
+#include <threads.h>
+
 #include "parser.h"
 
 typedef void* VDBHANDLE;
@@ -9,6 +11,7 @@ struct VdbDatabase {
     char* name;
     struct VdbPager* pager;
     struct VdbTreeList* trees;
+    mtx_t lock;
 };
 
 struct VdbDatabaseList {
@@ -29,6 +32,6 @@ struct VdbDatabaseList *vdbdblist_init();
 void vdbdblist_free(struct VdbDatabaseList* l);
 void vdbdblist_append_db(struct VdbDatabaseList* l, struct VdbDatabase* d);
 
-bool vdbvm_execute_stmts(struct VdbStmtList* sl, VDBHANDLE* h, struct VdbByteList* output);
+bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output);
 
 #endif //VDB_VM_H

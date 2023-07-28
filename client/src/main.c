@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <threads.h>
 
 #include "client.h"
 
@@ -112,15 +113,48 @@ char* load_file(const char* path) {
     return buf;
 }
 
+int fcn(void* args) {
+    int thrd_id = *((int*)(args));
+    char* port_arg = (char*)((uint8_t*)args + sizeof(int));;
+    VDBHANDLE h = vdbclient_connect("127.0.0.1", port_arg);
+
+    char* setup_query = "open sol;";
+    struct VdbReader r = vdbclient_execute_query(h, setup_query);
+    free(r.buf);
+
+    char update_buf[64];
+    sprintf(update_buf, "update planets set moons=%d where id=1;", thrd_id);
+    char* select_query = "select moons from planets;";
+
+    for (int i = 0; i < 10000; i++) {
+        r = vdbclient_execute_query(h, update_buf);
+        free(r.buf);
+
+        //TODO: select data here and make sure it's valid
+    }
+
+    char* teardown_query = "close sol;";
+    r = vdbclient_execute_query(h, teardown_query);
+    free(r.buf);
+
+    vdbclient_disconnect(h);
+    free(args);
+    return 0;
+}
+
 int main(int argc, char** argv) {
     int opt;
     bool set_port = false;
+    bool multiple_threads = false;
     char* port_arg;
-    while ((opt = getopt(argc, argv, "p:")) != -1) {
+    while ((opt = getopt(argc, argv, "p:t")) != -1) {
         switch (opt) {
             case 'p':
                 set_port = true;
                 port_arg = optarg;
+                break;
+            case 't': //testing with multiple threads
+                multiple_threads = true;
                 break;
             default:
                 printf("usage: vdbclient -p [port number] [sql file]\n");
@@ -133,9 +167,45 @@ int main(int argc, char** argv) {
         port_arg = "3333";
     }
 
-    VDBHANDLE h = vdbclient_connect("127.0.0.1", port_arg);
 
-    if (optind < argc) {
+    if (multiple_threads) {
+        //set up database
+        VDBHANDLE h = vdbclient_connect("127.0.0.1", port_arg);
+
+        char* setup_query = "create database sol;"
+                            "open sol;"
+                            "create table planets (id int key, moons int);"
+                            "insert into planets (id, moons) values (1, 0);";
+
+        struct VdbReader r = vdbclient_execute_query(h, setup_query);
+        free(r.buf);
+
+        //open 4 threads to read/write
+        const int THREAD_COUNT = 4;
+        thrd_t threads[THREAD_COUNT];
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            uint8_t* args = malloc(sizeof(int) + strlen(port_arg));
+            int thrd_id = i + 1;
+            memcpy(args, &thrd_id, sizeof(int));
+            memcpy(args + sizeof(int), port_arg, strlen(port_arg));
+            thrd_create(&threads[i], &fcn, args);
+        }
+
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            thrd_join(threads[i], NULL);
+        }
+
+        char* cleanup_query = "close sol;"
+                              "drop database sol;";
+
+        r = vdbclient_execute_query(h, cleanup_query);
+        free(r.buf);
+
+        //clean up database
+        vdbclient_disconnect(h);
+    } else if (optind < argc) {
+        VDBHANDLE h = vdbclient_connect("127.0.0.1", port_arg);
         char* queries = load_file(argv[argc - 1]);
 
         struct VdbReader r = vdbclient_execute_query(h, queries);
@@ -167,8 +237,9 @@ int main(int argc, char** argv) {
         free(r.buf);
 
         free(queries);
-
+        vdbclient_disconnect(h);
     } else {
+        VDBHANDLE h = vdbclient_connect("127.0.0.1", port_arg);
         char* line = NULL; //not including this in memory allocation tracker
         size_t len = 0;
         ssize_t nread;
@@ -271,10 +342,9 @@ int main(int argc, char** argv) {
         }
 
         free(line);
-
+        vdbclient_disconnect(h);
     }
 
-    vdbclient_disconnect(h);
 
     return 0;
 }

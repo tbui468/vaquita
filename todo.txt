@@ -80,6 +80,11 @@
             How is asymmetric encryption related to digital signatures?
 
         Chapter 10: Big Data (p. 467)
+            Give three examples of big data storage systems.
+            What is the difference between 'range partitioning' and 'hash partitioning'?  (when related to sharding)
+            Can a system have both high availability and consistency?
+            How can GROUP BY and an aggregate function in SQL be done with MapReduce?
+            p.494 Beyond MapReduce: Algebraic Operations <------------------START HERE
 
 
     Read Database Design and Implementation
@@ -110,23 +115,16 @@
     Redo select so that these work:
         select upper('AdbdD'), lower('AdfBZ');
         select sum(moons) from planets; 
+     
+    Add concurrency tests to test suite
+        How to do this?
 
-    Difficulty: Medium
-    Lock trees (for both reading/writing)
+    Lock root of tree when writing/reading table
+    Lock database server (yes, entire thing)
+        when creating dropping tables
 
-        Use a multi-reader/single-writer lock on root for now
-            Just use a plain mtx_lock for now for reading/writing
-            it's not fast or efficient, but it'll do for now
-
-        Works fine now for updating with multiple threads (eg, doesn't crash) without the lock <-----------------START HERE
-            BUT the data is probably corrupt since no locking is taking place
-                - Check to see if data is corrupt without locks (select moons and check if 1, 2, 3, or 4)
-                - Add locks in for 'update'
-                - select should still read corrupt data (since select may read while an update is taking place)
-                - Add locks in for both 'update' and 'select'
-                - Check to see if data is no longer corrupt (expecting this to be the case)
-
-            Where to lock to maxmimize throughput?  Does server needs a lock for each database (for dropping/creating)?
+    Bug:
+        projection using non-existant attribute should return error (rather than just silently crashing right now)
            
     Difficulty: Easy 
     Make syntax match postgresql (makes my life easier and also makes direction clearer)

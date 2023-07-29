@@ -668,7 +668,6 @@ static void vdbvm_update_executor(struct VdbByteList* output,
                                   struct VdbExprList* values, 
                                   struct VdbExpr* selection) {
     struct VdbDatabase *db = (struct VdbDatabase*)(*h);
-//    mtx_lock(&db->lock);
 
     char table_name[MAX_TAR_SIZE];
     vdbtoken_serialize_lexeme(table_name, target);
@@ -691,8 +690,6 @@ static void vdbvm_update_executor(struct VdbByteList* output,
     snprintf(buf, MAX_BUF_SIZE, "%d row(s) updated", updated_count);
     vdbvm_output_string(output, buf, strlen(buf));
     vdbcursor_free(cursor);
-
-//    mtx_unlock(&db->lock);
 }
 
 static void vdbvm_delete_executor(struct VdbByteList* output, VDBHANDLE* h, struct VdbToken target, struct VdbExpr* selection) {
@@ -734,6 +731,7 @@ static void vdbvm_select_executor(struct VdbByteList* output,
                                   struct VdbExpr* limit) {
 
     struct VdbDatabase *db = (struct VdbDatabase*)(*h);
+
     char table_name[MAX_TAR_SIZE];
     vdbtoken_serialize_lexeme(table_name, target);
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
@@ -823,27 +821,8 @@ static void vdbvm_exit_executor(struct VdbByteList* output, VDBHANDLE* h) {
     }
 }
 
-bool vdbvm_do_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output);
 bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output) {
-    /*
-    struct VdbDatabase* db = (struct VdbDatabase*)(*h);
 
-    bool locked = false;
-    if (*h) {
-        mtx_lock(&db->lock);
-        locked = true;
-    }*/
-
-    bool result = vdbvm_do_execute_stmts(h, sl, output);
-
-    /*
-    if (locked) {
-        mtx_unlock(&db->lock);
-    }*/
-    return result;
-}
-
-bool vdbvm_do_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output) {
     for (int i = 0; i < sl->count; i++) {
         struct VdbStmt* stmt = &sl->stmts[i];
 
@@ -885,21 +864,35 @@ bool vdbvm_do_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByte
             case VDBST_DESCRIBE:
                 vdbvm_describe_tab_executor(output, h, stmt->target);
                 break;
-            case VDBST_INSERT:
+            case VDBST_INSERT: {
+                struct VdbDatabase* db = (struct VdbDatabase*)(*h);
+                mtx_lock(&db->lock);
                 vdbvm_insert_executor(output, h, stmt->target, 
                                          stmt->as.insert.attributes, 
                                          stmt->as.insert.values);
+                mtx_unlock(&db->lock);
                 break;
-            case VDBST_UPDATE:
+            }
+            case VDBST_UPDATE: {
+                struct VdbDatabase* db = (struct VdbDatabase*)(*h);
+                mtx_lock(&db->lock);
                 vdbvm_update_executor(output, h, stmt->target, 
                                          stmt->as.update.attributes, 
                                          stmt->as.update.values, 
                                          stmt->as.update.selection);
+                mtx_unlock(&db->lock);
                 break;
-            case VDBST_DELETE:
+            }
+            case VDBST_DELETE: {
+                struct VdbDatabase* db = (struct VdbDatabase*)(*h);
+                mtx_lock(&db->lock);
                 vdbvm_delete_executor(output, h, stmt->target, stmt->as.delete.selection);
+                mtx_unlock(&db->lock);
                 break;
-            case VDBST_SELECT:
+            }
+            case VDBST_SELECT: {
+                struct VdbDatabase* db = (struct VdbDatabase*)(*h);
+                mtx_lock(&db->lock);
                 vdbvm_select_executor(output, h, stmt->target, 
                                          stmt->as.select.projection, 
                                          stmt->as.select.selection, 
@@ -910,7 +903,9 @@ bool vdbvm_do_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByte
                                          stmt->as.select.distinct,
                                          stmt->as.select.limit);
 
+                mtx_unlock(&db->lock);
                 break;
+            }
             case VDBST_EXIT:
                 vdbvm_exit_executor(output, h);
                 return true;

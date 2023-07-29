@@ -123,14 +123,45 @@ int fcn(void* args) {
     free(r.buf);
 
     char update_buf[64];
-    sprintf(update_buf, "update planets set moons=%d where id=1;", thrd_id);
-    char* select_query = "select moons from planets;";
+    sprintf(update_buf, "update planets set aa=%d, bb=%d, cc=%d, dd=%d where id=1;", thrd_id, thrd_id, thrd_id, thrd_id);
+    char* select_query = "select aa, bb, cc, dd from planets;";
 
     for (int i = 0; i < 10000; i++) {
         r = vdbclient_execute_query(h, update_buf);
         free(r.buf);
 
-        //TODO: select data here and make sure it's valid
+        r = vdbclient_execute_query(h, select_query);
+
+        while (vdbreader_has_unread_bytes(&r)) {
+            uint8_t is_tuple = vdbreader_next_is_tuple(&r);
+            if (is_tuple) {
+                uint32_t row;
+                uint32_t col;
+                vdbreader_next_set_dim(&r, &row, &col);
+                for (uint32_t i = 0; i < row; i++) {
+                    uint64_t v[4];
+                    v[0] = 0;
+                    v[1] = 0;
+                    v[2] = 0;
+                    v[3] = 0;
+                    for (uint32_t j = 0; j < col; j++) {
+                        enum VdbTokenType type = vdbreader_next_type(&r);
+                        if (type == VDBT_TYPE_STR) {
+                            char* s = vdbreader_next_string(&r);
+                            free(s);
+                        } else {
+                            v[j] = vdbreader_next_int(&r);
+                        }
+                    }
+                    if (!(v[0] == v[1] && v[1] == v[2] && v[2] == v[3])) {
+                        printf("inconsistent data: ");
+                        printf("%ld, %ld, %ld, %ld\n", v[0], v[1], v[2], v[3]);
+                    }
+                }
+            }
+        }
+
+        free(r.buf);
     }
 
     char* teardown_query = "close sol;";
@@ -174,21 +205,22 @@ int main(int argc, char** argv) {
 
         char* setup_query = "create database sol;"
                             "open sol;"
-                            "create table planets (id int key, moons int);"
-                            "insert into planets (id, moons) values (1, 0);";
+                            "create table planets (id int key, aa int, bb int, cc int, dd int);"
+                            "insert into planets (id, aa, bb, cc, dd) values (1, 0, 0, 0, 0);";
 
         struct VdbReader r = vdbclient_execute_query(h, setup_query);
         free(r.buf);
 
         //open 4 threads to read/write
-        const int THREAD_COUNT = 4;
+        const int THREAD_COUNT = 8;
         thrd_t threads[THREAD_COUNT];
 
         for (int i = 0; i < THREAD_COUNT; i++) {
-            uint8_t* args = malloc(sizeof(int) + strlen(port_arg));
+            uint8_t* args = malloc(sizeof(int) + strlen(port_arg) + 1);
             int thrd_id = i + 1;
             memcpy(args, &thrd_id, sizeof(int));
             memcpy(args + sizeof(int), port_arg, strlen(port_arg));
+            args[sizeof(int) + strlen(port_arg)] = '\0';
             thrd_create(&threads[i], &fcn, args);
         }
 

@@ -40,9 +40,9 @@ void vdbtoken_print(struct VdbToken t) {
         case VDBT_STR: printf("VDBT_STR: %.*s\n", t.len, t.lexeme); break;
         case VDBT_INT: printf("VDBT_INT: %.*s\n", t.len, t.lexeme); break;
         case VDBT_FLOAT: printf("VDBT_FLOAT: %.*s\n", t.len, t.lexeme); break;
-        case VDBT_TYPE_STR: printf("VDBT_TYPE_STR\n"); break;
-        case VDBT_TYPE_INT: printf("VDBT_TYPE_INT\n"); break;
-        case VDBT_TYPE_FLOAT: printf("VDBT_TYPE_FLOAT\n"); break;
+        case VDBT_TYPE_TEXT: printf("VDBT_TYPE_TEXT\n"); break;
+        case VDBT_TYPE_INT8: printf("VDBT_TYPE_INT8\n"); break;
+        case VDBT_TYPE_FLOAT8: printf("VDBT_TYPE_FLOAT8\n"); break;
         case VDBT_TYPE_BOOL: printf("VDBT_TYPE_BOOL\n"); break;
         case VDBT_TYPE_NULL: printf("VDBT_TYPE_NULL\n"); break;
         case VDBT_LPAREN: printf("VDBT_LPAREN\n"); break;

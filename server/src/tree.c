@@ -335,7 +335,7 @@ struct VdbValue vdbtree_leaf_read_record_key(struct VdbTree* tree, uint32_t idx,
     if (!rec) printf("rec is null\n"); //TODO: this should never happend...?
 
     struct VdbValue v = rec->data[tree->schema->key_idx];
-    if (v.type == VDBT_TYPE_STR) {
+    if (v.type == VDBT_TYPE_TEXT) {
         v = vdbstring(v.as.Str.start, v.as.Str.len);
     }
 
@@ -546,7 +546,7 @@ uint32_t vdbtree_get_data_block(struct VdbTree* tree, uint32_t datacell_size) {
 }
 
 void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v) {
-    if (v->type != VDBT_TYPE_STR) {
+    if (v->type != VDBT_TYPE_TEXT) {
         return;
     }
 
@@ -564,7 +564,7 @@ void vdbtree_serialize_to_data_block_if_varlen(struct VdbTree* tree, struct VdbV
 }
 
 void vdbtree_deserialize_from_data_block_if_varlen(struct VdbTree* tree, struct VdbValue* v) {
-    if (v->type != VDBT_TYPE_STR) {
+    if (v->type != VDBT_TYPE_TEXT) {
         return;
     }
 

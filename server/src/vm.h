@@ -31,6 +31,7 @@ void vdbserver_free();
 struct VdbDatabaseList *vdbdblist_init();
 void vdbdblist_free(struct VdbDatabaseList* l);
 void vdbdblist_append_db(struct VdbDatabaseList* l, struct VdbDatabase* d);
+void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size);
 
 bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output);
 

@@ -70,48 +70,37 @@ bool vdbserver_execute_query(VDBHANDLE* h, char* query, struct VdbByteList* outp
     struct VdbTokenList* tokens;
     struct VdbErrorList* lex_errors;
 
-    time_t start_time, end_time;
-    time(&start_time);
-
     if (vdblexer_lex(query, &tokens, &lex_errors) == VDBRC_ERROR) {
         for (int i = 0; i < 1; i++) {
-            //struct VdbError e = lex_errors->errors[i];
-            //vdbstring_concat(output, "error [%d]: %s\n", e.line, e.msg);
+            struct VdbError e = lex_errors->errors[i];
+            vdbvm_output_string(output, e.msg, strlen(e.msg));
         }
+
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
-        printf("lex error\n");
         return false;
     }
-
-    time(&end_time);
-    //printf("tokenizing time: %.2lf\n", difftime(end_time, start_time));
-    time(&start_time);
 
     struct VdbStmtList* stmts;
     struct VdbErrorList* parse_errors;
 
     if (vdbparser_parse(tokens, &stmts, &parse_errors) == VDBRC_ERROR) {
         for (int i = 0; i < 1; i++) {
-            //struct VdbError e = parse_errors->errors[i];
-            //vdbstring_concat(output, "error [%d]: %s\n", e.line, e.msg);
+            struct VdbError e = parse_errors->errors[i];
+            vdbvm_output_string(output, e.msg, strlen(e.msg));
         }
+
         vdbtokenlist_free(tokens);
         vdberrorlist_free(lex_errors);
-        vdbstmtlist_free(stmts);
+        //vdbstmtlist_free(stmts); //TODO: this guy is causing problems
         vdberrorlist_free(parse_errors);
-        printf("parse error\n");
         return false;
     }
 
-    time(&end_time);
-    //printf("parsing time: %.2lf\n", difftime(end_time, start_time));
-    time(&start_time);
+//    vdbstmtlist_print(stmts);
 
     bool end = vdbvm_execute_stmts(h, stmts, output);
 
-    time(&end_time);
-    //printf("executing time: %.2lf\n", difftime(end_time, start_time));
 
     vdbtokenlist_free(tokens);
     vdberrorlist_free(lex_errors);

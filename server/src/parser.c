@@ -223,7 +223,7 @@ struct VdbValue vdbexpr_eval_identifier(struct VdbToken token, struct VdbRecord*
         }
     }
 
-    if (rec->data[i].type == VDBT_TYPE_STR) {
+    if (rec->data[i].type == VDBT_TYPE_TEXT) {
         return vdbstring(rec->data[i].as.Str.start, rec->data[i].as.Str.len);
     }
     
@@ -238,7 +238,7 @@ struct VdbValue vdbexpr_eval_literal(struct VdbToken token) {
             break;
         }
         case VDBT_INT: {
-            d.type = VDBT_TYPE_INT;
+            d.type = VDBT_TYPE_INT8;
             int len = token.len;
             char s[len + 1];
             memcpy(s, token.lexeme, len);
@@ -247,7 +247,7 @@ struct VdbValue vdbexpr_eval_literal(struct VdbToken token) {
             break;
         }
         case VDBT_FLOAT: {
-            d.type = VDBT_TYPE_FLOAT;
+            d.type = VDBT_TYPE_FLOAT8;
             int len = token.len;
             char s[len + 1];
             memcpy(s, token.lexeme, len);
@@ -292,13 +292,13 @@ static struct VdbValue vdbexpr_eval_binary_equals(struct VdbValue* left, struct 
     struct VdbValue d;
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) == 0;
             break;
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             d.as.Bool = left->as.Int == right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             d.as.Bool = left->as.Float == right->as.Float;
             break;
         case VDBT_TYPE_BOOL:
@@ -326,13 +326,13 @@ static struct VdbValue vdbexpr_eval_binary_not_equals(struct VdbValue* left, str
     struct VdbValue d;
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) != 0;
             break;
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             d.as.Bool = left->as.Int != right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             d.as.Bool = left->as.Float != right->as.Float;
             break;
         case VDBT_TYPE_BOOL:
@@ -359,13 +359,13 @@ static struct VdbValue vdbexpr_eval_binary_less(struct VdbValue* left, struct Vd
     struct VdbValue d;
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) < 0;
             break;
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             d.as.Bool = left->as.Int < right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             d.as.Bool = left->as.Float < right->as.Float;
             break;
         default:
@@ -390,13 +390,13 @@ static struct VdbValue vdbexpr_eval_binary_less_equals(struct VdbValue* left, st
     struct VdbValue d;
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) <= 0;
             break;
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             d.as.Bool = left->as.Int <= right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             d.as.Bool = left->as.Float <= right->as.Float;
             break;
         default:
@@ -421,13 +421,13 @@ static struct VdbValue vdbexpr_eval_binary_greater(struct VdbValue* left, struct
     struct VdbValue d;
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) > 0;
             break;
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             d.as.Bool = left->as.Int > right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             d.as.Bool = left->as.Float > right->as.Float;
             break;
         default:
@@ -452,13 +452,13 @@ static struct VdbValue vdbexpr_eval_binary_greater_equals(struct VdbValue* left,
     struct VdbValue d;
     d.type = VDBT_TYPE_BOOL;
     switch (left->type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             d.as.Bool = strncmp(left->as.Str.start, right->as.Str.start, left->as.Str.len) >= 0;
             break;
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             d.as.Bool = left->as.Int >= right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             d.as.Bool = left->as.Float >= right->as.Float;
             break;
         default:
@@ -536,8 +536,8 @@ static struct VdbValue vdbexpr_eval_binary_plus(struct VdbValue* left, struct Vd
 
     struct VdbValue d;
     switch (left->type) {
-        case VDBT_TYPE_STR:
-            d.type = VDBT_TYPE_STR;
+        case VDBT_TYPE_TEXT:
+            d.type = VDBT_TYPE_TEXT;
             int len = left->as.Str.len + right->as.Str.len;
             d.as.Str.len = len;
             d.as.Str.start = malloc_w(sizeof(char) * (len + 1));
@@ -545,12 +545,12 @@ static struct VdbValue vdbexpr_eval_binary_plus(struct VdbValue* left, struct Vd
             memcpy(d.as.Str.start + left->as.Str.len, right->as.Str.start, right->as.Str.len);
             d.as.Str.start[len] = '\0';
             break;
-        case VDBT_TYPE_INT:
-            d.type = VDBT_TYPE_INT;
+        case VDBT_TYPE_INT8:
+            d.type = VDBT_TYPE_INT8;
             d.as.Int = left->as.Int + right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
-            d.type = VDBT_TYPE_FLOAT;
+        case VDBT_TYPE_FLOAT8:
+            d.type = VDBT_TYPE_FLOAT8;
             d.as.Int = left->as.Float + right->as.Float;
             break;
         default:
@@ -574,12 +574,12 @@ static struct VdbValue vdbexpr_eval_binary_minus(struct VdbValue* left, struct V
 
     struct VdbValue d;
     switch (left->type) {
-        case VDBT_TYPE_INT:
-            d.type = VDBT_TYPE_INT;
+        case VDBT_TYPE_INT8:
+            d.type = VDBT_TYPE_INT8;
             d.as.Int = left->as.Int - right->as.Int;
             break;
-        case VDBT_TYPE_FLOAT:
-            d.type = VDBT_TYPE_FLOAT;
+        case VDBT_TYPE_FLOAT8:
+            d.type = VDBT_TYPE_FLOAT8;
             d.as.Int = left->as.Float - right->as.Float;
             break;
         default:
@@ -607,24 +607,24 @@ static struct VdbValue vdbexpr_eval_arg(struct VdbExpr* arg, struct VdbRecord* r
 
 static struct VdbValue vdbexpr_eval_call_sum(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
     struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
-    if (first_value.type == VDBT_TYPE_INT) {
+    if (first_value.type == VDBT_TYPE_INT8) {
         int64_t sum = 0;
         for (uint32_t i = 0; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             sum += v.as.Int;
         }
         struct VdbValue d;
-        d.type = VDBT_TYPE_INT;
+        d.type = VDBT_TYPE_INT8;
         d.as.Int = sum;
         return d;
-    } else if (first_value.type == VDBT_TYPE_FLOAT) {
+    } else if (first_value.type == VDBT_TYPE_FLOAT8) {
         double sum = 0.0;
         for (uint32_t i = 0; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             sum += v.as.Float;
         }
         struct VdbValue d;
-        d.type = VDBT_TYPE_FLOAT;
+        d.type = VDBT_TYPE_FLOAT8;
         d.as.Float = sum;
         return d;
     }
@@ -638,11 +638,11 @@ static struct VdbValue vdbexpr_eval_call_sum(struct VdbExpr* arg, struct VdbReco
 static struct VdbValue vdbexpr_eval_call_avg(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema)  {
     struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[0], schema);
     struct VdbValue d;
-    d.type = VDBT_TYPE_FLOAT;
-    if (v.type == VDBT_TYPE_INT) {
+    d.type = VDBT_TYPE_FLOAT8;
+    if (v.type == VDBT_TYPE_INT8) {
         d.as.Float = (double)(vdbexpr_eval_call_sum(arg, rs, schema).as.Int) / (double)(rs->count);
         return d;
-    } else if (v.type == VDBT_TYPE_FLOAT) {
+    } else if (v.type == VDBT_TYPE_FLOAT8) {
         d.as.Float = vdbexpr_eval_call_sum(arg, rs, schema).as.Float / (double)(rs->count);
         return d;
     }
@@ -656,14 +656,14 @@ static struct VdbValue vdbexpr_eval_call_count(struct VdbExpr* arg, struct VdbRe
     arg = arg;
     schema = schema;
     struct VdbValue d;
-    d.type = VDBT_TYPE_INT;
+    d.type = VDBT_TYPE_INT8;
     d.as.Int = rs->count;
     return d;
 }
 
 static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
     struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
-    if (first_value.type == VDBT_TYPE_INT) {
+    if (first_value.type == VDBT_TYPE_INT8) {
         int64_t max = first_value.as.Int;
         for (uint32_t i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
@@ -671,10 +671,10 @@ static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbReco
                 max = v.as.Int;
         }
         struct VdbValue d;
-        d.type = VDBT_TYPE_INT;
+        d.type = VDBT_TYPE_INT8;
         d.as.Int = max;
         return d;
-    } else if (first_value.type == VDBT_TYPE_FLOAT) {
+    } else if (first_value.type == VDBT_TYPE_FLOAT8) {
         double max = first_value.as.Float;
         for (uint32_t i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
@@ -682,7 +682,7 @@ static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbReco
                 max = v.as.Float;
         }
         struct VdbValue d;
-        d.type = VDBT_TYPE_FLOAT;
+        d.type = VDBT_TYPE_FLOAT8;
         d.as.Float = max;
         return d;
     }
@@ -695,7 +695,7 @@ static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbReco
 
 static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbRecordSet* rs, struct VdbSchema* schema) {
     struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
-    if (first_value.type == VDBT_TYPE_INT) {
+    if (first_value.type == VDBT_TYPE_INT8) {
         int64_t min = first_value.as.Int;
         for (uint32_t i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
@@ -703,10 +703,10 @@ static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbReco
                 min = v.as.Int;
         }
         struct VdbValue d;
-        d.type = VDBT_TYPE_INT;
+        d.type = VDBT_TYPE_INT8;
         d.as.Int = min;
         return d;
-    } else if (first_value.type == VDBT_TYPE_FLOAT) {
+    } else if (first_value.type == VDBT_TYPE_FLOAT8) {
         double min = first_value.as.Float;
         for (uint32_t i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
@@ -714,7 +714,7 @@ static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbReco
                 min = v.as.Float;
         }
         struct VdbValue d;
-        d.type = VDBT_TYPE_FLOAT;
+        d.type = VDBT_TYPE_FLOAT8;
         d.as.Float = min;
         return d;
     }
@@ -768,11 +768,11 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet
                     break;
             }
 
-            if (left.type == VDBT_TYPE_STR) {
+            if (left.type == VDBT_TYPE_TEXT) {
                 free_w(left.as.Str.start, sizeof(char) * left.as.Str.len);
             }
 
-            if (right.type == VDBT_TYPE_STR) {
+            if (right.type == VDBT_TYPE_TEXT) {
                 free_w(right.as.Str.start, sizeof(char) * right.as.Str.len);
             }
 
@@ -793,9 +793,9 @@ static struct VdbValue vdbexpr_do_eval(struct VdbExpr* expr, struct VdbRecordSet
                     break;
                 case VDBT_MINUS:
                     d = right;
-                    if (d.type == VDBT_TYPE_INT) {
+                    if (d.type == VDBT_TYPE_INT8) {
                         d.as.Int = -d.as.Int;
-                    } else if (d.type == VDBT_TYPE_FLOAT) {
+                    } else if (d.type == VDBT_TYPE_FLOAT8) {
                         d.as.Float = -d.as.Float;
                     } else {
                         assert(false && "unsupported type for unary operation");
@@ -1126,6 +1126,13 @@ void vdbparser_parse_identifier_tuple(struct VdbParser* parser, struct VdbTokenL
     vdbparser_consume_token(parser, VDBT_RPAREN);
 }
 
+bool vdbparser_valid_data_type(struct VdbToken t) {
+    return t.type == VDBT_TYPE_TEXT ||
+           t.type == VDBT_TYPE_INT8 ||
+           t.type == VDBT_TYPE_FLOAT8 ||
+           t.type == VDBT_TYPE_BOOL;
+}
+
 enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt) {
     switch (vdbparser_next_token(parser).type) {
         case VDBT_SHOW: {
@@ -1155,7 +1162,11 @@ enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt
                 while (vdbparser_peek_token(parser).type != VDBT_RPAREN) {
                     struct VdbToken t = vdbparser_consume_token(parser, VDBT_IDENTIFIER);
                     vdbtokenlist_append_token(stmt->as.create.attributes, t);
-                    vdbtokenlist_append_token(stmt->as.create.types, vdbparser_next_token(parser));
+                    struct VdbToken attr_type = vdbparser_next_token(parser);
+                    if (!vdbparser_valid_data_type(attr_type)) {
+                        vdberrorlist_append_error(parser->errors, 1, "invalid data type");
+                    }
+                    vdbtokenlist_append_token(stmt->as.create.types, attr_type);
                     if (vdbparser_peek_token(parser).type == VDBT_KEY) {
                         vdbparser_consume_token(parser, VDBT_KEY);
                         stmt->as.create.key_idx = stmt->as.create.types->count - 1;
@@ -1550,5 +1561,11 @@ void vdbstmt_print(struct VdbStmt* stmt) {
         }
         default:
             break;
+    }
+}
+
+void vdbstmtlist_print(struct VdbStmtList* sl) {
+    for (int i = 0; i < sl->count; i++) {
+        vdbstmt_print(&sl->stmts[i]);
     }
 }

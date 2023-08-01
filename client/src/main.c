@@ -17,13 +17,13 @@ void vdbreader_sprint_value(char* buf, int maxlen, struct VdbReader* r) {
     enum VdbTokenType type = vdbreader_next_type(r);
 
     switch (type) {
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             snprintf(buf, maxlen, "%ld", vdbreader_next_int(r));
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             snprintf(buf, maxlen, "%f", vdbreader_next_float(r));
             break;
-        case VDBT_TYPE_STR: {
+        case VDBT_TYPE_TEXT: {
             char* s = vdbreader_next_string(r);
             snprintf(buf, maxlen, "%s", s);
             free(s);
@@ -68,13 +68,13 @@ void vdbreader_print_value(struct VdbReader* r) {
     enum VdbTokenType type = vdbreader_next_type(r);
 
     switch (type) {
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             printf("%ld", vdbreader_next_int(r));
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             printf("%f", vdbreader_next_float(r));
             break;
-        case VDBT_TYPE_STR: {
+        case VDBT_TYPE_TEXT: {
             char* s = vdbreader_next_string(r);
             printf("%s", s);
             free(s);
@@ -146,7 +146,7 @@ int fcn(void* args) {
                     v[3] = 0;
                     for (uint32_t j = 0; j < col; j++) {
                         enum VdbTokenType type = vdbreader_next_type(&r);
-                        if (type == VDBT_TYPE_STR) {
+                        if (type == VDBT_TYPE_TEXT) {
                             char* s = vdbreader_next_string(&r);
                             free(s);
                         } else {

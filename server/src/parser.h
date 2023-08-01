@@ -153,5 +153,6 @@ void vdbparser_parse_tuple(struct VdbParser* parser, struct VdbTokenList* tl);
 enum VdbReturnCode vdbparser_parse_stmt(struct VdbParser* parser, struct VdbStmt* stmt);
 void vdbstmt_free_fields(struct VdbStmt* stmt);
 void vdbstmt_print(struct VdbStmt* stmt);
+void vdbstmtlist_print(struct VdbStmtList* sl);
 
 #endif //VDB_PARSER_H

@@ -2,10 +2,10 @@ created database sol
 opened database sol
 created table planets
 field, type, key
-id, int, pri
-name, string,  
-moons, int,  
-gravity, float,  
+id, int8, pri
+name, text,  
+moons, int8,  
+gravity, float8,  
 atmosphere, bool,  
 dropped table planets
 closed database sol

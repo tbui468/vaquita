@@ -162,8 +162,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_EXISTS;
             break;
         case 'f':
-            if (t->len == 5 && strncmp("float", t->lexeme, 5) == 0)
-                t->type = VDBT_TYPE_FLOAT;
+            if (t->len == 6 && strncmp("float8", t->lexeme, 6) == 0)
+                t->type = VDBT_TYPE_FLOAT8;
             if (t->len == 5 && strncmp("false", t->lexeme, 5) == 0)
                 t->type = VDBT_FALSE;
             if (t->len == 4 && strncmp("from", t->lexeme, 4) == 0)
@@ -178,8 +178,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_HAVING;
             break;
         case 'i':
-            if (t->len == 3 && strncmp("int", t->lexeme, 3) == 0)
-                t->type = VDBT_TYPE_INT;
+            if (t->len == 4 && strncmp("int8", t->lexeme, 4) == 0)
+                t->type = VDBT_TYPE_INT8;
             if (t->len == 4 && strncmp("into", t->lexeme, 4) == 0)
                 t->type = VDBT_INTO;
             if (t->len == 6 && strncmp("insert", t->lexeme, 6) == 0)
@@ -222,8 +222,6 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_ROLLBACK;
             break;
         case 's':
-            if (t->len == 6 && strncmp("string", t->lexeme, 6) == 0)
-                t->type = VDBT_TYPE_STR;
             if (t->len == 6 && strncmp("select", t->lexeme, 6) == 0)
                 t->type = VDBT_SELECT;
             if (t->len == 3 && strncmp("set", t->lexeme, 3) == 0)
@@ -234,6 +232,8 @@ enum VdbReturnCode vdblexer_read_word(struct VdbLexer* lexer, struct VdbToken* t
                 t->type = VDBT_SHOW;
             break;
         case 't':
+            if (t->len == 4 && strncmp("text", t->lexeme, 4) == 0)
+                t->type = VDBT_TYPE_TEXT;
             if (t->len == 4 && strncmp("true", t->lexeme, 4) == 0)
                 t->type = VDBT_TRUE;
             if (t->len == 5 && strncmp("table", t->lexeme, 5) == 0)

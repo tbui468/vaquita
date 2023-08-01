@@ -84,8 +84,28 @@
             What is the difference between 'range partitioning' and 'hash partitioning'?  (when related to sharding)
             Can a system have both high availability and consistency?
             How can GROUP BY and an aggregate function in SQL be done with MapReduce?
-            p.494 Beyond MapReduce: Algebraic Operations <------------------START HERE
+            Hadoop uses MapReduce - what does Spark give us?
+            How is 'data-at'rest' different from streaming data?
+            What is complex query processing?
+            What is a publish-subscribe model?
+            Give an example of when a graph database would be useful
 
+        Chapter 11: Data Analytics (p.519)
+            What is the definition of data analytics?  Why is it useful?
+            What is ETL, and how is it related to data warehouses?  How about ELT?
+            What are OLAP systems?
+            What are fact tables and dimension tables in a datawarehouse?
+            How is a star schema different from a snowflake schema?
+            Which of these is not common (or used at all) in data warehouse (insert, update, delete)?
+            Why is column-oriented storage used in datawarehouses rather than row-oriented storage?
+            How is a datalake different from a datawarehouse?  What are the pros and cons?
+            What are cube/rollup/grouping set used for?
+            Why are kernel functions useful for using Support Vector Machine classifiers?
+            How are association and correlation related?
+
+        Chapter 12: Physical Storage Systems (p. 559) <--------------START HERE
+
+    Make a Vaquita website to make it more presentable
 
     Read Database Design and Implementation
     Read Designing Data-Intensive Applications
@@ -112,31 +132,51 @@
     Switch over to google cpp coding style
         https://gist.github.com/davidzchen/9187878
 
+    Errors need a major rework/integrated back into the system
+        lexing and parsing errors work now - need to add runtime (execution) errors
+        Fix tests so that they work <------start here
+
     Redo select so that these work:
         select upper('AdbdD'), lower('AdfBZ');
         select sum(moons) from planets; 
      
     Add concurrency tests to test suite
-        How to do this?
+        Write python script to start single server first, and then multiple clients that run in parallel
+        Write tests for these three commands:
+            insert
+            delete
+            update
+            select is used for checking data, so need to use it with each test already, so no need to test individually
+        Instead of writing output to file, just check directly in program????
 
-    Lock root of tree when writing/reading table
-    Lock database server (yes, entire thing)
-        when creating dropping tables
+    Tests currently cause a cascade of failures when on fails
+        need to decouple them so that we know which test actually fails
+        after running a test, should have python script run some cleanup code to remove sol.vdb to start fresh
+
+    Concurrency for data definition language commands
+        Lock database list when creating/dropping tables using dbs_lock
+            struct VdbServer {
+                struct VdbPager* pager;
+                struct VdbDatabaseList* dbs;
+                mtx_t dbs_lock;
+            };
+
+        But will need a reference count to allow open connections to use
+            dropped databases...
 
     Bug:
         projection using non-existant attribute should return error (rather than just silently crashing right now)
            
     Difficulty: Easy 
-    Make syntax match postgresql (makes my life easier and also makes direction clearer)
-        Type names:
-            change STRING to TEXT
-            change INT to INT8
-            change FLOAT to FLOAT8
-        change KEY to PRIMARY KEY
-        change 'if exists drop database sol;' to 'DROP DATABASE IF EXISTS university;'
-        Don't require attributes names if defining all attributes: INSERT INTO planets VALUES (3, 'asfasd')
-        Use single quotes for TEXT (rather than the double quotes used in vaquita now)        
-        Make all identifiers lowercase (but not data inside of single quotes, eg TEXT)
+        Make syntax match postgresql (makes my life easier and also makes direction clearer)
+            Type names:
+                changed ALL type names to TEXT, INT8, and FLOAT8, BUT tests are all still passing for some reason
+                this should report an error
+            change KEY to PRIMARY KEY
+            change 'if exists drop database sol;' to 'DROP DATABASE IF EXISTS university;'
+            Don't require attributes names if defining all attributes: INSERT INTO planets VALUES (3, 'asfasd')
+            Use single quotes for TEXT (rather than the double quotes used in vaquita now)        
+            Make all identifiers lowercase (but not data inside of single quotes, eg TEXT)
 
     Joins
 

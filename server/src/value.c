@@ -11,15 +11,15 @@ int vdbvalue_serialized_size(struct VdbValue v) {
     size += sizeof(uint8_t);
 
     switch (v.type) {
-        case VDBT_TYPE_STR: {
+        case VDBT_TYPE_TEXT: {
             size += sizeof(uint32_t) * 2;
             break;
         }
-        case VDBT_TYPE_INT: {
+        case VDBT_TYPE_INT8: {
             size += sizeof(int64_t);
             break;
         }
-        case VDBT_TYPE_FLOAT: {
+        case VDBT_TYPE_FLOAT8: {
             size += sizeof(double);
             break;
         }
@@ -38,7 +38,7 @@ int vdbvalue_serialized_size(struct VdbValue v) {
 }
 
 int vdbvalue_serialize_string(uint8_t* buf, struct VdbValue* v) {
-    assert(v->type == VDBT_TYPE_STR && "must be string");
+    assert(v->type == VDBT_TYPE_TEXT && "must be string");
     int off = 0;
 
     *((uint8_t*)(buf + off)) = (uint8_t)(v->type);
@@ -53,7 +53,7 @@ int vdbvalue_serialize_string(uint8_t* buf, struct VdbValue* v) {
 }
 
 int vdbvalue_serialized_string_size(struct VdbValue v) {
-    assert(v.type == VDBT_TYPE_STR && "must be string");
+    assert(v.type == VDBT_TYPE_TEXT && "must be string");
     int off = 0;
     off += sizeof(uint8_t);
     off += sizeof(uint32_t);
@@ -69,7 +69,7 @@ int vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
     off += sizeof(uint8_t);
 
     switch (v.type) {
-        case VDBT_TYPE_STR: {
+        case VDBT_TYPE_TEXT: {
             assert(v.as.Str.block_idx != 0 && "block idx not set");
             *((uint32_t*)(buf + off)) = v.as.Str.block_idx;
             off += sizeof(uint32_t);
@@ -77,12 +77,12 @@ int vdbvalue_serialize(uint8_t* buf, struct VdbValue v) {
             off += sizeof(uint32_t);
             break;
         }
-        case VDBT_TYPE_INT: {
+        case VDBT_TYPE_INT8: {
             memcpy(buf + off, &v.as.Int, sizeof(int64_t));
             off += sizeof(int64_t);
             break;
         }
-        case VDBT_TYPE_FLOAT: {
+        case VDBT_TYPE_FLOAT8: {
             memcpy(buf + off, &v.as.Float, sizeof(double));
             off += sizeof(double);
             break;
@@ -120,19 +120,19 @@ int vdbvalue_deserialize(struct VdbValue* v, uint8_t* buf) {
     off += sizeof(uint8_t);
 
     switch (v->type) {
-        case VDBT_TYPE_STR: {
+        case VDBT_TYPE_TEXT: {
             v->as.Str.block_idx = *((uint32_t*)(buf + off));
             off += sizeof(uint32_t);
             v->as.Str.idxcell_idx = *((uint32_t*)(buf + off));
             off += sizeof(uint32_t);
             break;
         }
-        case VDBT_TYPE_INT: {
+        case VDBT_TYPE_INT8: {
             memcpy(&v->as.Int, buf + off, sizeof(int64_t));
             off += sizeof(int64_t);
             break;
         }
-        case VDBT_TYPE_FLOAT: {
+        case VDBT_TYPE_FLOAT8: {
             memcpy(&v->as.Float, buf + off, sizeof(double));
             off += sizeof(double);
             break;
@@ -158,21 +158,21 @@ bool vdbvalue_is_null(struct VdbValue* d) {
 
 struct VdbValue vdbint(int64_t i) {
     struct VdbValue v;
-    v.type = VDBT_TYPE_INT;
+    v.type = VDBT_TYPE_INT8;
     v.as.Int = i;
     return v;
 }
 
 struct VdbValue vdbfloat(double d) {
     struct VdbValue v;
-    v.type = VDBT_TYPE_FLOAT;
+    v.type = VDBT_TYPE_FLOAT8;
     v.as.Float = d;
     return v;
 }
 
 struct VdbValue vdbstring(char* s, int len) {
     struct VdbValue v;
-    v.type = VDBT_TYPE_STR;
+    v.type = VDBT_TYPE_TEXT;
     v.as.Str.start = malloc_w(sizeof(char) * len);
     v.as.Str.len = len;
     v.as.Str.block_idx = 0;
@@ -189,7 +189,7 @@ struct VdbValue vdbbool(bool b) {
 }
 
 struct VdbValue vdbvalue_copy(struct VdbValue v) {
-    if (v.type == VDBT_TYPE_STR) {
+    if (v.type == VDBT_TYPE_TEXT) {
         return vdbstring(v.as.Str.start, v.as.Str.len);
     }
 
@@ -199,15 +199,15 @@ struct VdbValue vdbvalue_copy(struct VdbValue v) {
 int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2) {
     assert(v1.type == v2.type && "value types must be the same to compared");
     switch (v1.type) {
-        case VDBT_TYPE_STR:
+        case VDBT_TYPE_TEXT:
             return strncmp(v1.as.Str.start, v2.as.Str.start, v1.as.Str.len > v2.as.Str.len ? v1.as.Str.len : v2.as.Str.len);
-        case VDBT_TYPE_INT:
+        case VDBT_TYPE_INT8:
             if (v1.as.Int < v2.as.Int)
                 return -1;
             if (v1.as.Int > v2.as.Int)
                 return 1;
             break;
-        case VDBT_TYPE_FLOAT:
+        case VDBT_TYPE_FLOAT8:
             if (v1.as.Float < v2.as.Float)
                 return -1;
             if (v1.as.Float > v2.as.Float)
@@ -229,7 +229,7 @@ int vdbvalue_compare(struct VdbValue v1, struct VdbValue v2) {
 }
 
 void vdbvalue_free(struct VdbValue v) {
-    if (v.type == VDBT_TYPE_STR) {
+    if (v.type == VDBT_TYPE_TEXT) {
         free_w(v.as.Str.start, sizeof(char) * v.as.Str.len);
     }
 }
@@ -244,7 +244,7 @@ struct VdbValueList * vdbvaluelist_init() {
 
 void vdbvaluelist_free(struct VdbValueList* vl) {
     for (int i = 0; i < vl->count; i++) {
-        if (vl->values[i].type == VDBT_TYPE_STR) {
+        if (vl->values[i].type == VDBT_TYPE_TEXT) {
             free_w(vl->values[i].as.Str.start, vl->values[i].as.Str.len * sizeof(char));
         }
     }

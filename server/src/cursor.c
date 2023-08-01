@@ -173,7 +173,7 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     //free any string cells in record before freeing record cell
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue v = rec->data[i];
-        if (v.type == VDBT_TYPE_STR) {
+        if (v.type == VDBT_TYPE_TEXT) {
             vdbtree_free_datablock_string(tree, &v);
         }
     }
@@ -208,7 +208,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
     //could optimize this by not freeing unchanged strings
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue v = rec->data[i];
-        if (v.type == VDBT_TYPE_STR) {
+        if (v.type == VDBT_TYPE_TEXT) {
             vdbtree_free_datablock_string(tree, &v);
         }
     }
@@ -329,7 +329,7 @@ struct VdbByteList* vdbcursor_key_from_cols(struct VdbCursor* cursor, struct Vdb
 
     for (int i = 0; i < cols->count; i++) {
         struct VdbValue v = vdbexpr_eval(cols->exprs[i], rs, cursor->tree->schema);
-        if (v.type == VDBT_TYPE_STR) {
+        if (v.type == VDBT_TYPE_TEXT) {
             vdbbytelist_resize(bl, vdbvalue_serialized_string_size(v));
             bl->count += vdbvalue_serialize_string(bl->values + bl->count, &v);
         } else {

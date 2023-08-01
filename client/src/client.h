@@ -6,10 +6,10 @@ typedef void* VDBHANDLE;
 //TODO: shouldn't require us to copy this over from server token.h
 //      this is error prone
 enum VdbTokenType {
-    VDBT_TYPE_STR,
-    VDBT_TYPE_INT,
+    VDBT_TYPE_TEXT,
+    VDBT_TYPE_INT8,
     VDBT_TYPE_BOOL,
-    VDBT_TYPE_FLOAT,
+    VDBT_TYPE_FLOAT8,
     VDBT_TYPE_NULL
 };
 

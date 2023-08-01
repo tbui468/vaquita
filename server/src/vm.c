@@ -174,11 +174,11 @@ VDBHANDLE vdbvm_return_db(const char* name) {
     return NULL;
 }
 
-static void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
+void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size) {
     uint8_t is_tuple = 0;
     vdbbytelist_append_byte(bl, is_tuple);
 
-    uint8_t type = VDBT_TYPE_STR;
+    uint8_t type = VDBT_TYPE_TEXT;
     vdbbytelist_append_byte(bl, type);
     uint32_t len = size;
     vdbbytelist_append_bytes(bl, (uint8_t*)&len, sizeof(uint32_t));
@@ -204,7 +204,7 @@ static void vdbvm_assign_column_values(struct VdbValue* data, struct VdbSchema* 
         }
 
         //user manually inserted null for a string value
-        if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_STR) {
+        if (found && data[i].type == VDBT_TYPE_NULL && schema->types[i] == VDBT_TYPE_TEXT) {
             data[i] = vdbstring("0", 1); //insert dummy string
             data[i].type = VDBT_TYPE_NULL;
         }
@@ -213,7 +213,7 @@ static void vdbvm_assign_column_values(struct VdbValue* data, struct VdbSchema* 
             data[i].type = VDBT_TYPE_NULL;
 
             //automacally insert null value for string
-            if (schema->types[i] == VDBT_TYPE_STR) {
+            if (schema->types[i] == VDBT_TYPE_TEXT) {
                 data[i] = vdbstring("0", 1); //insert dummy string
                 data[i].type = VDBT_TYPE_NULL;
             }
@@ -566,17 +566,17 @@ static void vdbvm_describe_tab_executor(struct VdbByteList* output, VDBHANDLE* h
         char* type;
         int len;
         switch (tree->schema->types[i]) {
-            case VDBT_TYPE_INT:
-                type = "int";
-                len = 3;
+            case VDBT_TYPE_INT8:
+                type = "int8";
+                len = 4;
                 break;
-            case VDBT_TYPE_STR:
-                type = "string";
+            case VDBT_TYPE_TEXT:
+                type = "text";
                 len = 6;
                 break;
-            case VDBT_TYPE_FLOAT:
-                type = "float";
-                len = 5;
+            case VDBT_TYPE_FLOAT8:
+                type = "float8";
+                len = 6;
                 break;
             case VDBT_TYPE_BOOL:
                 type = "bool";
@@ -643,7 +643,7 @@ static void vdbvm_insert_executor(struct VdbByteList* output,
         //free record
         for (uint32_t i = 0; i < rec.count; i++) {
             struct VdbValue* d = &rec.data[i];
-            if (d->type == VDBT_TYPE_STR) {
+            if (d->type == VDBT_TYPE_TEXT) {
                 free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
             }
         }

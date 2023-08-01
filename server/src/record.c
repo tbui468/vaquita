@@ -17,7 +17,7 @@ struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data) {
 void vdbrecord_free(struct VdbRecord* rec) {
     for (uint32_t i = 0; i < rec->count; i++) {
         struct VdbValue* d = &rec->data[i];
-        if (d->type == VDBT_TYPE_STR) {
+        if (d->type == VDBT_TYPE_TEXT) {
             free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);
         }
     }
@@ -34,10 +34,10 @@ struct VdbRecord* vdbrecord_copy(struct VdbRecord* rec) {
         struct VdbValue* d = &rec->data[i];
         r->data[i].type = d->type;
         switch (d->type) {
-            case VDBT_TYPE_INT:
+            case VDBT_TYPE_INT8:
                 r->data[i].as.Int = d->as.Int;
                 break;
-            case VDBT_TYPE_STR:
+            case VDBT_TYPE_TEXT:
                 r->data[i].as.Str.len = d->as.Str.len;
                 r->data[i].as.Str.start = malloc_w(sizeof(char) * d->as.Str.len);
                 memcpy(r->data[i].as.Str.start, d->as.Str.start, d->as.Str.len);
@@ -62,7 +62,7 @@ int vdbrecord_serialized_size(struct VdbRecord* rec) {
     int size = 0;
 
     for (uint32_t i = 0; i < rec->count; i++) {
-        if (rec->data[i].type == VDBT_TYPE_STR) {
+        if (rec->data[i].type == VDBT_TYPE_TEXT) {
             size += vdbvalue_serialized_string_size(rec->data[i]);
         } else {
             size += vdbvalue_serialized_size(rec->data[i]);
@@ -157,7 +157,7 @@ void vdbrecordset_serialize(struct VdbRecordSet* rs, struct VdbByteList* bl) {
 
             //vdbvalue_serialize will serialize block_idx/idxcell_idx by default, so
             //need to call vdbvalue_serialize_string to write the actual string
-            if (v.type == VDBT_TYPE_STR) {
+            if (v.type == VDBT_TYPE_TEXT) {
                 bl->count += vdbvalue_serialize_string(bl->values + bl->count, &v);
             } else {
                 bl->count += vdbvalue_serialize(bl->values + bl->count, v);

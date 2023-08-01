@@ -20,7 +20,7 @@ def test(filename):
                 output_matches = True
 
     if (return_code == 0 and output_matches):
-        print(filename.ljust(30, " "), GREEN + "passed" + ENDC)
+        #print(filename.ljust(30, " "), GREEN + "passed" + ENDC)
         return True
     else:
         print(filename.ljust(30, " "), RED + "failed" + ENDC)

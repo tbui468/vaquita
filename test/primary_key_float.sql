@@ -1,7 +1,7 @@
 create database sol;
 open sol;
 
-create table planets (id float key, name string, mass int, atmosphere bool);
+create table planets (id float8 key, name text, mass int8, atmosphere bool);
 insert into planets (id, name, mass, atmosphere) values 
     (3.0, "Mars", 10, true), 
     (-2.0, "Venus", 10, false),

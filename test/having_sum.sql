@@ -3,10 +3,10 @@ create database sol;
 open sol;
 
 create table planets (
-                        id int key,
-                        name string, 
-                        mass float, 
-                        moons int,
+                        id int8 key,
+                        name text, 
+                        mass float8, 
+                        moons int8,
                         ring_system bool
                     );
 

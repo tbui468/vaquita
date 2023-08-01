@@ -1,7 +1,7 @@
 create database sol;
 open sol;
 
-create table planets (id int key, name string, gravity float);
+create table planets (id int8 key, name text, gravity float8);
 insert into planets (id, name, gravity) values (1, "Mars", null);
 select * from planets;
 

@@ -134,7 +134,6 @@
 
     Errors need a major rework/integrated back into the system
         lexing and parsing errors work now - need to add runtime (execution) errors
-        Fix tests so that they work <------start here
 
     Redo select so that these work:
         select upper('AdbdD'), lower('AdfBZ');

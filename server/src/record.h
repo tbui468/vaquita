@@ -8,13 +8,13 @@
 
 struct VdbRecord {
     struct VdbValue* data;
-    uint32_t count; //TODO: should just be int
+    int count;
 };
 
 struct VdbRecordSet {
     struct VdbRecord** records;
-    uint32_t count; //TODO: should just be int
-    uint32_t capacity;
+    int count;
+    int capacity;
     struct VdbRecordSet* next;
     struct VdbByteList* key;
 };

@@ -609,7 +609,7 @@ static struct VdbValue vdbexpr_eval_call_sum(struct VdbExpr* arg, struct VdbReco
     struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
     if (first_value.type == VDBT_TYPE_INT8) {
         int64_t sum = 0;
-        for (uint32_t i = 0; i < rs->count; i++) {
+        for (int i = 0; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             sum += v.as.Int;
         }
@@ -619,7 +619,7 @@ static struct VdbValue vdbexpr_eval_call_sum(struct VdbExpr* arg, struct VdbReco
         return d;
     } else if (first_value.type == VDBT_TYPE_FLOAT8) {
         double sum = 0.0;
-        for (uint32_t i = 0; i < rs->count; i++) {
+        for (int i = 0; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             sum += v.as.Float;
         }
@@ -665,7 +665,7 @@ static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbReco
     struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
     if (first_value.type == VDBT_TYPE_INT8) {
         int64_t max = first_value.as.Int;
-        for (uint32_t i = 1; i < rs->count; i++) {
+        for (int i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             if (v.as.Int > max)
                 max = v.as.Int;
@@ -676,7 +676,7 @@ static struct VdbValue vdbexpr_eval_call_max(struct VdbExpr* arg, struct VdbReco
         return d;
     } else if (first_value.type == VDBT_TYPE_FLOAT8) {
         double max = first_value.as.Float;
-        for (uint32_t i = 1; i < rs->count; i++) {
+        for (int i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             if (v.as.Float > max)
                 max = v.as.Float;
@@ -697,7 +697,7 @@ static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbReco
     struct VdbValue first_value = vdbexpr_eval_arg(arg, rs->records[0], schema);
     if (first_value.type == VDBT_TYPE_INT8) {
         int64_t min = first_value.as.Int;
-        for (uint32_t i = 1; i < rs->count; i++) {
+        for (int i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             if (v.as.Int < min)
                 min = v.as.Int;
@@ -708,7 +708,7 @@ static struct VdbValue vdbexpr_eval_call_min(struct VdbExpr* arg, struct VdbReco
         return d;
     } else if (first_value.type == VDBT_TYPE_FLOAT8) {
         double min = first_value.as.Float;
-        for (uint32_t i = 1; i < rs->count; i++) {
+        for (int i = 1; i < rs->count; i++) {
             struct VdbValue v = vdbexpr_eval_arg(arg, rs->records[i], schema);
             if (v.as.Float < min)
                 min = v.as.Float;

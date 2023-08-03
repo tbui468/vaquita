@@ -641,7 +641,7 @@ static void vdbvm_insert_executor(struct VdbByteList* output,
         vdbcursor_free(cursor);
 
         //free record
-        for (uint32_t i = 0; i < rec.count; i++) {
+        for (int i = 0; i < rec.count; i++) {
             struct VdbValue* d = &rec.data[i];
             if (d->type == VDBT_TYPE_TEXT) {
                 free_w(d->as.Str.start, sizeof(char) * d->as.Str.len);

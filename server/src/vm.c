@@ -737,7 +737,6 @@ static void vdbvm_select_executor(struct VdbByteList* output,
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
     struct VdbCursor* cursor = vdbcursor_init(tree);
 
-    struct VdbHashTable* distinct_table = vdbhashtable_init();
     struct VdbHashTable* grouping_table = vdbhashtable_init();
 
     struct VdbRecordSet* head = NULL;
@@ -756,6 +755,7 @@ static void vdbvm_select_executor(struct VdbByteList* output,
             free_w(rs->records, sizeof(struct VdbRecord*) * rs->capacity);
             free_w(rs, sizeof(struct VdbRecordSet));
             vdbhashtable_insert_entry(grouping_table, key, rec);
+
             continue;
         }
 
@@ -765,19 +765,9 @@ static void vdbvm_select_executor(struct VdbByteList* output,
             continue;
         }
 
-        //passes selection criteria
-        if (distinct) {
-            struct VdbByteList* key = vdbcursor_key_from_cols(cursor, rs, projection);
-            if (!vdbhashtable_contains_key(distinct_table, key)) {
-                vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
-
-                rs->next = head;
-                head = rs;
-            }
-        } else {
-            rs->next = head;
-            head = rs;
-        }
+        //not grouped, and where clause evaulates to true
+        rs->next = head;
+        head = rs;
 
     }
 
@@ -802,13 +792,16 @@ static void vdbvm_select_executor(struct VdbByteList* output,
     //apply projections to each recordset in linked-list, and return final single recordset
     struct VdbRecordSet* final = vdbcursor_apply_projection(cursor, head, projection, grouping->count > 0);
 
+    if (distinct) {
+        final = vdbrecordset_remove_duplicates(final);
+    }
+
     vdbcursor_apply_limit(cursor, final, limit);
 
     vdbrecordset_serialize(final, output);
 
     vdbcursor_free(cursor);
     vdbrecordset_free(final);
-    vdbhashtable_free(distinct_table);
     vdbhashtable_free(grouping_table);
 }
 

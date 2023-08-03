@@ -61,6 +61,7 @@
 
         Chapter 8: Complex Data Types (p.365)
             What is the difference between 'wide column' and 'sparse column' data representation?
+                wide column is variable length, sparse column is fixed length with a whole ton of nulls
             Can custom data types be declared in SQL?
             How does inheritance work with tables?
             What are keyword queries?
@@ -69,22 +70,30 @@
 
         Chapter 9: Application Development (p.403)
             HTTP is connectionless - what does this mean?
+                A single request is sent and then the tcp connection ends immediately
             If HTTP is connectionless, how does a web app know if a person is logged in?  (How does it maintain state?)
+                cookies
             What is a Java servelet?
             What is a 'progressive web app'?
             What is connection pooling, and why is it useful?
+                making connections is expensive
             Give two examples of data that can be cached to improve performance.
             Give an example of a caching system (name a popular one).
+                memcache
             What is row-level authorization, and what are some advantages/disadvantages compared to application-level authorization?
             What is an audit trail, and why is it useful?
             How is asymmetric encryption related to digital signatures?
 
         Chapter 10: Big Data (p. 467)
             Give three examples of big data storage systems.
+                datawarehouse, datalake, 
             What is the difference between 'range partitioning' and 'hash partitioning'?  (when related to sharding)
+                put records with keys within a range together, vs hashing (record?) and grouping by that
             Can a system have both high availability and consistency?
+                No!  Have to give one up for the other.
             How can GROUP BY and an aggregate function in SQL be done with MapReduce?
             Hadoop uses MapReduce - what does Spark give us?
+                Algebraic operations - more fancy operations on data
             How is 'data-at'rest' different from streaming data?
             What is complex query processing?
             What is a publish-subscribe model?
@@ -103,7 +112,24 @@
             Why are kernel functions useful for using Support Vector Machine classifiers?
             How are association and correlation related?
 
-        Chapter 12: Physical Storage Systems (p. 559) <--------------START HERE
+        Chapter 12: Physical Storage Systems (p. 559)
+            What is a typical data transfer rate of various connections between a computer and a disks (magnetic and solid state)?
+            How much faster are SSDs compared to HDD (how many orders of magnitude)?
+            What are two advantages of RAID?
+            What is disk mirroring (sometimes called shadowing)?
+            What is block-striping?
+
+        Chapter 13: Data Storage Structures (p. 587)
+            How can a free-space map be used to find empty data blocks in vaquita?
+            What are the advantages of multitable clustering?
+            What is a data-dictionary (sometimes called 'system catalog')?
+            Clients in vaquita need to lock blocks when reading/writing.  Does the server also need to lock blocks at any point?
+            In operating systems, what is a journaling file system?
+            What are ORC and Parquet formats?
+            How are hybrid row/column stores used?
+            What is an main-memory database?
+
+        Chapter 14: Indexing (p. 623)
 
     Make a Vaquita website to make it more presentable
 
@@ -132,25 +158,14 @@
     Switch over to google cpp coding style
         https://gist.github.com/davidzchen/9187878
 
-    Errors need a major rework/integrated back into the system
+    Execution errors
         lexing and parsing errors work now - need to add runtime (execution) errors
 
     Redo select so that these work:
         select upper('AdbdD'), lower('AdfBZ');
-        select sum(moons) from planets; 
      
-    Add concurrency tests to test suite
-        Write python script to start single server first, and then multiple clients that run in parallel
-        Write tests for these three commands:
-            insert
-            delete
-            update
-            select is used for checking data, so need to use it with each test already, so no need to test individually
-        Instead of writing output to file, just check directly in program????
-
-    Tests currently cause a cascade of failures when on fails
-        need to decouple them so that we know which test actually fails
-        after running a test, should have python script run some cleanup code to remove sol.vdb to start fresh
+    Add concurrency tests for insert and delete
+        currently only have tests for update (and select)
 
     Concurrency for data definition language commands
         Lock database list when creating/dropping tables using dbs_lock
@@ -163,14 +178,62 @@
         But will need a reference count to allow open connections to use
             dropped databases...
 
-    Bug:
-        projection using non-existant attribute should return error (rather than just silently crashing right now)
-           
+    Distinct should remove duplicate rows, so let's move that to the very end of the selection process
+        before applying limit, apply distinct operator
+
+    Do aggregates work when not using 'group by'? <--------------------------------------------------CONTINUE HERE
+        select sum(moons) from planets;
+        SELECT COUNT(name) FROM cd.facilities WHERE guestcost >= 10; //this should work too
+
+        This is also a good chance to add in execution errors (along with the lexing/parsing errors already reported)
+
+        No.  If group by is NOT used, need to flatten recordset before calling aggregate function
+        struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor,
+                                                        struct VdbRecordSet* head,
+                                                        struct VdbExprList* projection,
+                                                        bool aggregate);
+
+            The last parameter ('aggregate') should NOT be name that.  aggregates can still be used without group by...
+            Should be named group_by_used
+
+            If data is NOT grouped, and an aggregate function is used, then need to flatten recordset (since will be recordset with single records)
+
+        Why are we using recordsets for queries that don't use group by????
+
+        struct VdbValue vdbexpr_eval(projection expr, record read from disk, schema read from meta data);
+            Currently this evaluates a single struct VdbValue because:
+                If GROUP BY was used, an aggregate function was used and can be applied to entire recordset
+                If GROUP BY was NOT used, only a single record is inside the record set and no aggregates used
+
+                Rewrite so API is:
+                    struct VdbRecordSet* vdbexpr_eval(struct VdbExpr* projection, struct VdbRecordSet* rs, struct VdbSchema* schema);
+                        either
+
+        When records are scanned:
+            If 'group by' is used, make a linked-list of recordsets, where each set is the 'group by' operands
+            If 'group by' is NOT used, make a single recordset of all records read from disk
+
+        When records are sorted:
+            If 'group by' is used, sort by first entry in recordsets
+                ORDER BY columns MUST be part of GROUP BY columns to be used without an aggregate function
+            If 'group by' is NOT used, there should only be a single recordset, so sort all records
+
+        When projection is applied:
+            If 'group by' NOT used, then all projections must be aggregate function calls or none can be aggregate function calls
+            Report error otherwise
+
+            If 'group by' used, then if attribute used in projection is NOT part of GROUP BY clause, then it must be used in an aggregate function
+                If used in GROUP BY clause, then a column can appear in the projection with or without an aggregate function 
+
+    Allow using SELECT along with INSERT to add records to a table
+        eg:
+        INSERT INTO planets (id, name, mass)
+            SELECT 1, 'Mars', 3.42
+            UNION ALL
+            SELECT 2, 'Earth', 343.0;
+                
     Difficulty: Easy 
         Make syntax match postgresql (makes my life easier and also makes direction clearer)
-            Type names:
-                changed ALL type names to TEXT, INT8, and FLOAT8, BUT tests are all still passing for some reason
-                this should report an error
             change KEY to PRIMARY KEY
             change 'if exists drop database sol;' to 'DROP DATABASE IF EXISTS university;'
             Don't require attributes names if defining all attributes: INSERT INTO planets VALUES (3, 'asfasd')

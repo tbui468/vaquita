@@ -4,6 +4,7 @@
 
 #include "record.h"
 #include "util.h"
+#include "hashtable.h"
 
 struct VdbRecord* vdbrecord_init(int count, struct VdbValue* data) {
     struct VdbRecord* rec = malloc_w(sizeof(struct VdbRecord));
@@ -164,4 +165,41 @@ void vdbrecordset_serialize(struct VdbRecordSet* rs, struct VdbByteList* bl) {
             }
         }
     }
+}
+
+struct VdbRecordSet* vdbrecordset_remove_duplicates(struct VdbRecordSet* rs) {
+    struct VdbHashTable* distinct_table = vdbhashtable_init();
+    for (int i = 0; i < rs->count; i++) {
+        struct VdbRecord* rec = rs->records[i];
+
+        //generate key for hash table
+        struct VdbByteList* key = vdbbytelist_init();
+        for (int i = 0; i < rec->count; i++) {
+            struct VdbValue v = rec->data[i];
+            if (v.type == VDBT_TYPE_TEXT) {
+                vdbbytelist_resize(key, vdbvalue_serialized_string_size(v));
+                key->count += vdbvalue_serialize_string(key->values + key->count, &v);
+            } else {
+                vdbbytelist_resize(key, vdbvalue_serialized_size(v));
+                key->count += vdbvalue_serialize(key->values + key->count, v);
+            }
+        }
+
+        if (!vdbhashtable_contains_key(distinct_table, key)) {
+            vdbhashtable_insert_entry(distinct_table, key, rec); //using hashtable to check for duplicates bc of 'distinct' keyword
+        } else {
+            struct VdbRecord** dst = &rs->records[i];
+            size_t size = sizeof(struct VdbRecord*) * (rs->count - 1 - i);
+            memmove(dst, dst + 1, size);
+            
+            rs->count--;
+            i--; //shifting all values in array down, so need to recheck the same index again for next iteration
+        }
+
+        vdbbytelist_free(key); //key not used in this hash table anymore, BUT it is used when executing the 'group by' clause in vm.c
+    }
+
+    vdbhashtable_free(distinct_table);
+
+    return rs;
 }

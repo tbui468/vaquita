@@ -8,12 +8,12 @@
 
 struct VdbRecord {
     struct VdbValue* data;
-    uint32_t count;
+    uint32_t count; //TODO: should just be int
 };
 
 struct VdbRecordSet {
     struct VdbRecord** records;
-    uint32_t count;
+    uint32_t count; //TODO: should just be int
     uint32_t capacity;
     struct VdbRecordSet* next;
     struct VdbByteList* key;
@@ -35,6 +35,6 @@ struct VdbRecordSet* vdbrecordset_init(struct VdbByteList* key);
 void vdbrecordset_append_record(struct VdbRecordSet* rs, struct VdbRecord* rec);
 void vdbrecordset_free(struct VdbRecordSet* rs);
 void vdbrecordset_serialize(struct VdbRecordSet* rs, struct VdbByteList* bl);
-
+struct VdbRecordSet* vdbrecordset_remove_duplicates(struct VdbRecordSet* rs);
 
 #endif //VDB_RECORD_H

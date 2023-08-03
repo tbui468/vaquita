@@ -126,7 +126,9 @@ int fcn(void* args) {
     sprintf(update_buf, "update planets set aa=%d, bb=%d, cc=%d, dd=%d where id=1;", thrd_id, thrd_id, thrd_id, thrd_id);
     char* select_query = "select aa, bb, cc, dd from planets;";
 
-    for (int i = 0; i < 10000; i++) {
+    bool okay = true;
+
+    for (int i = 0; i < 1000; i++) {
         r = vdbclient_execute_query(h, update_buf);
         free(r.buf);
 
@@ -156,6 +158,7 @@ int fcn(void* args) {
                     if (!(v[0] == v[1] && v[1] == v[2] && v[2] == v[3])) {
                         printf("inconsistent data: ");
                         printf("%ld, %ld, %ld, %ld\n", v[0], v[1], v[2], v[3]);
+                        okay = false;
                     }
                 }
             }
@@ -170,6 +173,13 @@ int fcn(void* args) {
 
     vdbclient_disconnect(h);
     free(args);
+
+    if (okay) {
+        printf("concurrency tests passed\n");
+    } else {
+        printf("concurrency tests failed\n");
+    }
+
     return 0;
 }
 
@@ -205,14 +215,14 @@ int main(int argc, char** argv) {
 
         char* setup_query = "create database sol;"
                             "open sol;"
-                            "create table planets (id int key, aa int, bb int, cc int, dd int);"
+                            "create table planets (id int8 key, aa int8, bb int8, cc int8, dd int8);"
                             "insert into planets (id, aa, bb, cc, dd) values (1, 0, 0, 0, 0);";
 
         struct VdbReader r = vdbclient_execute_query(h, setup_query);
         free(r.buf);
 
         //open 4 threads to read/write
-        const int THREAD_COUNT = 8;
+        const int THREAD_COUNT = 4;
         thrd_t threads[THREAD_COUNT];
 
         for (int i = 0; i < THREAD_COUNT; i++) {

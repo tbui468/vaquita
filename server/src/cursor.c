@@ -279,7 +279,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
     }
 
     while (cur) {
-        uint32_t max = aggregate ? 1 : cur->count;
+        uint32_t max = aggregate ? 1 : cur->count; //if group_by is used, compresses entire recordset into a single tuple
         for (uint32_t i = 0; i < max; i++) {
             struct VdbRecord* rec = cur->records[i];
             struct VdbExpr* expr = projection->exprs[0];

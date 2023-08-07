@@ -46,7 +46,7 @@ struct VdbRecPtr vdbtree_append_record_to_datablock(struct VdbTree* tree, struct
 
     uint32_t idxcell_idx = vdbnode_new_idxcell(page->buf, vdbrecord_fixedlen_size(r));
 
-    for (uint32_t i = 0; i < r->count; i++) {
+    for (int i = 0; i < r->count; i++) {
         vdbtree_serialize_to_data_block_if_varlen(tree, &r->data[i]);
     }
     vdbrecord_serialize(vdbnode_datacell(page->buf, idxcell_idx), r);
@@ -68,7 +68,7 @@ void vdbtree_write_record_to_datablock(struct VdbTree* tree, struct VdbRecord* r
     vdbpager_unpin_page(page, false);
 
     struct VdbPage* data_page = vdbpager_pin_page(tree->pager, tree->f, p.block_idx);
-    for (uint32_t i = 0; i < r->count; i++) {
+    for (int i = 0; i < r->count; i++) {
         vdbtree_serialize_to_data_block_if_varlen(tree, &r->data[i]);
     }
     vdbrecord_serialize(vdbnode_datacell(data_page->buf, p.idxcell_idx), r);
@@ -79,7 +79,7 @@ struct VdbRecord* vdbtree_read_record_from_datablock(struct VdbTree* tree, struc
     struct VdbPage* page = vdbpager_pin_page(tree->pager, tree->f, p->block_idx);
 
     struct VdbRecord* r = vdbrecord_deserialize(vdbnode_datacell(page->buf, p->idxcell_idx), tree->schema);
-    for (uint32_t i = 0; i < r->count; i++) {
+    for (int i = 0; i < r->count; i++) {
         vdbtree_deserialize_from_data_block_if_varlen(tree, &r->data[i]);
     }
 
@@ -598,7 +598,7 @@ struct VdbTree* vdb_treelist_get_tree(struct VdbTreeList* tl, const char* name) 
     struct VdbTree* t;
     for (int i = 0; i < tl->count; i++) {
         t = tl->trees[i];
-        if (strncmp(name, t->name, strlen(name)) == 0)
+        if (strlen(name) == strlen(t->name) && strncmp(name, t->name, strlen(name)) == 0)
             return t;
     }
 
@@ -610,7 +610,7 @@ struct VdbTree* vdb_treelist_remove_tree(struct VdbTreeList* tl, const char* nam
     int i;
     for (i = 0; i < tl->count; i++) {
         t = tl->trees[i];
-        if (strncmp(name, t->name, strlen(name)) == 0)
+        if (strlen(name) == strlen(t->name) && strncmp(name, t->name, strlen(name)) == 0)
             break;
     }
 

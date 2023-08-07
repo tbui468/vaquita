@@ -20,7 +20,7 @@
 
 #include "lexer.h"
 #include "parser.h"
-#include "vm.h"
+#include "interp.h"
 #include "pager.h"
 
 struct VdbThreadContext {
@@ -99,7 +99,16 @@ bool vdbserver_execute_query(VDBHANDLE* h, char* query, struct VdbByteList* outp
 
 //    vdbstmtlist_print(stmts);
 
-    bool end = vdbvm_execute_stmts(h, stmts, output);
+    struct VdbErrorList* execution_errors;
+    bool end;
+
+    if (vdbvm_execute_stmts(h, stmts, output, &end, &execution_errors) == VDBRC_ERROR) {
+        for (int i = 0; i < 1; i++) {
+            struct VdbError e = execution_errors->errors[i];
+            vdbvm_output_string(output, e.msg, strlen(e.msg));
+        }
+    }
+    //bool end = vdbvm_execute_stmts(h, stmts, output);
 
 
     vdbtokenlist_free(tokens);

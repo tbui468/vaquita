@@ -14,7 +14,7 @@ set(Sources
     value.c
     binarytree.c
     hashtable.c
-    vm.c
+    interp.c
     )
 
 set(Headers
@@ -32,7 +32,7 @@ set(Headers
     value.h
     binarytree.h
     hashtable.h
-    vm.h
+    interp.h
     )
 
 add_executable(

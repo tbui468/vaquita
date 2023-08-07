@@ -171,7 +171,7 @@ void vdbcursor_delete_record(struct VdbCursor* cursor) {
     struct VdbRecord* rec = vdbtree_leaf_read_record(cursor->tree, cursor->cur_node_idx, cursor->cur_rec_idx);
 
     //free any string cells in record before freeing record cell
-    for (uint32_t i = 0; i < rec->count; i++) {
+    for (int i = 0; i < rec->count; i++) {
         struct VdbValue v = rec->data[i];
         if (v.type == VDBT_TYPE_TEXT) {
             vdbtree_free_datablock_string(tree, &v);
@@ -206,7 +206,7 @@ void vdbcursor_update_record(struct VdbCursor* cursor, struct VdbTokenList* attr
 
     //free all strings in datablocks - will just rewrite entire record for the time being
     //could optimize this by not freeing unchanged strings
-    for (uint32_t i = 0; i < rec->count; i++) {
+    for (int i = 0; i < rec->count; i++) {
         struct VdbValue v = rec->data[i];
         if (v.type == VDBT_TYPE_TEXT) {
             vdbtree_free_datablock_string(tree, &v);
@@ -257,7 +257,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
 
     //add column names to tuple
     struct VdbExpr* first_expr = projection->exprs[0];
-    if (first_expr->type == VDBET_IDENTIFIER && first_expr->as.identifier.token.type == VDBT_STAR) {
+    if (first_expr->type == VDBET_WILDCARD) {
         uint32_t count = cursor->tree->schema->count;
         struct VdbValue data[count];
         for (uint32_t i = 0; i < count; i++) {
@@ -283,7 +283,7 @@ struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor, struct
         for (uint32_t i = 0; i < max; i++) {
             struct VdbRecord* rec = cur->records[i];
             struct VdbExpr* expr = projection->exprs[0];
-            if (expr->type != VDBET_IDENTIFIER || expr->as.identifier.token.type != VDBT_STAR) { //Skip if projection is *
+            if (expr->type != VDBET_WILDCARD) { //Skip if projection is *
                 struct VdbValue* data = malloc_w(sizeof(struct VdbValue) * projection->count);
                 for (int i = 0; i < projection->count; i++) {
                     data[i] = vdbexpr_eval(projection->exprs[i], cur, cursor->tree->schema);
@@ -317,7 +317,7 @@ void vdbcursor_apply_limit(struct VdbCursor* cursor, struct VdbRecordSet* rs, st
     if (limit.as.Int >= rs->count)
         return;
 
-    for (uint32_t i = limit.as.Int; i < rs->count; i++) {
+    for (int i = limit.as.Int; i < rs->count; i++) {
         vdbrecord_free(rs->records[i]);
     }
 

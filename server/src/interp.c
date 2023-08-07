@@ -1,7 +1,7 @@
 #include <string.h>
 #include <assert.h>
 
-#include "vm.h"
+#include "interp.h"
 #include "util.h"
 #include "lexer.h"
 #include "binarytree.h"
@@ -718,6 +718,54 @@ static void vdbvm_delete_executor(struct VdbByteList* output, VDBHANDLE* h, stru
     vdbcursor_free(cursor);
 }
 
+static bool vdbinterp_select_process(VDBHANDLE* h, struct VdbStmt* stmt) {
+    struct VdbDatabase *db = (struct VdbDatabase*)(*h);
+
+    char table_name[MAX_TAR_SIZE];
+    vdbtoken_serialize_lexeme(table_name, stmt->target);
+
+    struct VdbTree* tree;
+    if (!(tree = vdb_treelist_get_tree(db->trees, table_name))) {
+        return false;
+    }
+
+    if (!vdbexpr_attrs_valid(stmt->as.select.selection, tree->schema)) {
+        return false; 
+    }
+
+    struct VdbExprList* projection = stmt->as.select.projection;
+    for (int i = 0; i < projection->count; i++) {
+        if (!vdbexpr_attrs_valid(projection->exprs[i], tree->schema)) {
+            return false;
+        }
+
+        //all projection expressions result in a scalar OR all projection expressions result in a table (eg, don't collapse tupleset)
+        //  traverse each expression (and sub-expression) and return true if any aggregate function is used
+        //  bool vdbeval_contains_agg_fn(struct VdbExpr* expr);
+    }
+
+    struct VdbExprList* ordering = stmt->as.select.ordering;
+    for (int i = 0; i < ordering->count; i++) {
+        if (!vdbexpr_attrs_valid(ordering->exprs[i], tree->schema)) {
+            return false;
+        }
+    }
+
+
+    struct VdbExprList* grouping = stmt->as.select.grouping;
+    for (int i = 0; i < grouping->count; i++) {
+        if (!vdbexpr_attrs_valid(grouping->exprs[i], tree->schema)) {
+            return false;
+        }
+    }
+
+    if (!vdbexpr_attrs_valid(stmt->as.select.having, tree->schema)) {
+        return false; 
+    }
+
+    return true;
+}
+
 static void vdbvm_select_executor(struct VdbByteList* output,
                                   VDBHANDLE* h,
                                   struct VdbToken target,
@@ -734,6 +782,7 @@ static void vdbvm_select_executor(struct VdbByteList* output,
 
     char table_name[MAX_TAR_SIZE];
     vdbtoken_serialize_lexeme(table_name, target);
+
     struct VdbTree* tree = vdb_treelist_get_tree(db->trees, table_name);
     struct VdbCursor* cursor = vdbcursor_init(tree);
 
@@ -814,7 +863,14 @@ static void vdbvm_exit_executor(struct VdbByteList* output, VDBHANDLE* h) {
     }
 }
 
-bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output) {
+enum VdbReturnCode vdbvm_execute_stmts(VDBHANDLE* h, 
+                                       struct VdbStmtList* sl,
+                                       struct VdbByteList* output,
+                                       bool* end,
+                                       struct VdbErrorList** errors) {
+
+    *errors = vdberrorlist_init();
+    *end = false; //will not exit database on most commands
 
     for (int i = 0; i < sl->count; i++) {
         struct VdbStmt* stmt = &sl->stmts[i];
@@ -886,27 +942,37 @@ bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteLis
             case VDBST_SELECT: {
                 struct VdbDatabase* db = (struct VdbDatabase*)(*h);
                 mtx_lock(&db->lock);
-                vdbvm_select_executor(output, h, stmt->target, 
-                                         stmt->as.select.projection, 
-                                         stmt->as.select.selection, 
-                                         stmt->as.select.grouping,
-                                         stmt->as.select.ordering,
-                                         stmt->as.select.having,
-                                         stmt->as.select.order_desc,
-                                         stmt->as.select.distinct,
-                                         stmt->as.select.limit);
+
+                if (vdbinterp_select_process(h, stmt)) {
+                    vdbvm_select_executor(output, h, stmt->target, 
+                                             stmt->as.select.projection, 
+                                             stmt->as.select.selection, 
+                                             stmt->as.select.grouping,
+                                             stmt->as.select.ordering,
+                                             stmt->as.select.having,
+                                             stmt->as.select.order_desc,
+                                             stmt->as.select.distinct,
+                                             stmt->as.select.limit);
+                } else {
+                    vdberrorlist_append_error(*errors, 1, "select stmt error");
+                }
 
                 mtx_unlock(&db->lock);
                 break;
             }
             case VDBST_EXIT:
                 vdbvm_exit_executor(output, h);
-                return true;
+                *end = true;
+                break;
             default:
-                printf("statement execution not implemented\n");
+                vdberrorlist_append_error(*errors, 1, "unrecognized sql statement");
                 break;
         }
     }
 
-    return false;
+    if ((*errors)->count > 0)
+        return VDBRC_ERROR;
+    else
+        return VDBRC_SUCCESS;
+
 }

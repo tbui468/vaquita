@@ -130,6 +130,9 @@ void vdbexpr_print(struct VdbExpr* expr) {
         case VDBET_IDENTIFIER:
             printf("[%.*s]", expr->as.identifier.token.len, expr->as.identifier.token.lexeme);
             break;
+        case VDBET_WILDCARD:
+            printf("[%.*s]", expr->as.wildcard.token.len, expr->as.wildcard.token.lexeme);
+            break;
         case VDBET_UNARY:
             printf("(%.*s", expr->as.unary.op.len, expr->as.unary.op.lexeme);
             printf(" ");
@@ -173,6 +176,13 @@ struct VdbExpr* vdbexpr_init_identifier(struct VdbToken token) {
     struct VdbExpr* expr = malloc_w(sizeof(struct VdbExpr));
     expr->type = VDBET_IDENTIFIER; 
     expr->as.identifier.token = token;
+    return expr;
+}
+
+struct VdbExpr* vdbexpr_init_wildcard(struct VdbToken token) {
+    struct VdbExpr* expr = malloc_w(sizeof(struct VdbExpr));
+    expr->type = VDBET_WILDCARD;
+    expr->as.wildcard.token = token;
     return expr;
 }
             
@@ -861,6 +871,37 @@ struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, stru
     return vdbexpr_do_eval(expr, rs, schema);
 }
 
+bool vdbexpr_attrs_valid(struct VdbExpr* expr, struct VdbSchema* schema) {
+    switch (expr->type) {
+        case VDBET_LITERAL:
+            return true;
+        case VDBET_IDENTIFIER: {
+            struct VdbToken t = expr->as.identifier.token;
+            for (int i = 0; i < schema->count; i++) {
+                char* attr = schema->names[i];
+                if (strlen(attr) == t.len && strncmp(attr, t.lexeme, t.len) == 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case VDBET_WILDCARD:
+            return true;
+        case VDBET_UNARY:
+            return vdbexpr_attrs_valid(expr->as.unary.right, schema);
+        case VDBET_BINARY:
+            return vdbexpr_attrs_valid(expr->as.binary.left, schema) && vdbexpr_attrs_valid(expr->as.binary.right, schema);
+        case VDBET_IS_NULL:
+            return vdbexpr_attrs_valid(expr->as.is_null.left, schema);
+        case VDBET_IS_NOT_NULL:
+            return vdbexpr_attrs_valid(expr->as.is_not_null.left, schema);
+        case VDBET_CALL:
+            return vdbexpr_attrs_valid(expr->as.call.arg, schema);
+        default:
+            return false;
+    }
+}
+
 void vdbexpr_free(struct VdbExpr* expr) {
     switch (expr->type) {
         case VDBET_LITERAL:
@@ -991,8 +1032,9 @@ struct VdbExpr* vdbparser_parse_primary(struct VdbParser* parser) {
         case VDBT_NULL:
             return vdbexpr_init_literal(vdbparser_next_token(parser));
         case VDBT_IDENTIFIER:
-        case VDBT_STAR:
             return vdbexpr_init_identifier(vdbparser_next_token(parser));
+        case VDBT_STAR:
+            return vdbexpr_init_wildcard(vdbparser_next_token(parser));
         case VDBT_LPAREN:
             vdbparser_consume_token(parser, VDBT_LPAREN);
             struct VdbExpr* expr = vdbparser_parse_expr(parser);

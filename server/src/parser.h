@@ -9,6 +9,7 @@
 enum VdbExprType {
     VDBET_LITERAL,
     VDBET_IDENTIFIER,
+    VDBET_WILDCARD,
     VDBET_UNARY,
     VDBET_BINARY,
     VDBET_IS_NULL,
@@ -25,6 +26,9 @@ struct VdbExpr {
         struct {
             struct VdbToken token;
         } identifier;
+        struct {
+            struct VdbToken token;
+        } wildcard;
         struct {
             struct VdbToken op;
             struct VdbExpr* right;
@@ -130,6 +134,7 @@ struct VdbExpr* vdbexpr_init_binary(struct VdbToken op, struct VdbExpr* left, st
 struct VdbExpr* vdbexpr_init_is_null(struct VdbExpr* left);
 struct VdbExpr* vdbexpr_init_is_not_null(struct VdbExpr* left);
 struct VdbValue vdbexpr_eval(struct VdbExpr* expr, struct VdbRecordSet* rs, struct VdbSchema* schema);
+bool vdbexpr_attrs_valid(struct VdbExpr* expr, struct VdbSchema* schema);
 char* vdbexpr_to_string(struct VdbExpr* expr);
 
 struct VdbExpr* vdbexpr_copy(struct VdbExpr* expr);

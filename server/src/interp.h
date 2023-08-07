@@ -1,5 +1,5 @@
-#ifndef VDB_VM_H
-#define VDB_VM_H
+#ifndef VDB_INTERP_H
+#define VDB_INTERP_H
 
 #include <threads.h>
 
@@ -33,6 +33,7 @@ void vdbdblist_free(struct VdbDatabaseList* l);
 void vdbdblist_append_db(struct VdbDatabaseList* l, struct VdbDatabase* d);
 void vdbvm_output_string(struct VdbByteList* bl, const char* buf, size_t size);
 
-bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output);
+enum VdbReturnCode vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output, bool* end, struct VdbErrorList** errors);
+//bool vdbvm_execute_stmts(VDBHANDLE* h, struct VdbStmtList* sl, struct VdbByteList* output);
 
 #endif //VDB_VM_H

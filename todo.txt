@@ -107,13 +107,23 @@
             How is a star schema different from a snowflake schema?
             Which of these is not common (or used at all) in data warehouse (insert, update, delete)?
             Why is column-oriented storage used in datawarehouses rather than row-oriented storage?
+                faster data analytics since most analyzing requires only some columns, but those
+                columns from a large number of rows.  Storing data as columns allows more values (of a single column)
+                to fit in a page, allowing faster reads
+                But one drawback is when inserting/updating, multiple pages will have to be read (such as one
+                page per attribute) to insert/update the record.  So transactions like this are slower with
+                columnar stores
             How is a datalake different from a datawarehouse?  What are the pros and cons?
+                Datalake is just a giant store of data without much (if any) transformations
             What are cube/rollup/grouping set used for?
             Why are kernel functions useful for using Support Vector Machine classifiers?
+                Mapping a non-linear function into a linear one will allow use of a support vector machine
             How are association and correlation related?
 
         Chapter 12: Physical Storage Systems (p. 559)
             What is a typical data transfer rate of various connections between a computer and a disks (magnetic and solid state)?
+                SSD is microseconds
+                magnetic disk is milliseconds
             How much faster are SSDs compared to HDD (how many orders of magnitude)?
             What are two advantages of RAID?
             What is disk mirroring (sometimes called shadowing)?
@@ -130,14 +140,39 @@
             What is an main-memory database?
 
         Chapter 14: Indexing (p. 623)
+            What are the two types of indices?
+                ordering index
+                hash index
+            What is the difference between a dense and sparse index? Is Vaquita using a dense or sparse index?
+            What are some advantages/drawbacks of using secondary indices?
+                faster for scanning if a range scan is used for that attribute
+                slower for insertion/update/delete
+            What is a composite search key?  Why are they sometimes necessary?
+            What is the difference between coalescing nodes and redistributing (children in) nodes?
+            What is prefix compression (related to string indices)?
+                only store enough to string to be able to differentiate it from the adjacent string 
+            Why are smaller block sizes faster when using flash storage compared to magnetic storage?
+            What are the benefits/drawbacks of a log-structured merge tree?
+                faster write/update...
+                slower read...?
+            When are buffer trees faster at writing that LSM trees?  (using SSDs or magnetic disk?)
+            What are k-d trees used for?  How about R-trees?
+
+        Chapter 15: Query Processing (p. 589)
+            How are evaluation primitives related to a query-execution (or evaluation) plan?
+            What two times are used to measure the cost of a query plan?
+            How is merge sort different from external merge sort?
+            How are the nested loop join and block nested loop join different?
+            Is vaquita currently using materialized evaluation or pipelined evaluation?
+            Is vaquita using demand-driven pipelining or producer-driven pipelining?
+            How much faster is compiled queries vs interpreted queries?
+
+        Chapter 16: Query Optimization (p.743)
 
     Make a Vaquita website to make it more presentable
 
     Read Database Design and Implementation
     Read Designing Data-Intensive Applications
-
-        Do ALL exercises in Chapter 3, 4, and 5 in Database Systems using Postgres
-            Solutions are on db-book.com (and database download is there too)
 
     Implementation of Ingres
 
@@ -181,49 +216,27 @@
     Distinct should remove duplicate rows, so let's move that to the very end of the selection process
         before applying limit, apply distinct operator
 
-    Do aggregates work when not using 'group by'? <--------------------------------------------------CONTINUE HERE
+    Do aggregates work when not using 'group by'?
         select sum(moons) from planets;
         SELECT COUNT(name) FROM cd.facilities WHERE guestcost >= 10; //this should work too
 
-        This is also a good chance to add in execution errors (along with the lexing/parsing errors already reported)
+        Look in vm.c VDBST_SELECT for notes on what to do next <---------------------------------------------CONTINUE HERE
 
-        No.  If group by is NOT used, need to flatten recordset before calling aggregate function
-        struct VdbRecordSet* vdbcursor_apply_projection(struct VdbCursor* cursor,
-                                                        struct VdbRecordSet* head,
-                                                        struct VdbExprList* projection,
-                                                        bool aggregate);
+        Big problem with * now.  Should replace that all
 
-            The last parameter ('aggregate') should NOT be name that.  aggregates can still be used without group by...
-            Should be named group_by_used
+        How about this - give select stmts a bool wildcard, and set it to true if encountered while parsing
+            if true, add ALL schema attrs before 
 
-            If data is NOT grouped, and an aggregate function is used, then need to flatten recordset (since will be recordset with single records)
+            VDBET_WILDCARD - make this its own expression
 
-        Why are we using recordsets for queries that don't use group by????
+    crab latching rather than locking root for entire time
 
-        struct VdbValue vdbexpr_eval(projection expr, record read from disk, schema read from meta data);
-            Currently this evaluates a single struct VdbValue because:
-                If GROUP BY was used, an aggregate function was used and can be applied to entire recordset
-                If GROUP BY was NOT used, only a single record is inside the record set and no aggregates used
+    GROUP BY and WHERE should be able to be used together
+        the where clause is applied first, and then records passing that are grouped
+        The having clause is then applied to the resulting groups next
 
-                Rewrite so API is:
-                    struct VdbRecordSet* vdbexpr_eval(struct VdbExpr* projection, struct VdbRecordSet* rs, struct VdbSchema* schema);
-                        either
-
-        When records are scanned:
-            If 'group by' is used, make a linked-list of recordsets, where each set is the 'group by' operands
-            If 'group by' is NOT used, make a single recordset of all records read from disk
-
-        When records are sorted:
-            If 'group by' is used, sort by first entry in recordsets
-                ORDER BY columns MUST be part of GROUP BY columns to be used without an aggregate function
-            If 'group by' is NOT used, there should only be a single recordset, so sort all records
-
-        When projection is applied:
-            If 'group by' NOT used, then all projections must be aggregate function calls or none can be aggregate function calls
-            Report error otherwise
-
-            If 'group by' used, then if attribute used in projection is NOT part of GROUP BY clause, then it must be used in an aggregate function
-                If used in GROUP BY clause, then a column can appear in the projection with or without an aggregate function 
+    DISTINCT can be used in aggregate functions:
+        SELECT COUNT(DISTINCT memid) FROM cd.bookings;
 
     Allow using SELECT along with INSERT to add records to a table
         eg:
